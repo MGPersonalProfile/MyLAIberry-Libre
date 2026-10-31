@@ -1,3 +1,5 @@
+🇬🇧 [Read in English](VERIFY.md)
+
 # Comprobar el instalador de MyLAIberry
 
 Usa el `.exe` y `SHA256SUMS.txt` de **la misma Release** del repositorio `MGPersonalProfile/MyLAIberry-Libre`.
