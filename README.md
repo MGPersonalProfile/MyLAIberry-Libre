@@ -11,8 +11,8 @@ downloads the chapters, cleans up the formatting, and you read them offline, wit
 ## What it does
 
 - **Imports by link** from AO3, FanFiction.net, RoyalRoad, Webnovel, WeTriedTLs, Project Gutenberg,
-  SpaceBattles, SufficientVelocity, QuestionableQuesting and almost any site with chapters. It also imports EPUB and
-  PDF files from your disk.
+  SpaceBattles, SufficientVelocity, QuestionableQuesting and almost any site with chapters. It also imports EPUB,
+  PDF and AO3 HTML files from your disk (the format many people share fics in on Google Drive).
 - **Reader** with themes, font size, bookmarks, per-chapter progress, a table of contents, search within the work, and
   read-aloud with the Windows voices.
 - **Translation** of each chapter into your language, free and with no account; each chapter is translated once and then saved.

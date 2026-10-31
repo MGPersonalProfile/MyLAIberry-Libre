@@ -5,7 +5,7 @@ const { leerCapitulos, leerMetadatos, lectoresJsdom } = require('./epub.js');
 const PREFIJO = 'epub:';
 
 function esDelDisco(url) {
-  return /^(epub|pdf):/.test(String(url || ''));
+  return /^(epub|pdf|ao3-html):/.test(String(url || ''));
 }
 
 function tituloDelFichero(nombre) {

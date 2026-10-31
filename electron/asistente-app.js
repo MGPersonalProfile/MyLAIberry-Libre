@@ -302,9 +302,9 @@ const CATALOGO = [
   { nombre: 'importar_enlace_libro', nivel: 'confirmar', canal: 'importar-enlace-libro', parametros: { url: { type: 'string', minLength: 1, maxLength: 4000 } },
     args: async a => [a.url], resultado: r => ({ titulo: r.data?.title, capitulos: r.data?.totalChapters, yaEstaba: !!r.yaEstaba, aviso: r.aviso }),
     resumen: a => `Descargar e importar el libro de ${dominio(a.url)}.`,
-    descripcion: 'Descarga un EPUB/PDF de un enlace directo dado por el usuario (una tienda sin DRM, Project Gutenberg, su propia nube). Lo añade a la biblioteca sin descargar a mano. Si es una página que exige sesión o un botón, ofrece abrir_importador_web en el PC.' },
+    descripcion: 'Descarga un EPUB, PDF o HTML de AO3 de un enlace directo dado por el usuario (una tienda sin DRM, Project Gutenberg, su propia nube). Lo añade a la biblioteca sin descargar a mano. Si es una página que exige sesión o un botón, ofrece abrir_importador_web en el PC.' },
   { nombre: 'abrir_importador_web', nivel: 'confirmar', canal: 'abrir-importador-web', parametros: { url: { type: 'string', minLength: 1, maxLength: 4000 } }, requeridos: [],
-    args: async a => [a.url], resumen: a => `Abrir el importador web en ${a.url ? dominio(a.url) : 'Project Gutenberg'}.`, descripcion: 'Abre en el PC un navegador en la web que diga el usuario (si no dice ninguna, Project Gutenberg). El usuario entra en su cuenta si hace falta y pulsa el EPUB/PDF; la app captura la descarga y lo importa. No eliges libros por tu cuenta. Abrir la ventana NO significa libro importado.' },
+    args: async a => [a.url], resumen: a => `Abrir el importador web en ${a.url ? dominio(a.url) : 'Project Gutenberg'}.`, descripcion: 'Abre en el PC un navegador en la web que diga el usuario (si no dice ninguna, Project Gutenberg). El usuario entra en su cuenta si hace falta y pulsa el EPUB, PDF o HTML de AO3; la app captura la descarga y lo importa. No eliges libros por tu cuenta. Abrir la ventana NO significa libro importado.' },
 
   { nombre: 'abrir_en_el_pc', nivel: 'confirmar', canal: 'abrir-en-navegador', parametros: { url: { type: 'string', minLength: 8, maxLength: 2000 } },
     args: async a => [a.url], resumen: a => `Abrir ${dominio(a.url)} en el navegador del PC.`,
@@ -312,7 +312,7 @@ const CATALOGO = [
   { nombre: 'importar_libro', nivel: 'accion', canal: 'importar-libro', parametros: { ruta: { type: 'string', minLength: 1, maxLength: 500 } }, requeridos: [],
     args: async (a) => [a.ruta ? { rutaSugerida: a.ruta } : {}],
     siElUsuarioDice: ['import', 'fichero', 'archivo', 'disco', 'file', 'ordenador', 'mi pc', 'del pc', 'carpeta'],
-    descripcion: 'Abre en el PC el diálogo para importar un EPUB o un PDF que el usuario YA TIENE en su disco; él elige el fichero. Si ha dicho la ruta del fichero, pásala en ruta: el diálogo se abre en él. No sirve para conseguir libros: nunca para «descárgame…» o «búscame…».' },
+    descripcion: 'Abre en el PC el diálogo para importar un EPUB, un PDF o un HTML de descarga de AO3 que el usuario YA TIENE en su disco; él elige el fichero. Si ha dicho la ruta del fichero, pásala en ruta: el diálogo se abre en él. No sirve para conseguir libros: nunca para «descárgame…» o «búscame…».' },
   { nombre: 'apagar_acceso_movil', nivel: 'accion', canal: 'lan-apagar', args: async () => [],
     descripcion: 'Apaga «Leer desde el móvil».' },
 

@@ -1,5 +1,4 @@
-const path = require('path');
-const fs = require('fs').promises;
+const path = require('path'), fs = require('fs').promises;
 const { leer, releerSiAbierta, writeDB, carpetaDeObra } = require('./nucleo.js');
 const { planDeRealineado, moverFicheros, remapearDatos, claveDeCapitulo } = require('../realinear-capitulos.js');
 const { mismaObra } = require('../misma-obra.js');

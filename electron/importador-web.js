@@ -11,7 +11,7 @@ async function recibirLibro(item, destino, avisar, importar) {
   const tipo = tipoLibro(buffer);
   const fichero = path.join(path.dirname(destino), `libro.${tipo}`);
   await fs.promises.rename(destino, fichero);
-  const resultado = await importar(fichero, p => avisar('scrape-progress', p));
+  const resultado = await importar(fichero, p => avisar('scrape-progress', p), { urlOrigen: item.getURL() });
   if (resultado?.status !== 'success') throw new Error(resultado?.message || 'No se pudo importar el libro.');
   avisar('discoveries-updated', {});
   avisar('download-progress', { step: 'complete', fanficId: resultado.data.id, downloaded: resultado.data.totalChapters, total: resultado.data.totalChapters });
@@ -49,7 +49,7 @@ function abrirImportador(url = 'https://www.gutenberg.org/') {
 
   sesion.setPermissionRequestHandler((_wc, _permiso, responder) => responder(false));
   sesion.setPermissionCheckHandler(() => false);
-  const win = ventana = new BrowserWindow({ width: 1100, height: 800, title: 'Elige el EPUB o PDF: se añadirá a MyLAIberry',
+  const win = ventana = new BrowserWindow({ width: 1100, height: 800, title: 'Elige un EPUB, PDF o HTML de AO3: se añadirá a MyLAIberry',
     autoHideMenuBar: true, webPreferences: { session: sesion, nodeIntegration: false, contextIsolation: true, sandbox: true } });
   const permitidas = new Set([win.webContents.id]);
   const preparar = w => {
@@ -75,7 +75,7 @@ function abrirImportador(url = 'https://www.gutenberg.org/') {
   sesion.on('will-download', descarga);
   win.once('closed', () => { sesion.removeListener('will-download', descarga); ventana = null; });
   win.loadURL(direccion).catch(e => { if (!descargando && e.code !== 'ERR_ABORTED' && !win.isDestroyed()) dialog.showMessageBox(win, { type: 'error', message: e.message }); });
-  return { status: 'ok', abierta: true, aviso: 'Entra en tu cuenta y pulsa el enlace o adjunto EPUB/PDF. Se importa automáticamente; no se envían mensajes al bot por ti.' };
+  return { status: 'ok', abierta: true, aviso: 'Entra en tu cuenta y pulsa la descarga EPUB, PDF o HTML de AO3. Se importa automáticamente.' };
 }
 
 module.exports = { abrirImportador };

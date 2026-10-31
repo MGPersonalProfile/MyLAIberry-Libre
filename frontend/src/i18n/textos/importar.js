@@ -18,7 +18,7 @@ export const IMPORTAR = {
     en: 'Works with RoyalRoad · AO3 · FanFiction.net · SpaceBattles · Project Gutenberg · and any website with text'
   },
   'import.extract':        { es: 'Extraer Historia', en: 'Fetch Story' },
-  'import.from_disk':      { es: 'o importa un EPUB o un PDF de tu disco', en: 'or import an EPUB or a PDF from your disk' },
+  'import.from_disk':      { es: 'o importa un EPUB, un PDF o un HTML de AO3 de tu disco', en: 'or import an EPUB, a PDF or an AO3 HTML file from your disk' },
   'import.reading_file':   { es: 'Elige el libro…', en: 'Pick the book…' },
   'import.starting':       { es: 'Iniciando...', en: 'Starting...' },
   'import.error':          { es: 'Hubo un error al procesar la URL.', en: 'Something went wrong with that URL.' },

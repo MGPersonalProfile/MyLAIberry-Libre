@@ -15,6 +15,8 @@ const { dirDeFanfic } = require('../rutas.js');
 const { obraDeEpub, esDelDisco } = require('../epub-importar.js');
 const { TECHO_DEL_FICHERO } = require('../epub.js');
 const { obraDePdf } = require('../pdf-importar.js');
+const { tipoLibro } = require('../libro-enlace.js');
+const { obraDeHtmlAo3 } = require('../html-ao3-importar.js');
 
 const capitulosGuardados = (n) => `${n} ${n === 1 ? 'capítulo guardado' : 'capítulos guardados'}`;
 const { crearProveedor } = require('../asistente-proveedor.js');
@@ -135,24 +137,52 @@ function bajarPortada(saved) {
   });
 }
 
-async function importarLibro(ruta, sendProgress, { proveedor = crearProveedor() } = {}) {
+async function ampliarHtmlAo3(saved, storyData, sendProgress) {
+  const anteriores = saved.chapterList || [];
+  if (!/^https:\/\/archiveofourown\.org\/works\/\d+$/.test(saved.url)
+      || saved.url !== storyData.url || anteriores.length >= storyData.chapters.length
+      || !anteriores.every((c, i) => c.title === storyData.chapters[i].title)) return null;
+  const actualizado = await updateChapterList(saved.id, storyData.chapters, camposFrescos(storyData));
+  if (actualizado?.conservado) return null;
+  sendProgress({ step: 'saving_chapters', message: 'Guardando capítulos nuevos...' });
+  for (let i = anteriores.length; i < storyData.chapterContents.length; i++) {
+    await saveChapterContent(saved.id, i, storyData.chapterContents[i]);
+  }
+  await updateDownloadCount(saved.id, await countChaptersOnDisk(saved.id));
+  await medirPalabras(saved.id, { forzar: true }).catch(() => {});
+  const ajustes = await getSettings();
+  if (ajustes?.autoTranslate !== false && ajustes?.lang) {
+    traduccion.encolar(saved.id, storyData.chapters.slice(anteriores.length).map((_, i) => i + anteriores.length), ajustes.lang);
+  }
+  const nueva = await getFanficById(saved.id);
+  sendProgress({ step: 'complete', message: `¡Importado! ${capitulosGuardados(storyData.chapters.length - anteriores.length)}.` });
+  return { status: 'success', data: nueva };
+}
+
+async function importarLibro(ruta, sendProgress, { proveedor = crearProveedor(), urlOrigen } = {}) {
   sendProgress({ step: 'fetching', message: 'Leyendo el libro…' });
 
   if ((await fs.promises.stat(ruta)).size > TECHO_DEL_FICHERO) {
     throw new Error('Ese fichero pasa de 300 MB: no parece un libro.');
   }
   const datos = await fs.promises.readFile(ruta);
-  const storyData = /\.pdf$/i.test(ruta)
+  const tipo = tipoLibro(datos);
+  const storyData = tipo === 'pdf'
     ? await obraDePdf(datos, ruta, {
       proveedor,
 
       modelo: (await getAssistantState())?.settings?.model,
       alAvanzar: (hechos, total) => sendProgress({ step: 'fetching', message: `Maquetando con DeepSeek… ${hechos} de ${total}` })
     })
-    : await obraDeEpub(datos, ruta);
+    : tipo === 'html' ? obraDeHtmlAo3(datos, urlOrigen) : await obraDeEpub(datos, ruta);
 
   sendProgress({ step: 'saving_metadata', message: 'Guardando metadatos...' });
   const saved = await addFanfic(obraParaGuardar(storyData));
+
+  if (tipo === 'html') {
+    const ampliada = await ampliarHtmlAo3(saved, storyData, sendProgress);
+    if (ampliada) return ampliada;
+  }
 
   if (saved.totalChapters !== storyData.chapters.length) {
     const aviso = 'El libro ya estaba importado con otra división del índice. Se conserva esa copia y su progreso; no se sobrescriben capítulos ni traducciones.';
@@ -217,7 +247,7 @@ function registrar() {
     const { canceled, filePaths } = await dialog.showOpenDialog(ventana(), {
       title: 'Importar un libro',
       defaultPath: rutaSugerida,
-      filters: [{ name: 'EPUB o PDF', extensions: ['epub', 'pdf'] }],
+      filters: [{ name: 'EPUB, PDF o HTML de AO3', extensions: ['epub', 'pdf', 'html', 'htm'] }],
       properties: ['openFile']
     });
     if (canceled || !filePaths?.length) return { status: 'cancelled' };

@@ -17,7 +17,8 @@ function direccionWeb(valor) {
 function tipoLibro(buffer) {
   if (buffer.subarray(0, 5).toString() === '%PDF-') return 'pdf';
   if (buffer.subarray(0, 2).toString() === 'PK') return 'epub';
-  throw new Error('La descarga no es un EPUB ni un PDF. Abre el enlace en el importador web para iniciar sesión o elegir el archivo.');
+  if (/^\uFEFF?\s*(?:<!doctype\s+html\b|<html\b)/i.test(buffer.toString('utf8', 0, 512))) return 'html';
+  throw new Error('Ese fichero no es un EPUB, un PDF ni un HTML de AO3. MOBI y AZW3 no se admiten.');
 }
 
 function ipPrivada(ip) {
@@ -67,13 +68,21 @@ async function volcarDescarga(respuesta, fichero, ctrl) {
       vigilar();
       total += parte.length;
       if (total > TECHO_DEL_FICHERO) throw new Error('El libro supera 300 MB.');
-      if (cabeza.length < 5) cabeza = Buffer.concat([cabeza, Buffer.from(parte).subarray(0, 5)]);
+      if (cabeza.length < 512) cabeza = Buffer.concat([cabeza, Buffer.from(parte).subarray(0, 512 - cabeza.length)]);
       await salida.write(parte);
     }
   } catch (e) {
     throw new Error(ctrl?.signal.aborted ? 'La descarga se quedó parada más de un minuto.' : `No se pudo completar la descarga: ${e.message}`);
   } finally { clearTimeout(silencio); await salida.close(); }
-  return tipoLibro(cabeza);
+  const tipo = tipoLibro(cabeza);
+  if (tipo === 'html') {
+    try { require('./html-ao3-importar').obraDeHtmlAo3(await fs.promises.readFile(fichero)); }
+    catch (e) {
+      if (e.message !== require('./html-ao3-importar').ERROR_HTML) throw e;
+      throw new Error(`${e.message} Abre el enlace en el importador web para iniciar sesión o elegir el archivo.`);
+    }
+  }
+  return tipo;
 }
 
 async function leerDescarga(respuesta) {
@@ -95,12 +104,17 @@ async function importarEnlace(url, progreso, { pedir, importar, resolver } = {})
     const tipo = await volcarDescarga(respuesta, crudo, ctrl);
     const fichero = path.join(carpeta, `libro.${tipo}`);
     await fs.promises.rename(crudo, fichero);
-    return await guardar(fichero, progreso || (() => {}));
+    return await guardar(fichero, progreso || (() => {}), { urlOrigen: direccion });
   } finally { await fs.promises.rm(carpeta, { recursive: true, force: true }); }
 }
 
 const esEnlaceLibro = valor => {
-  try { return /\.(epub|pdf)$/i.test(new URL(valor).pathname); } catch { return false; }
+  try {
+    const url = new URL(valor);
+    if (/\.(epub|pdf)$/i.test(url.pathname)) return true;
+    return ['archiveofourown.org', 'www.archiveofourown.org', 'download.archiveofourown.org'].includes(url.hostname.toLowerCase())
+      && /^https?:$/.test(url.protocol) && /^\/downloads\/\d+\/[^/]+\.html?$/i.test(url.pathname);
+  } catch { return false; }
 };
 
 module.exports = { direccionWeb, tipoLibro, ipPrivada, comprobarDestino, leerDescarga, importarEnlace, esEnlaceLibro };

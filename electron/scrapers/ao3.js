@@ -58,6 +58,9 @@ function capitulosDe(doc, title) {
       if (encabezado) {
         actual = { title: limpio(encabezado), partes: [] };
         capitulos.push(actual);
+
+        const cuerpo = hijo.querySelector(':scope > div.userstuff');
+        if (cuerpo?.innerHTML.trim()) actual.partes.push(cuerpo.innerHTML.trim());
         continue;
       }
       if (hijo.classList && hijo.classList.contains('userstuff')) {
@@ -73,7 +76,8 @@ function capitulosDe(doc, title) {
   }
 
   if (capitulos.length === 0) {
-    const cuerpo = doc.querySelector('#chapters') || doc.querySelector('.userstuff');
+    const cuerpo = doc.querySelector('#chapters')
+      || [...doc.querySelectorAll('.userstuff')].find(el => !el.closest('#preface, #afterword'));
     if (cuerpo) capitulos.push({ title: title || 'Capítulo 1', partes: [cuerpo.innerHTML.trim()] });
   }
 
@@ -82,6 +86,7 @@ function capitulosDe(doc, title) {
 
 function parsearDescarga(html, workId, urlOriginal) {
   const doc = new JSDOM(html).window.document;
+  const urlObra = workId ? `https://archiveofourown.org/works/${workId}` : urlOriginal;
 
   const title = limpio(doc.querySelector('h1'));
   const enlaceAutor = doc.querySelector('.byline a') || doc.querySelector('a[rel="author"]');
@@ -107,11 +112,11 @@ function parsearDescarga(html, workId, urlOriginal) {
     title, author, autorUrl, synopsis, wordCount, completa,
     tags: etiquetasDe(meta),
     series: seriesDe(doc),
-    url: `https://archiveofourown.org/works/${workId}`,
+    url: urlObra,
 
     chapters: capitulos.map((c, i) => ({
       title: c.title || `Capítulo ${i + 1}`,
-      url: `https://archiveofourown.org/works/${workId}`
+      url: urlObra
     })),
     chapterContents: capitulos.map(c => c.partes.join('\n'))
   };

@@ -11,8 +11,8 @@ baja los capítulos, los deja con formato limpio y los lees sin conexión, con t
 ## Qué hace
 
 - **Importa por enlace** desde AO3, FanFiction.net, RoyalRoad, Webnovel, WeTriedTLs, Project Gutenberg,
-  SpaceBattles, SufficientVelocity, QuestionableQuesting y casi cualquier web con capítulos. También EPUB y PDF de tu
-  disco.
+  SpaceBattles, SufficientVelocity, QuestionableQuesting y casi cualquier web con capítulos. También EPUB, PDF y HTML de
+  AO3 de tu disco (el formato en que mucha gente comparte fics en Google Drive).
 - **Lector** con temas, tamaño de letra, marcapáginas, progreso por capítulo, índice, búsqueda dentro de la obra y
   lectura en voz alta con las voces de Windows.
 - **Traducción** de cada capítulo a tu idioma, gratis y sin cuenta; cada capítulo se traduce una vez y queda guardado.
