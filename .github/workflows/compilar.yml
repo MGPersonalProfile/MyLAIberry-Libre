@@ -1,0 +1,163 @@
+# Compila el código del tag en GitHub y publica exactamente los ficheros
+# producidos por ese trabajo. La atestación vincula el .exe con este workflow.
+#
+# Dos trabajos: el que compila ejecuta código de terceros (los scripts de
+# instalación de npm, electron-builder) y por eso sólo puede leer; el que
+# publica no ejecuta nada de npm y es el único con permiso para escribir,
+# atestar y pedir el token de identidad. Así una dependencia comprometida no
+# tiene en sus manos un token con el que cambiar la Release.
+name: Compilar y publicar Windows
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag v<versión> ya creado que se quiere compilar'
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  compilar:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    env:
+      RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      # El checkout queda fijado a un commit de la acción, no a una etiqueta móvil.
+      - name: Obtener el código del tag
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          persist-credentials: false
+
+      # El tag y package.json deben decir la misma versión: el actualizador
+      # busca un asset con ese número exacto y latest.yml debe coincidir.
+      - name: Comprobar el tag y la versión
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($env:RELEASE_TAG -ne "v$version") { throw "El tag no coincide con package.json: $env:RELEASE_TAG / $version" }
+          $commitDelTag = git rev-parse "refs/tags/$env:RELEASE_TAG^{commit}"
+          if ($LASTEXITCODE -ne 0) { throw 'La referencia no es un tag existente' }
+          # La atestación registra el commit desde el que se lanza el workflow (GITHUB_SHA). Lanzado a mano desde una
+          # rama, ese commit no sería el del tag que se compila: se exige que lo sea.
+          if ($commitDelTag -ne $env:GITHUB_SHA) { throw "Lanza el workflow desde el tag: $env:GITHUB_SHA no es el commit de $env:RELEASE_TAG ($commitDelTag)" }
+
+      # Sin caché de npm: lo que se publica sale sólo de los lockfiles y del
+      # registro, no de lo que haya guardado otra ejecución.
+      - name: Preparar Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+
+      # La 22.x exacta del día queda escrita en el registro de la ejecución.
+      - name: Versiones de Node y npm
+        shell: pwsh
+        run: node --version; npm --version
+
+      - name: Instalar dependencias según los lockfiles
+        shell: pwsh
+        run: |
+          npm ci
+          if ($LASTEXITCODE -ne 0) { throw 'npm ci falló en la raíz' }
+          npm ci --prefix frontend
+          if ($LASTEXITCODE -ne 0) { throw 'npm ci falló en frontend' }
+
+      # build:frontend ejecuta también scripts/preparar-modelo.js; de esa forma
+      # el modelo que usa la aplicación queda dentro de esta compilación.
+      - name: Compilar la interfaz y preparar el modelo
+        shell: pwsh
+        run: |
+          # Las licencias de terceros, sacadas de los lockfiles de esta misma compilación; van junto al .exe instalado.
+          npm run avisos
+          if ($LASTEXITCODE -ne 0) { throw 'Falló avisos-de-terceros' }
+          npm run build:frontend
+          if ($LASTEXITCODE -ne 0) { throw 'Falló build:frontend' }
+
+      # publish never impide que electron-builder publique por su cuenta. Se
+      # configura un destino genérico ficticio para que produzca latest.yml;
+      # la publicación efectiva se hace sólo en el trabajo siguiente, con gh.
+      - name: Construir el instalador NSIS y su ficha
+        shell: pwsh
+        run: |
+          npx electron-builder --win nsis --publish never --config.publish.provider=generic --config.publish.url=https://example.invalid --config.nsis.artifactName='MyLAIberry-Setup-${version}.exe'
+          if ($LASTEXITCODE -ne 0) { throw 'Falló electron-builder' }
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $nombre = "MyLAIberry-Setup-$version.exe"
+          New-Item -ItemType Directory -Force -Path salida | Out-Null
+          foreach ($ruta in @("dist/$nombre", 'dist/latest.yml', "dist/$nombre.blockmap")) {
+            if (-not (Test-Path -LiteralPath $ruta -PathType Leaf)) { throw "Falta el producto de la compilación: $ruta" }
+            Copy-Item -LiteralPath $ruta -Destination salida/
+          }
+
+      # SHA256SUMS permite comparar el fichero bajado con el publicado. Su
+      # huella se calcula sobre el .exe ya cerrado, antes de subir nada.
+      - name: Calcular SHA256SUMS.txt
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $nombre = "MyLAIberry-Setup-$version.exe"
+          $sha = (Get-FileHash -Algorithm SHA256 -LiteralPath "salida/$nombre").Hash.ToLowerInvariant()
+          # Con salto de línea LF y sin BOM: sha256sum --check lo lee tal cual, y con CRLF tomaría el \r por parte del nombre.
+          [IO.File]::WriteAllText((Join-Path $PWD 'salida/SHA256SUMS.txt'), "$sha  $nombre`n")
+
+      - name: Entregar los cuatro ficheros al trabajo que publica
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: instalador
+          path: salida/
+          if-no-files-found: error
+          retention-days: 1
+
+  publicar:
+    needs: compilar
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Recoger los ficheros compilados
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: instalador
+          path: salida
+
+      # La huella se vuelve a comprobar aquí: lo que se atesta y se publica es
+      # lo mismo que salió de la compilación.
+      - name: Comprobar la huella
+        shell: bash
+        working-directory: salida
+        run: sha256sum --check --strict SHA256SUMS.txt
+
+      # GitHub firma una declaración que asocia la huella del .exe con la
+      # ejecución de este workflow y el commit de origen. No certifica el código.
+      - name: Atestar la procedencia del ejecutable
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-path: salida/MyLAIberry-Setup-*.exe
+
+      # Si una Release de ese tag ya existe, se para: no se sustituyen assets
+      # que alguien pudiera haber descargado y verificado antes.
+      - name: Publicar la Release y los cuatro ficheros
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "La Release $RELEASE_TAG ya existe" >&2
+            exit 1
+          fi
+          nombre="MyLAIberry-Setup-${RELEASE_TAG#v}.exe"
+          gh release create "$RELEASE_TAG" "salida/$nombre" salida/latest.yml "salida/$nombre.blockmap" salida/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" --verify-tag --title "$RELEASE_TAG" --generate-notes

@@ -1,0 +1,25 @@
+# Dependencias
+node_modules/
+frontend/node_modules/
+
+# Compilación
+dist/
+frontend/dist/
+out/
+
+# Se genera en cada compilación (npm run avisos) a partir de los lockfiles
+THIRD_PARTY_NOTICES.txt
+
+# El modelo del clasificador se baja con `npm run modelo` (revisión fija y SHA-256 en scripts/preparar-modelo.js)
+frontend/public/modelos/
+
+# Registros y temporales
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Entorno y claves: nunca en el repositorio
+.env
+.env.*
+claves.json

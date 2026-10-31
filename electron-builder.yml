@@ -1,0 +1,35 @@
+# Su propio appId: en un mismo equipo, instalar otra edición de MyLAIberry no reemplaza ésta.
+appId: com.mylaiberry.libre
+productName: MyLAIberry Libre
+directories:
+  output: dist
+  buildResources: assets
+files:
+  - electron/**/*
+  - frontend/dist/**/*
+  # El icono tiene que ir dentro de la aplicación, no sólo en buildResources: la bandeja lo abre en tiempo de
+  # ejecución, y sin él se crea con una imagen vacía.
+  - assets/**/*
+  - "!node_modules/puppeteer-core/**/*"
+# Las licencias de terceros (scripts/avisos-de-terceros.mjs), al lado del ejecutable instalado.
+extraFiles:
+  - from: THIRD_PARTY_NOTICES.txt
+    to: THIRD_PARTY_NOTICES.txt
+  # Y el texto de su propia licencia (AGPL), que también tiene que acompañar a cada copia.
+  - from: LICENSE
+    to: LICENSE.txt
+win:
+  target: nsis
+  icon: assets/icon.ico
+nsis:
+  oneClick: true
+  perMachine: false
+  allowToChangeInstallationDirectory: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  # El nombre que busca el actualizador (electron/actualizar.js) en las Releases y que lista latest.yml.
+  artifactName: MyLAIberry-Setup-${version}.${ext}
+# Sin destino de publicación: electron-builder no publica nada por su cuenta ni deja un app-update.yml apuntando a
+# ningún repositorio. Las Releases las crea el workflow (.github/workflows/compilar.yml).
+publish: null
+asar: true

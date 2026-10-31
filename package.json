@@ -1,0 +1,43 @@
+{
+  "name": "mylaiberry",
+  "version": "2026.10.31",
+  "description": "Lector de fanfics y novelas web sin conexión, con traducción y asistente opcional",
+  "main": "electron/main.js",
+  "keywords": [
+    "fanfic",
+    "reader",
+    "royalroad",
+    "electron",
+    "offline"
+  ],
+  "author": "Los autores de MyLAIberry",
+  "license": "AGPL-3.0-or-later",
+  "type": "commonjs",
+  "devDependencies": {
+    "@huggingface/transformers": "^4.2.0",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^41.3.0",
+    "electron-builder": "^26.15.3",
+    "wait-on": "^9.0.5"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "jsdom": "^29.1.0",
+    "lowdb": "^3.0.0",
+    "pdfjs-dist": "^6.3.289"
+  },
+  "scripts": {
+    "dev": "node dev.js",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:electron": "wait-on http://localhost:6173 && cross-env NODE_ENV=development electron .",
+    "app": "npm run build:frontend && cross-env MYLAIBERRY_LOCAL=1 electron .",
+    "modelo": "node scripts/preparar-modelo.js",
+    "build:frontend": "npm run modelo && npm run build --prefix frontend",
+    "pack": "npm run avisos && npm run build:frontend && cross-env NODE_OPTIONS=--no-deprecation electron-builder --dir",
+    "avisos": "node scripts/avisos-de-terceros.mjs",
+    "dist": "npm run avisos && npm run build:frontend && cross-env NODE_OPTIONS=--no-deprecation electron-builder --win nsis --publish never",
+    "test": "node --test scripts/verificar-actualizar-github.mjs"
+  },
+  "repositorio": "MGPersonalProfile/MyLAIberry-Libre"
+}
