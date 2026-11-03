@@ -1,6 +1,6 @@
 {
   "name": "mylaiberry",
-  "version": "2026.10.31-2",
+  "version": "2026.11.3",
   "description": "Lector de fanfics y novelas web sin conexión, con traducción y asistente opcional",
   "main": "electron/main.js",
   "keywords": [

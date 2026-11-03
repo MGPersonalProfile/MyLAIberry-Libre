@@ -14,9 +14,37 @@ function sonDistintas(lista) {
   return new Set(lista.map(c => claveDeCapitulo(c.url))).size === lista.length;
 }
 
+const esDeLibro = (lista) => lista.length > 0 && lista.every(c => /gutenberg\.org\/ebooks\/\d+#capitulo-\d+$/i.test(String(c.url || '')));
+
+function planPorTitulo(viejo, nuevo) {
+  const nada = { mapa: new Map(), huerfanos: [], cambia: false };
+  if (!esDeLibro(viejo) || !esDeLibro(nuevo)) return nada;
+  const { claveDeTitulo } = require('./epub-limpiar.js');
+  const donde = new Map();
+  for (let i = 0; i < nuevo.length; i++) {
+    const k = claveDeTitulo(nuevo[i].title);
+    if (!k || donde.has(k)) return nada;
+    donde.set(k, i);
+  }
+  const mapa = new Map();
+  const huerfanos = [];
+  const repetidos = new Set();
+  const usados = new Set();
+  viejo.forEach((c, i) => {
+    const k = claveDeTitulo(c.title);
+    const a = donde.get(k);
+    if (a === undefined) { huerfanos.push(i); return; }
+    if (usados.has(k)) { huerfanos.push(i); repetidos.add(a); return; }
+    usados.add(k);
+    mapa.set(i, a);
+  });
+  const cambia = huerfanos.length > 0 || [...mapa].some(([de, a]) => de !== a);
+  return { mapa, huerfanos, cambia, porTitulo: true, dudosos: [...repetidos] };
+}
+
 function planDeRealineado(viejo = [], nuevo = []) {
 
-  if (!sonDistintas(viejo) || !sonDistintas(nuevo)) return { mapa: new Map(), huerfanos: [], cambia: false };
+  if (!sonDistintas(viejo) || !sonDistintas(nuevo)) return planPorTitulo(viejo, nuevo);
   const donde = new Map();
   nuevo.forEach((c, i) => { const k = claveDeCapitulo(c.url); if (!donde.has(k)) donde.set(k, i); });
   const mapa = new Map();

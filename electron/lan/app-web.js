@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { mismoOrigen, drenar } = require('./progreso.js');
-const { rutaSegura } = require('./rutas-seguras.js');
+const { rutaSegura, esIdValido } = require('./rutas-seguras.js');
 const { puenteParaElMovil } = require('./puente.js');
 const eventos = require('./eventos.js');
 
@@ -94,6 +94,42 @@ function servirFichero(res, pedida, raizDatos) {
   return enviar(res, 200, TIPOS[path.extname(real).toLowerCase()], fs.readFileSync(real), { 'Cache-Control': 'private, max-age=86400' });
 }
 
+async function servirEpub(res, id, url, epub) {
+  if (typeof epub !== 'function' || !esIdValido(id)) return json(res, 404, { error: 'No hay nada aquí.' });
+  const t = url.searchParams.get('traducido');
+  const hecho = await epub(id, t === '1' || t === '0' ? { traducido: t === '1' } : {});
+  if (hecho.status !== 'ok') return json(res, 404, { error: hecho.message || 'No se pudo exportar.' });
+  const nombre = hecho.nombre;
+  return enviar(res, 200, 'application/epub+zip', hecho.libro, {
+    'Content-Disposition': `attachment; filename="${nombre.replace(/[^\x20-\x7e]|["\\]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(nombre)}`,
+    'Cache-Control': 'no-store',
+    'X-Capitulos': String(hecho.resumen.capitulos), 'X-Total': String(hecho.resumen.total)
+  });
+}
+
+async function servirAudioObra(res, id, url, audioObra) {
+  const idioma = url.searchParams.get('idioma') || 'es';
+  if (typeof audioObra !== 'function' || !esIdValido(id) || !/^[a-z]{2}$/.test(idioma)) return json(res, 404, { error: 'No hay nada aquí.' });
+  const zip = await audioObra(id, idioma);
+  if (!zip) return json(res, 404, { error: 'Todavía no hay ningún capítulo de esta obra en MP3.' });
+  res.writeHead(200, {
+    'Content-Type': 'application/zip', 'Content-Length': String(zip.bytes),
+    'Content-Disposition': `attachment; filename="${zip.nombre.replace(/[^\x20-\x7e]|["\\]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(zip.nombre)}`,
+    'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store',
+    'X-Capitulos': String(zip.capitulos), 'X-Total': String(zip.total)
+  });
+  const escribir = buf => new Promise((ok, mal) => {
+    if (res.destroyed) return mal(new Error('El móvil cerró la conexión'));
+    if (res.write(buf)) ok(); else res.once('drain', ok);
+  });
+  try {
+    await require('../epub-zip.js').escribirZipPorPartes(zip.ficheros, escribir);
+    res.end();
+  } catch {
+    res.destroy();
+  }
+}
+
 function leerCuerpo(req) {
   return new Promise((ok, mal) => {
     const trozos = [];
@@ -130,6 +166,11 @@ async function atenderApp(req, res, partes, url, ctx) {
   if (!ctx || typeof ctx.llamar !== 'function') return false;
   const [primero, ...resto] = partes;
   if (req.method === 'POST') {
+
+    if (primero === 'subir' && !resto.length) {
+      await require('./subida.js').atenderSubida(req, res, url, ctx.subirLibro, { json, drenar, mismoOrigen });
+      return true;
+    }
     if (primero !== 'api' || resto.length !== 1) return false;
     await llamarApi(req, res, resto[0], ctx.llamar);
     return true;
@@ -144,6 +185,8 @@ async function atenderApp(req, res, partes, url, ctx) {
   if (primero === 'app') { servirApp(res, resto); return true; }
   if (primero === 'puente.json' && !resto.length) { json(res, 200, puenteParaElMovil()); return true; }
   if (primero === 'eventos' && !resto.length) { eventos.suscribir(req, res); return true; }
+  if (primero === 'epub' && resto.length === 1) { await servirEpub(res, resto[0], url, ctx.epub); return true; }
+  if (primero === 'audio-obra' && resto.length === 1) { await servirAudioObra(res, resto[0], url, ctx.audioObra); return true; }
   if (primero === 'fichero' && !resto.length) {
     servirFichero(res, url.searchParams.get('ruta'), typeof ctx.raizDatos === 'function' ? ctx.raizDatos() : ctx.raizDatos);
     return true;

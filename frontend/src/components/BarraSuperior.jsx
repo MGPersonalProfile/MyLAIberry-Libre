@@ -9,7 +9,7 @@ import Baya from './Baya';
 
 export default function BarraSuperior({
   vista, alIrA, scrolled, consulta, alBuscar,
-  buscadorAbierto, alAlternarBuscador, alImportar, lang, alCambiarIdioma
+  buscadorAbierto, alAlternarBuscador, alImportar, lang, alCambiarIdioma, avisoAsistente
 }) {
   const { t } = useI18n();
   return (
@@ -35,7 +35,7 @@ export default function BarraSuperior({
                 vista === p.id ? 'font-bold text-white' : ''
               }`}
             >
-              {t(p.clave)}
+              {t(p.clave)}{p.id === 'asistente' && avisoAsistente === 'respondiendo' && <span className="ml-1 text-amber-400 animate-pulse" role="status" aria-label={t('assistant.replying')}>◌</span>}{p.id === 'asistente' && avisoAsistente === 'listo' && <span className="ml-1 text-emerald-400" aria-label={t('assistant.reply_ready')}>●</span>}
             </li>
           ))}
         </ul>

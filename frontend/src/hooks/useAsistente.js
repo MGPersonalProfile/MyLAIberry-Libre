@@ -21,8 +21,8 @@ export default function useAsistente(punto = null) {
 
   const disponible = !!window.api?.asistenteChat;
   useEffect(() => window.api?.onAsistenteInvestigacionProgreso?.(dato => {
-    const clave = peticiones.current.get(dato.requestId);
-    if (clave) setEnCurso(e => (e[clave] ? { ...e, [clave]: { ...e[clave], progreso: dato } } : e));
+    const id = peticiones.current.get(dato.requestId);
+    if (id) setEnCurso(e => e[id] ? { ...e, [id]: { ...e[id], progreso: dato } } : e);
   }), []);
 
   const clave = clavePunto(punto);
@@ -35,6 +35,44 @@ export default function useAsistente(punto = null) {
 
   const [vuelta, setVuelta] = useState(0);
   const refrescar = useCallback(() => setVuelta(n => n + 1), []);
+  useEffect(() => {
+    window.addEventListener('mylaiberry-conexion', refrescar);
+    return () => window.removeEventListener('mylaiberry-conexion', refrescar);
+  }, [refrescar]);
+  const scope = puntoEstable?.workId || 'library';
+  const recordar = useCallback(id => {
+    try { window.sessionStorage.setItem(`asistente-hilo:${scope}`, id || ''); } catch {  }
+  }, [scope]);
+
+  useEffect(() => window.api?.onAsistenteEstadoPeticion?.(dato => {
+    if (dato.scope !== scope) return;
+    const id = dato.threadId || `nueva:${dato.requestId}`;
+    if (dato.fase === 'leido') {
+      setSinLeer(s => sin(s, id));
+      refrescar();
+      return;
+    }
+    if (dato.fase === 'fin') {
+      setEnCurso(e => sin(sin(e, id), `nueva:${dato.requestId}`));
+      if (dato.sinLeer) {
+        if (mirando.current === id) window.api.asistenteAccion({ action: 'markRead', args: { id }, point: puntoEstable }).catch(() => {});
+        else setSinLeer(s => ({ ...s, [id]: true }));
+      }
+    } else {
+      setEnCurso(e => {
+        const provisional = `nueva:${dato.requestId}`;
+        return { ...sin(e, provisional), [id]: { requestId: dato.requestId, progreso: dato.progreso || null,
+          inicio: dato.inicio, ultimoProgreso: dato.ultimoProgreso } };
+      });
+      if (dato.fase === 'hilo') {
+        const provisional = `nueva:${dato.requestId}`;
+        setHilos(h => h[provisional] ? { ...sin(h, provisional), [id]: h[provisional] } : h);
+        if (mirando.current === provisional) recordar(id);
+        setHiloId(actualId => actualId === provisional ? id : actualId);
+      }
+    }
+    refrescar();
+  }), [scope, puntoEstable, refrescar, recordar]);
 
   useEffect(() => {
     if (!disponible) return;
@@ -44,28 +82,44 @@ export default function useAsistente(punto = null) {
       .then(r => {
         if (!vivo || r?.status !== 'ok') return;
         setVista(r.vista);
-
-        if (hiloId && !esProvisional(hiloId) && !pensando) {
-          const guardado = r.vista.threads?.find(h => h.id === hiloId);
-          if (guardado) setHilos(h => ({ ...h, [hiloId]: guardado.messages.map(mensajeGuardado) }));
+        const activas = r.vista.enCurso || [];
+        if (Array.isArray(r.vista.enCurso)) setEnCurso(Object.fromEntries(activas.map(p => [p.threadId || `nueva:${p.requestId}`,
+          { requestId: p.requestId, progreso: p.progreso, inicio: p.inicio, ultimoProgreso: p.ultimoProgreso }])));
+        if (Array.isArray(r.vista.sinLeer)) setSinLeer(Object.fromEntries(r.vista.sinLeer.map(id => [id, true])));
+        let recordado = '';
+        try { recordado = window.sessionStorage.getItem(`asistente-hilo:${scope}`) || ''; } catch {  }
+        const destino = hiloId || (r.vista.threads?.some(h => h.id === recordado) ? recordado : null)
+          || activas[0]?.threadId || (activas[0] ? `nueva:${activas[0].requestId}` : null)
+          || r.vista.sinLeer?.[0] || null;
+        if (!hiloId && destino) {
+          setHiloId(destino);
+          recordar(destino);
+          if (r.vista.sinLeer?.includes(destino)) window.api.asistenteAccion({ action: 'markRead', args: { id: destino }, point: puntoEstable }).catch(() => {});
+        }
+        if (destino && !esProvisional(destino)) {
+          const guardado = r.vista.threads?.find(h => h.id === destino);
+          if (guardado) setHilos(h => (h[destino]?.length > guardado.messages.length ? h
+            : { ...h, [destino]: guardado.messages.map(mensajeGuardado) }));
         }
       })
       .catch(() => {  });
 
     return () => { vivo = false; };
-  }, [disponible, puntoEstable, vuelta, hiloId, pensando]);
+  }, [disponible, puntoEstable, vuelta, hiloId, scope, recordar]);
 
   const abrirHilo = useCallback((id) => {
     const guardado = vista?.threads?.find(h => h.id === id);
     const destino = guardado?.id || (id && (enCurso[id] || hilos[id]) ? id : null);
     setHiloId(destino);
+    recordar(destino);
 
     if (guardado && !enCurso[guardado.id] && !guardado.recienCreada) setHilos(h => ({ ...h, [guardado.id]: guardado.messages.map(mensajeGuardado) }));
     if (!destino) setHilos(h => sin(h, ''));
 
     if (!sinLeer[destino || '']) setErrores(e => ({ ...e, [destino || '']: null }));
     setSinLeer(s => sin(s, destino || ''));
-  }, [vista, enCurso, hilos, sinLeer]);
+    if (destino && !esProvisional(destino)) window.api.asistenteAccion({ action: 'markRead', args: { id: destino }, point: puntoEstable }).catch(() => {});
+  }, [vista, enCurso, hilos, sinLeer, recordar, puntoEstable]);
 
   const borrarHilo = useCallback(async (id) => {
     if (enCurso[id]) return false;
@@ -88,6 +142,7 @@ export default function useAsistente(punto = null) {
     const previos = hilos[actual] || [];
     setHilos(h => ({ ...sin(h, actual), [conversacion]: [...previos, { rol: 'user', texto: limpio, point: puntoEstable, id: 'u' + Date.now() }] }));
     setHiloId(conversacion);
+    recordar(conversacion);
     setEnCurso(e => ({ ...e, [conversacion]: { requestId, progreso: null } }));
     setErrores(e => ({ ...e, [conversacion]: null }));
     peticiones.current.set(requestId, conversacion);
@@ -99,6 +154,7 @@ export default function useAsistente(punto = null) {
       if (!destino || destino === conversacion) return;
       setHilos(h => ({ ...sin(h, conversacion), [destino]: h[conversacion] || [] }));
       setHiloId(id => (id === conversacion ? destino : id));
+      recordar(destino);
       setVista(v => (v?.threads && !v.threads.some(t => t.id === destino)
         ? { ...v, threads: [...v.threads, { id: destino, title: limpio.slice(0, 80), createdAt: Date.now(), messages: [], recienCreada: true }] } : v));
     };
@@ -147,7 +203,7 @@ export default function useAsistente(punto = null) {
       setEnCurso(e => sin(e, conversacion));
       peticiones.current.delete(requestId);
     }
-  }, [pensando, disponible, hiloId, hilos, actual, refrescar, puntoEstable]);
+  }, [pensando, disponible, hiloId, hilos, actual, refrescar, puntoEstable, recordar]);
 
   const cancelar = useCallback(async () => {
     const requestId = enCurso[actual]?.requestId;
@@ -172,6 +228,8 @@ export default function useAsistente(punto = null) {
   const respondiendo = Object.keys(enCurso);
   const nuevas = Object.keys(hilos).filter(k => esProvisional(k) && (enCurso[k] || k === actual))
     .map(k => ({ id: k, title: hilos[k][0]?.texto?.slice(0, 80) || '' }));
+  for (const p of vista?.enCurso || []) if (!p.threadId && !nuevas.some(n => n.id === `nueva:${p.requestId}`))
+    nuevas.push({ id: `nueva:${p.requestId}`, title: p.texto });
   return { hilo: visible, hiloId, abrirHilo, borrarHilo, pensando, respondiendo, nuevas, sinLeer: Object.keys(sinLeer), progreso: enCurso[actual]?.progreso || null,
     error: errores[actual] || null, vista, disponible, preguntar, cancelar, refrescar, decidir };
 }

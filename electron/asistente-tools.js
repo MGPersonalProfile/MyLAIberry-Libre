@@ -23,6 +23,7 @@ async function conLoQueYaTiene(query, services, orden, filtros = {}) {
   const { nombraA } = require('./titulo-con-erratas');
   let suyas = (await services.library()).filter(o => nombraA(query, o.title));
   suyas = require('./asistente-busqueda').filtrarObras(suyas, filtros);
+  suyas = require('./asistente-busqueda').filtrarPareja(suyas, filtros.pareja);
   if (filtros.fuente) suyas = suyas.filter(o => o.source === filtros.fuente);
   suyas = suyas.slice(0, 5);
   const web = await services.search(query, orden, filtros);
@@ -95,16 +96,17 @@ const ESQUEMA_BUSQUEDA = {
   minPalabras: { type: 'integer', minimum: 1, maximum: 5000000 },
   minCapitulos: { type: 'integer', minimum: 1, maximum: 10000 },
   sinCrossovers: { type: 'boolean' },
+  pareja: { type: 'string', minLength: 3, maxLength: 120 },
   fuente: { type: 'string', enum: ['AO3', 'FanFiction.net', 'RoyalRoad', 'Project Gutenberg', 'WeTriedTLs', 'Webnovel'] }
 };
 
 function herramientasDeBiblioteca(add, { state, services, background, explicitText, desdeElMovil, hilo }) {
   add('biblioteca', 'Lista obras disponibles y su estado (título, autor, totalChapters, capituloActual —el que tiene abierto—, capitulosLeidos —los leídos enteros: para «¿cuántos he leído?», éste—, capitulosPorLeer, capitulosSinDescargar —los que aún no están en disco— y lectura), sin texto de capítulos. Con filtro (un fandom, etiqueta, autor, sitio, parte del título, o cómo va: «a medias», «sin empezar», «al día», «terminada»), sólo las que lo llevan y cuántas son: para «¿cuántas tengo de X?», usa el filtro y da ese número; no las cuentes tú. Dos cosas a la vez van juntas en el filtro: «naruto a medias».',
     { filtro: { type: 'string', minLength: 1, maxLength: 200 } }, async args => filtrarBiblioteca(await services.library(), args.filtro, args.filtro ? await services.obrasCompletas?.() : null), []);
-  add('buscar_obras', 'Busca por palabras clave en AO3 (por kudos), FanFiction.net, RoyalRoad, Project Gutenberg (clásicos de dominio público), WeTriedTLs y Webnovel (novelas web traducidas; en Webnovel buena parte de los capítulos son de pago). Devuelve por fuente hasta 8 obras con url, capítulos, palabras, popularidad y si ya está en la biblioteca. orden: popularidad (por defecto), palabras (las más largas primero), recientes o relevancia. completa: true para exigir sólo obras terminadas/completas. minPalabras o minCapitulos para exigir obras largas (p. ej. minPalabras: 50000 o minCapitulos: 20). fuente: para buscar sólo en ese sitio (AO3, FanFiction.net, RoyalRoad, Project Gutenberg, WeTriedTLs o Webnovel). sinCrossovers: true si no admite crossovers.',
+  add('buscar_obras', 'Busca por palabras clave en AO3 (por kudos), FanFiction.net, RoyalRoad, Project Gutenberg (clásicos de dominio público), WeTriedTLs y Webnovel (novelas web traducidas; en Webnovel buena parte de los capítulos son de pago). Para una pareja pasa pareja con nombres separados por / (por ejemplo Harry Potter/Hermione Granger): AO3 la busca en su campo de relaciones y en las demás fuentes sólo quedan obras cuya relación publicada coincide. Devuelve por fuente hasta 8 obras con url, capítulos, palabras, popularidad y si ya está en la biblioteca. orden: popularidad (por defecto), palabras (las más largas primero), recientes o relevancia. completa: true para exigir sólo obras terminadas/completas. minPalabras o minCapitulos para exigir obras largas (p. ej. minPalabras: 50000 o minCapitulos: 20). fuente: para buscar sólo en ese sitio (AO3, FanFiction.net, RoyalRoad, Project Gutenberg, WeTriedTLs o Webnovel). sinCrossovers: true si no admite crossovers.',
     ESQUEMA_BUSQUEDA,
     args => conLoQueYaTiene(args.query, services, args.orden, {
-      completa: args.completa, minPalabras: args.minPalabras, minCapitulos: args.minCapitulos, sinCrossovers: args.sinCrossovers, fuente: args.fuente
+      completa: args.completa, minPalabras: args.minPalabras, minCapitulos: args.minCapitulos, sinCrossovers: args.sinCrossovers, pareja: args.pareja, fuente: args.fuente
     }), ['query']);
 
   add('donde_esta_el_libro', 'Dónde leer gratis un libro que no es fanfic: Project Gutenberg y Standard Ebooks (dominio público) y Open Library (si se lee gratis o se toma prestado en Internet Archive, y en qué idiomas tiene ediciones). Para comprarlo, las tiendas con buscar_en_internet.',

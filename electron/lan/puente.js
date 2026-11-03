@@ -4,7 +4,7 @@ const path = require('path');
 const SOLO_EN_EL_PC = new Set([
   'abrir-importador-web',
 
-  'importar-libro', 'choose-data-location', 'open-data-location', 'exportar-epub', 'guardar-audio-capitulo', 'instalar-voces',
+  'importar-libro', 'choose-data-location', 'open-data-location', 'exportar-epub', 'guardar-audio-capitulo', 'guardar-audio-obra', 'instalar-voces',
 
   'restaurar-copia', 'abrir-biblioteca-existente', 'reiniciar-app',
   'abrir-en-navegador', 'iniciar-sesion-sitio', 'iniciar-sesion-web', 'mostrar-fichero', 'marcador-navegador',

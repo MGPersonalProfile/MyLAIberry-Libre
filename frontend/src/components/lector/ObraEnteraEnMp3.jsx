@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Library, Loader2 } from 'lucide-react';
+import { Download, Library, Loader2 } from 'lucide-react';
 
 import { useI18n } from '../../i18n/I18nContext';
 
@@ -47,6 +47,34 @@ export default function ObraEnteraEnMp3({ obraId, idioma }) {
           {t('reader.audio_work_make', { n: estado.faltan })}
         </button>
       )}
+      <BajarTodos obraId={obraId} idioma={idioma} listos={estado.listos} />
+    </div>
+  );
+}
+
+function BajarTodos({ obraId, idioma, listos }) {
+  const { t } = useI18n();
+  const [hecho, setHecho] = useState(null);
+  const [bajando, setBajando] = useState(false);
+  if (!window.api?.guardarAudioObra || !listos) return null;
+  const bajar = async () => {
+    setBajando(true);
+    setHecho(null);
+    try { setHecho(await window.api.guardarAudioObra(obraId, { idioma: idioma || null })); }
+    catch (e) { setHecho({ status: 'error', message: e.message }); }
+    finally { setBajando(false); }
+  };
+  return (
+    <div className="mt-2" data-bajar-obra-mp3>
+      <button type="button" onClick={bajar} disabled={bajando}
+        className="w-full flex items-center justify-center gap-2 py-2 max-md:min-h-11 rounded-lg border border-white/10 text-xs text-gray-200 hover:bg-white/5 disabled:opacity-50">
+        {bajando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+        {t('reader.audio_work_save', { n: listos })}
+      </button>
+      {hecho?.status === 'ok' && hecho.ruta && (
+        <p className="text-[11px] text-emerald-400/90 mt-1.5">{t('reader.audio_work_saved', { n: hecho.capitulos, ruta: hecho.ruta })}</p>
+      )}
+      {hecho?.status === 'error' && <p role="alert" className="text-[11px] text-red-300 mt-1.5">{hecho.message}</p>}
     </div>
   );
 }

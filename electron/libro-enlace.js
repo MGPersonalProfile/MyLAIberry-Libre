@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const dns = require('node:dns');
+const { conRitmo, sitioDe } = require('./scrapers/navegar');
 const net = require('node:net');
 const { TECHO_DEL_FICHERO } = require('./epub');
 
@@ -100,8 +101,12 @@ async function importarEnlace(url, progreso, { pedir, importar, resolver } = {})
   const carpeta = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mylaiberry-enlace-'));
   try {
     const crudo = path.join(carpeta, 'descarga');
-    const respuesta = await pedirConSaltos(direccion, fetchLibro, resolver || resolverDns, ctrl.signal);
-    const tipo = await volcarDescarga(respuesta, crudo, ctrl);
+    const descargar = async () => {
+      const respuesta = await pedirConSaltos(direccion, fetchLibro, resolver || resolverDns, ctrl.signal);
+      return volcarDescarga(respuesta, crudo, ctrl);
+    };
+    const tipo = sitioDe(direccion) === 'archiveofourown.org'
+      ? await conRitmo(direccion, descargar) : await descargar();
     const fichero = path.join(carpeta, `libro.${tipo}`);
     await fs.promises.rename(crudo, fichero);
     return await guardar(fichero, progreso || (() => {}), { urlOrigen: direccion });

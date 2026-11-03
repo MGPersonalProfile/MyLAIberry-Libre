@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('api', {
   audioCapitulo: (id, indice, opciones) => ipcRenderer.invoke('audio-capitulo', id, indice, opciones),
   guardarAudioCapitulo: (id, indice, opciones) => ipcRenderer.invoke('guardar-audio-capitulo', id, indice, opciones),
   audioObra: (id, opciones) => ipcRenderer.invoke('audio-obra', id, opciones),
+  guardarAudioObra: (id, opciones) => ipcRenderer.invoke('guardar-audio-obra', id, opciones),
   estadoVoces: () => ipcRenderer.invoke('estado-voces'),
   instalarVoces: () => ipcRenderer.invoke('instalar-voces'),
   onVocesProgreso: (callback) => {
@@ -213,6 +214,11 @@ contextBridge.exposeInMainWorld('api', {
     const oyente = (_event, data) => callback(data);
     ipcRenderer.on('asistente-investigacion-progreso', oyente);
     return () => ipcRenderer.removeListener('asistente-investigacion-progreso', oyente);
+  },
+  onAsistenteEstadoPeticion: (callback) => {
+    const oyente = (_event, data) => callback(data);
+    ipcRenderer.on('asistente-estado-peticion', oyente);
+    return () => ipcRenderer.removeListener('asistente-estado-peticion', oyente);
   },
   asistenteVer: (punto, opciones) => ipcRenderer.invoke('asistente-ver', punto, opciones),
 

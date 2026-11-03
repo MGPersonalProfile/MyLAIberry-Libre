@@ -9,8 +9,10 @@ const { avisar } = require('../ventana.js');
 const { crearLatido } = require('../asistente-latido.js');
 const { fichaDeObra } = require('../asistente-obra.js');
 const { esDeLaBiblioteca } = require('../origen.js');
-const { porFuente, fallo, claveDeObra, filtrarObras } = require('../asistente-busqueda.js');
+const { porFuente, fallo, claveDeObra, filtrarObras, filtrarPareja } = require('../asistente-busqueda.js');
 const { reglasDe, leerRegla, glosarioDeReglas, traducirConReglas, COMO_ESCRIBIR_UNA_REGLA } = require('../asistente-traduccion.js');
+const { crearRegistro } = require('../asistente-peticiones.js');
+const peticiones = crearRegistro(avisar);
 
 const { valorDeAjuste, CLAVES_DE_AJUSTE, POR_DEFECTO } = require('../asistente-ajustes.js');
 
@@ -18,7 +20,7 @@ async function buscarEnTodos(consulta, orden = 'popularidad', filtros = {}) {
 
   const columna = { popularidad: 'kudos_count', palabras: 'word_count', recientes: 'revised_at', relevancia: '_score' }[orden] || 'kudos_count';
   let fuentes = [
-    ['AO3', () => require('../scrapers/ao3.js').buscar({ consulta, orden: columna, completa: filtros.completa, minPalabras: filtros.minPalabras, sinCrossovers: filtros.sinCrossovers })],
+    ['AO3', () => require('../scrapers/ao3.js').buscar({ consulta, pareja: filtros.pareja, orden: columna, completa: filtros.completa, minPalabras: filtros.minPalabras, sinCrossovers: filtros.sinCrossovers })],
     ['FanFiction.net', () => require('../scrapers/buscar-ffn.js').buscar({ consulta, orden: columna })],
     ['RoyalRoad', () => require('../scrapers/buscar-royalroad.js').buscar({ consulta, orden: columna })],
 
@@ -36,7 +38,7 @@ async function buscarEnTodos(consulta, orden = 'popularidad', filtros = {}) {
 
   return Promise.all(fuentes.map(async ([nombre, buscar]) => {
     try {
-      return porFuente(nombre, filtrarObras(await buscar(), filtros), enBiblioteca);
+      return porFuente(nombre, filtrarPareja(filtrarObras(await buscar(), filtros), filtros.pareja), enBiblioteca);
     } catch (e) {
       return fallo(nombre, e);
     }
@@ -214,29 +216,54 @@ function pararLatido() {
   latido?.parar();
 }
 
-function registrar() {
+function registrar({ obtenerAsistente = obtener } = {}) {
 
   ipcMain.handle('asistente-chat', async (event, peticion) => {
     const inicio = Date.now();
     const { avisarSiTardo } = require('../aviso-asistente.js');
+    const requestId = String(peticion?.requestId || require('node:crypto').randomUUID()).slice(0, 80);
+    const scope = peticion?.point?.workId || 'library';
+    let threadId = null;
+    let sinLeer = false;
+    peticiones.iniciar({ requestId, scope, threadId: peticion?.threadId || null, texto: String(peticion?.text || '') });
     try {
 
-      const requestId = String(peticion?.requestId || '').slice(0, 80);
-      const onProgress = datos => avisar('asistente-investigacion-progreso', { ...datos, requestId });
-      const r = await obtener().chat({ ...(peticion || {}), onProgress, desdeElMovil: !!event?.desdeElMovil });
+      const onProgress = datos => {
+        peticiones.progreso(requestId, datos);
+        avisar('asistente-investigacion-progreso', { ...datos, requestId });
+      };
+      const r = await obtenerAsistente().chat({ ...(peticion || {}), requestId, onProgress,
+        onThread: id => { threadId = id; peticiones.hilo(requestId, id); }, desdeElMovil: !!event?.desdeElMovil });
+      threadId = r.threadId || threadId;
+      sinLeer = true;
 
       avisarSiTardo({ inicio, desdeElMovil: !!event?.desdeElMovil, texto: r?.answer?.text });
       return { status: 'ok', ...r };
     } catch (e) {
+      threadId = e.threadId || threadId;
+      sinLeer = !!threadId && !/cancelad/i.test(e.message);
 
       if (!/cancelad/i.test(e.message)) avisarSiTardo({ inicio, desdeElMovil: !!event?.desdeElMovil, texto: e.message, error: true });
       return { status: 'error', message: e.message, ...(e.threadId ? { threadId: e.threadId } : {}) };
+    } finally {
+      if (sinLeer && threadId) {
+        try { await db.updateAssistantState(s => {
+          const hilo = s?.threads?.find(t => t.id === threadId && t.scope === scope);
+          if (hilo) hilo.unreadAt = Date.now();
+          return s;
+        }); } catch (e) { console.error('No se pudo marcar la respuesta sin leer:', e); }
+      }
+      peticiones.terminar(requestId, { sinLeer });
     }
   });
 
   ipcMain.handle('asistente-ver', async (event, point, opciones) => {
     try {
-      return { status: 'ok', vista: await obtener().view(point || null, opciones || {}) };
+      const scope = point?.workId || 'library';
+      const vista = await obtenerAsistente().view(point || null, opciones || {});
+      return { status: 'ok', vista: { ...vista, enCurso: peticiones.ver(scope),
+        sinLeer: (vista.threads || (await db.getAssistantState())?.threads || [])
+          .filter(t => t.scope === scope && t.unreadAt).map(t => t.id) } };
     } catch (e) {
       return { status: 'error', message: e.message };
     }
@@ -245,7 +272,9 @@ function registrar() {
   ipcMain.handle('asistente-accion', async (event, peticion) => {
     try {
       const { action, args = {}, point = null } = peticion || {};
-      return { status: 'ok', resultado: await obtener().command({ action, args, point, desdeElMovil: !!event?.desdeElMovil }) };
+      const resultado = await obtenerAsistente().command({ action, args, point, desdeElMovil: !!event?.desdeElMovil });
+      if (action === 'markRead') avisar('asistente-estado-peticion', { fase: 'leido', threadId: args.id, scope: point?.workId || 'library' });
+      return { status: 'ok', resultado };
     } catch (e) {
       return { status: 'error', message: e.message };
     }
@@ -253,7 +282,7 @@ function registrar() {
 
   ipcMain.handle('asistente-leido', async (event, point) => {
     try {
-      return { status: 'ok', ...await obtener().state.receipt(point) };
+      return { status: 'ok', ...await obtenerAsistente().state.receipt(point) };
     } catch (e) {
       return { status: 'error', message: e.message };
     }

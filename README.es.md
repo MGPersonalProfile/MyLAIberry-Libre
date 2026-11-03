@@ -12,13 +12,14 @@ baja los capítulos, los deja con formato limpio y los lees sin conexión, con t
 
 - **Importa por enlace** desde AO3, FanFiction.net, RoyalRoad, Webnovel, WeTriedTLs, Project Gutenberg,
   SpaceBattles, SufficientVelocity, QuestionableQuesting y casi cualquier web con capítulos. También EPUB, PDF y HTML de
-  AO3 de tu disco (el formato en que mucha gente comparte fics en Google Drive).
+  AO3 de tu disco (el formato en que mucha gente comparte fics en Google Drive), o directamente de esa carpeta de
+  Drive con «Abrir una web para elegir un libro».
 - **Lector** con temas, tamaño de letra, marcapáginas, progreso por capítulo, índice, búsqueda dentro de la obra y
   lectura en voz alta con las voces de Windows.
 - **Traducción** de cada capítulo a tu idioma, gratis y sin cuenta; cada capítulo se traduce una vez y queda guardado.
 - **Biblioteca** con estanterías, «Mi lista», filtros, y avisos cuando una obra que sigues publica capítulos nuevos.
 - **Descubrimientos**: búsquedas que vigila por ti y autores que sigues.
-- **Exportar a EPUB** cualquier obra para tu e-reader.
+- **Exportar a EPUB** cualquier obra para tu e-reader, también desde el móvil.
 - **Un capítulo o la obra entera en MP3** con voces neuronales (opcional). Las voces no vienen en el
   instalador: la app las baja la primera vez que lo pides, con un botón (≈ 600 MB; ver «Voces» abajo).
 - **Leer desde el móvil** en tu red de casa (apagado de fábrica; se activa en Ajustes).

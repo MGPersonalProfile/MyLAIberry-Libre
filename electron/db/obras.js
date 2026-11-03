@@ -360,7 +360,8 @@ async function updateChapterList(id, chapters, extraMeta = {}) {
   if (plan?.cambia) {
 
     if (plan.mapa.size >= 0.8 * before || plan.mapa.size >= 0.8 * chapters.length) {
-      realineado = moverFicheros(carpetaDeObra(id), plan);
+
+      realineado = { ...moverFicheros(carpetaDeObra(id), plan), porTitulo: plan.porTitulo, dudosas: plan.dudosos };
       Object.assign(fanfic, remapearDatos(fanfic, plan.mapa, chapters.length));
       fanfic.downloadedChapters = await countChaptersOnDisk(id);
       console.log(`[Índice] «${fanfic.title}»: ${realineado.movidos} fichero(s) recolocados, ${realineado.apartados} apartados.`);

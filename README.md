@@ -12,13 +12,14 @@ downloads the chapters, cleans up the formatting, and you read them offline, wit
 
 - **Imports by link** from AO3, FanFiction.net, RoyalRoad, Webnovel, WeTriedTLs, Project Gutenberg,
   SpaceBattles, SufficientVelocity, QuestionableQuesting and almost any site with chapters. It also imports EPUB,
-  PDF and AO3 HTML files from your disk (the format many people share fics in on Google Drive).
+  PDF and AO3 HTML files from your disk (the format many people share fics in on Google Drive), or straight from that
+  Drive folder with «Open a website to choose a book».
 - **Reader** with themes, font size, bookmarks, per-chapter progress, a table of contents, search within the work, and
   read-aloud with the Windows voices.
 - **Translation** of each chapter into your language, free and with no account; each chapter is translated once and then saved.
 - **Library** with shelves, "My list", filters, and notifications when a work you follow publishes new chapters.
 - **Discoveries**: searches it watches for you and authors you follow.
-- **Export to EPUB** any work for your e-reader.
+- **Export to EPUB** any work for your e-reader, from your phone too.
 - **A chapter or the whole work as MP3** with neural voices (optional). The voices do not come in the
   installer: the app downloads them the first time you ask for it, with a button (≈ 600 MB; see "Voices" below).
 - **Read from your phone** on your home network (off by default; turn it on in Settings).

@@ -9,13 +9,14 @@ import CabeceraMovil from './components/movil/CabeceraMovil';
 import BarraDePestanas from './components/movil/BarraDePestanas';
 import AvisoSinConexion from './components/movil/AvisoSinConexion';
 import AvisoBreve from './components/AvisoBreve';
+import useAvisoAsistente from './hooks/useAvisoAsistente';
 
 function App() {
   const app = useEstadoDeApp();
   const { nav, bib, lector, importador, idioma } = app;
 
-  const esMovil = useEsMovil();
-  const tapado = lector.abierto || importador.abierto;
+  const esMovil = useEsMovil(); const tapado = lector.abierto || importador.abierto;
+  const avisoAsistente = useAvisoAsistente();
 
   const sinRellenoAbajo = esMovil || nav.vista === 'asistente';
 
@@ -54,11 +55,12 @@ function App() {
           alImportar={importador.abrir}
           lang={idioma.lang}
           alCambiarIdioma={idioma.setLang}
+          avisoAsistente={avisoAsistente}
         />
         </>)}
 
         <PestanasDeApp app={app} />
-        {esMovil && !tapado && <BarraDePestanas vista={nav.vista} alIrA={nav.irA} />}
+        {esMovil && !tapado && <BarraDePestanas vista={nav.vista} alIrA={nav.irA} avisoAsistente={avisoAsistente} />}
       </div>
     </div>
   );

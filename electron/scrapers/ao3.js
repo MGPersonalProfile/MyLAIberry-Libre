@@ -382,9 +382,10 @@ function obraDeFila(fila, limpiar) {
   };
 }
 
-function urlDeBusqueda({ consulta, orden = 'kudos_count', pagina = 1, completa, minPalabras, sinCrossovers }) {
+function urlDeBusqueda({ consulta, pareja, orden = 'kudos_count', pagina = 1, completa, minPalabras, sinCrossovers }) {
   const p = new URLSearchParams();
   p.set('work_search[query]', consulta);
+  if (pareja) p.set('work_search[relationship_names]', pareja);
   p.set('work_search[sort_column]', orden);
   if (completa === true) p.set('work_search[complete]', 'T');
   if (minPalabras) p.set('work_search[word_count]', `>${minPalabras}`);
@@ -394,8 +395,8 @@ function urlDeBusqueda({ consulta, orden = 'kudos_count', pagina = 1, completa, 
   return `https://archiveofourown.org/works/search?${p.toString()}`;
 }
 
-async function buscar({ consulta, orden, pagina, completa, minPalabras, sinCrossovers }) {
-  const html = await pedirHTMLConNavegador(urlDeBusqueda({ consulta, orden, pagina, completa, minPalabras, sinCrossovers }));
+async function buscar({ consulta, pareja, orden, pagina, completa, minPalabras, sinCrossovers }) {
+  const html = await pedirHTMLConNavegador(urlDeBusqueda({ consulta, pareja, orden, pagina, completa, minPalabras, sinCrossovers }));
   return resultadosDeHtml(html, sinCrossovers);
 }
 

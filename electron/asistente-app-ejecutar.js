@@ -245,8 +245,11 @@ function herramientasDeLaApp(add, { state, services, background, obraFija = null
     if (obraFija && !entrada.enLectura && !entrada.hastaElPunto) continue;
 
     if (desdeElMovil && (soloEnElPc(entrada.canal) || entrada.soloEnElPc)) {
-      add(entrada.nombre, `DESDE EL MÓVIL NO SE PUEDE: llamarla no hace nada y sólo devuelve cómo se hace. (En el PC: ${entrada.descripcion})`,
-        entrada.parametros || {}, async () => ({ hecho: false, motivo: 'Esto sólo se hace en el PC.' + (entrada.enElMovil ? ' ' + entrada.enElMovil : '') }), []);
+      const alternativa = entrada.alternativaMovil;
+      add(entrada.nombre, alternativa || `DESDE EL MÓVIL NO SE PUEDE: llamarla no hace nada y sólo devuelve cómo se hace. (En el PC: ${entrada.descripcion})`,
+        entrada.parametros || {}, async () => alternativa
+          ? { hecho: false, aviso: alternativa }
+          : { hecho: false, motivo: 'Esto sólo se hace en el PC.' + (entrada.enElMovil ? ' ' + entrada.enElMovil : '') }, []);
       continue;
     }
 

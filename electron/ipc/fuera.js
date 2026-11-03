@@ -1,19 +1,20 @@
 const { ipcMain, dialog } = require('electron');
 const fs = require('fs');
-const path = require('path');
 
-const { getFanficById, getFanfics, getSettings, getDataLocation, guardarProgresoRemoto } = require('../db.js');
-const { tieneTraduccion, rutaTraduccion } = require('../translate.js');
+const { getFanfics, getSettings, getDataLocation, guardarProgresoRemoto } = require('../db.js');
+const { prepararEpub } = require('../epub-obra.js');
 const sesiones = require('../sesiones.js');
 const { ventana } = require('../ventana.js');
-const { dirDeFanfic } = require('../rutas.js');
 const { codigoDeLan } = require('../lan-acceso.js');
 
 function opcionesDelServidor() {
   const { fuenteDeDisco } = require('../servidor-lan.js');
   return {
 
-    app: { llamar: require('../ipc-registro.js').llamar, raizDatos: () => getDataLocation().actual },
+    app: { llamar: require('../ipc-registro.js').llamar, raizDatos: () => getDataLocation().actual, epub: prepararEpub,
+      audioObra: (id, idioma) => require('../audio-obra.js').paraZip(id, idioma),
+
+      subirLibro: (ruta) => require('./descargas.js').importarLibro(ruta, d => require('../ventana.js').avisar('scrape-progress', d)) },
     fuente: fuenteDeDisco({
       raiz: getDataLocation().actual,
 
@@ -86,86 +87,21 @@ function reencenderLan() {
   });
 }
 
-function capitulosParaElLibro(obra, dir, { enTraducido, idioma, total }) {
-  const capitulos = [];
-
-  for (let i = 0; i < total; i++) {
-    const traducido = enTraducido && tieneTraduccion(dir, i, idioma);
-    const archivo = traducido
-      ? rutaTraduccion(dir, i, idioma)
-      : path.join(dir, `chapter_${i}.html`);
-    if (!fs.existsSync(archivo)) continue;
-
-    capitulos.push({
-      titulo: obra.chapterList?.[i]?.title || `Capítulo ${i + 1}`,
-      html: fs.readFileSync(archivo, 'utf-8'),
-      traducido
-    });
-  }
-
-  return capitulos;
-}
-
-function portadaDelLibro(obra) {
-  if (!obra.localCoverPath || !fs.existsSync(obra.localCoverPath)) return null;
-
-  const ext = path.extname(obra.localCoverPath).toLowerCase();
-  return {
-    datos: fs.readFileSync(obra.localCoverPath),
-    tipo: ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg'
-  };
-}
-
 function registrar() {
 
   ipcMain.handle('exportar-epub', async (event, fanficId, opciones = {}) => {
-    const id = String(fanficId);
-    const obra = await getFanficById(id);
-    if (!obra) return { status: 'error', message: 'No se encuentra esa obra' };
-
-    const dir = dirDeFanfic(id);
-    const ajustes = await getSettings();
-    const idioma = ajustes?.lang || 'es';
-    const enTraducido = opciones?.traducido ?? !!ajustes?.readTranslated;
-    const total = obra.totalChapters || (obra.chapterList || []).length || 0;
-
-    const capitulos = capitulosParaElLibro(obra, dir, { enTraducido, idioma, total });
-    if (capitulos.length === 0) {
-      return { status: 'error', message: 'No hay ningún capítulo descargado todavía' };
-    }
-
-    const { crearEpub, nombreSugerido } = require('../epub-escribir.js');
-    const capitulosTraducidos = capitulos.filter(c => c.traducido).length;
-    const libro = crearEpub({
-      titulo: obra.title,
-      autor: obra.author,
-      idioma: enTraducido && capitulosTraducidos ? idioma : (obra.idiomaOriginal || 'und'),
-      sinopsis: obra.synopsis,
-      portada: portadaDelLibro(obra),
-      capitulos,
-      url: obra.url,
-      etiquetas: (obra.tags || []).map(t => t.name).filter(Boolean).slice(0, 20)
-    });
+    const hecho = await prepararEpub(fanficId, opciones);
+    if (hecho.status === 'error') return hecho;
 
     const { canceled, filePath } = await dialog.showSaveDialog(ventana(), {
       title: 'Guardar EPUB',
-      defaultPath: nombreSugerido({ titulo: obra.title, autor: obra.author }),
+      defaultPath: hecho.nombre,
       filters: [{ name: 'EPUB', extensions: ['epub'] }]
     });
     if (canceled || !filePath) return { status: 'cancelado' };
 
-    fs.writeFileSync(filePath, libro);
-    return {
-      status: 'ok',
-      ruta: filePath,
-      capitulos: capitulos.length,
-      total,
-      traducido: enTraducido,
-      idiomaOriginal: obra.idiomaOriginal || 'no consta',
-      idiomaSolicitado: enTraducido ? idioma : null,
-
-      ...(enTraducido ? { capitulosTraducidos } : {})
-    };
+    fs.writeFileSync(filePath, hecho.libro);
+    return { status: 'ok', ruta: filePath, ...hecho.resumen };
   });
 
   require('../avisos.js').enlaceDeLaApp(() => {

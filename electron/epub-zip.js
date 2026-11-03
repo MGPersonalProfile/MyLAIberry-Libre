@@ -128,4 +128,24 @@ function crearZip(ficheros, fecha = new Date()) {
   return Buffer.concat([...trozos, cuerpoDirectorio, fin]);
 }
 
-module.exports = { crearZip, crc32, fechaDeDos };
+async function escribirZipPorPartes(ficheros, escribir, fecha = new Date()) {
+  if (ficheros.length > 0xffff) throw new Error('Más de 65535 entradas: haría falta ZIP64, que este escritor no hace');
+  const { hora, dia } = fechaDeDos(fecha);
+  const directorio = [];
+  let desplazamiento = 0;
+  for (const fichero of ficheros) {
+    const entrada = prepararEntrada({ nombre: fichero.nombre, datos: await fichero.leer(), comprimir: false });
+    const local = cabeceraLocal(entrada, hora, dia);
+    if (desplazamiento + local.length + entrada.nombre.length + entrada.carga.length > 0xffffffff) {
+      throw new Error('El ZIP pasaría de 4 GB: haría falta ZIP64');
+    }
+    directorio.push(fichaDeDirectorio(entrada, hora, dia, desplazamiento), entrada.nombre);
+    await escribir(local); await escribir(entrada.nombre); await escribir(entrada.carga);
+    desplazamiento += local.length + entrada.nombre.length + entrada.carga.length;
+  }
+  const cuerpoDirectorio = Buffer.concat(directorio);
+  await escribir(cuerpoDirectorio);
+  await escribir(finDeDirectorio(ficheros.length, cuerpoDirectorio.length, desplazamiento));
+}
+
+module.exports = { crearZip, escribirZipPorPartes, crc32, fechaDeDos };

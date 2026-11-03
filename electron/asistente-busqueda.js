@@ -46,6 +46,13 @@ function filtrarObras(obras, { completa, minPalabras, minCapitulos, sinCrossover
     && !(sinCrossovers === true && esCrossover(o)));
 }
 
+function filtrarPareja(obras, pareja) {
+  if (!pareja) return obras || [];
+  const { casaPareja } = require('./asistente-investigar-web');
+  return (obras || []).filter(o => (o.tags || []).some(t =>
+    t.category === 'relationship' && casaPareja(t.name, pareja)));
+}
+
 function esCrossover(o) {
 
   if (typeof o.crossover === 'boolean') return o.crossover;
@@ -53,4 +60,4 @@ function esCrossover(o) {
   return fandoms.length >= 2 || fandoms.some(f => /\bcrossover\b/i.test(f));
 }
 
-module.exports = { porFuente, fallo, aplanar, claveDeObra, filtrarObras, esCrossover };
+module.exports = { porFuente, fallo, aplanar, claveDeObra, filtrarObras, filtrarPareja, esCrossover };

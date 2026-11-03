@@ -37,6 +37,8 @@ export const LECTOR = {
   'reader.audio_work_progress': { es: '{listos} de {total} capítulos en MP3', en: '{listos} of {total} chapters as MP3' },
   'reader.audio_work_preparing': { es: '{n} en la cola', en: '{n} queued' },
   'reader.audio_work_make': { es: 'Preparar los {n} que faltan', en: 'Make the {n} missing' },
+  'reader.audio_work_save': { es: 'Bajar los {n} MP3 de una vez', en: 'Download the {n} MP3s at once' },
+  'reader.audio_work_saved': { es: '{n} MP3 guardados en {ruta}', en: '{n} MP3s saved in {ruta}' },
   'reader.audio_save': { es: 'Bajar el MP3', en: 'Download the MP3' },
   'reader.voice_speed': { es: 'Velocidad', en: 'Speed' },
   'reader.character_voices': { es: 'Voces de personajes', en: 'Character voices' },

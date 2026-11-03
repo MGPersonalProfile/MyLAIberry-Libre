@@ -1,7 +1,7 @@
 import { useI18n } from '../../i18n/I18nContext';
 import { PESTANAS_MOVIL } from './pestanasMovil';
 
-export default function BarraDePestanas({ vista, alIrA }) {
+export default function BarraDePestanas({ vista, alIrA, avisoAsistente }) {
   const { t } = useI18n();
   return (
     <nav
@@ -22,7 +22,8 @@ export default function BarraDePestanas({ vista, alIrA }) {
                   activa ? 'text-white' : 'text-gray-500'
                 }`}
               >
-                <Icono className="w-6 h-6" strokeWidth={activa ? 2.4 : 1.8} />
+                <span className="relative"><Icono className="w-6 h-6" strokeWidth={activa ? 2.4 : 1.8} />
+                  {id === 'asistente' && avisoAsistente && <span className={`absolute -right-1 -top-1 h-2 w-2 rounded-full ${avisoAsistente === 'respondiendo' ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`} role="status" aria-label={t(avisoAsistente === 'respondiendo' ? 'assistant.replying' : 'assistant.reply_ready')} />}</span>
                 <span className="text-[10px] font-medium leading-none">{t(clave)}</span>
               </button>
             </li>

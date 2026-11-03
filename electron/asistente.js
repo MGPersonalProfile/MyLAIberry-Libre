@@ -14,6 +14,8 @@ const { confirmar, rechazar, deshacer, CADUCIDAD } = require('./asistente-app-ej
 const { conTope, topeDe, TOPE_HERRAMIENTA } = require('./asistente-tope');
 const { completarCitas, seArrepiente } = require('./asistente-comprobado');
 const { avisoAntesDeResponder, cambioAlgo, sinDisculpa } = require('./asistente-redes');
+const { anotarAvance, resumenLimite } = require('./asistente-limite');
+const MAX_RONDAS = 24;
 
 async function conSuObra(memoria, services) {
   if (!memoria.some(p => p.workId)) return memoria;
@@ -45,7 +47,7 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
     return { ...ctx, ...(obra?.title ? { titulo: obra.title } : {}), ...(total ? { total } : {}), ...(guardado ? { guardado } : {}) };
   }
 
-  async function correrHerramientas({ calls, toolset, controller, messages, actions, vistas, pendientes, retiradas, capturas = [] }) {
+  async function correrHerramientas({ calls, toolset, controller, messages, actions, vistas, pendientes, retiradas, capturas = [], avance }) {
 
     for (const call of calls.slice(8)) {
       messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify({ error: 'No hecha: como mucho 8 herramientas a la vez. Dile al usuario cuáles quedaron sin hacer, o sigue en la ronda siguiente.' }) });
@@ -69,6 +71,7 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
       }
 
       actions.push({ name: call.function.name, ok: !result?.error, args: String(call.function.arguments || '{}').slice(0, 300) });
+      anotarAvance(avance, call.function.name, result, call.function.arguments);
       vistas.push(...obrasDe(call.function.name, result));
 
       if (typeof result?.captura === 'string') capturas.push({ imagen: result.captura, url: result.url, titulo: result.titulo });
@@ -85,9 +88,12 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
     const capturas = [];
     const pendientes = [];
     const retiradas = [];
+    const avance = { importadas: [], fichas: [], limiteWeb: null };
     const corregidas = new Set();
     const usoTurno = { prompt_tokens: 0, completion_tokens: 0 };
-    const responder = async (texto) => {
+    const maxRondas = background ? 6 : MAX_RONDAS;
+    const responder = async (texto, resumido = false) => {
+      if (avance.limiteWeb && !resumido) texto = `${resumenLimite('investigación', { acciones: actions, vistas, pendientes, avance })}\n\n${texto}`;
       if (corregidas.has('guardadoReal') && require('./asistente-evidencia').guardadoSinEvidencia(texto, { actions })) {
         texto = 'No he podido guardar ese encargo o esas pistas; no han quedado registrados. Puedes volver a pedírmelo.';
       }
@@ -104,13 +110,24 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
       return { threadId: thread.id, answer };
     };
 
-    for (let round = 0; round < 6; round++) {
+    for (let round = 0; round < maxRondas; round++) {
       if (controller.signal.aborted) throw new Error('Petición cancelada.');
-      const day = await state.reserve(background);
-      require('./asistente-recorte').cabeEnElTope(messages, toolset.specs, require('./asistente-proveedor').MAX_ENTRADA_BYTES);
+      let day;
+      try {
+        day = await state.reserve(background);
+        require('./asistente-recorte').cabeEnElTope(messages, toolset.specs, require('./asistente-proveedor').MAX_ENTRADA_BYTES);
+      } catch (e) {
+        const motivo = /límite diario/i.test(e.message) ? 'llamadas diarias' : /tope de entrada/i.test(e.message) ? 'entrada del modelo' : null;
+        if (!motivo) throw e;
+        return responder(resumenLimite(motivo, { acciones: actions, vistas, pendientes, avance }), true);
+      }
 
       const result = await provider({ messages, tools: toolset.specs, model: modelo, signal: controller.signal })
-        .catch(e => { e.hechas = actions; throw e; });
+        .catch(e => {
+          if (/tope de entrada/i.test(e.message)) return { topeEntrada: true };
+          e.hechas = actions; throw e;
+        });
+      if (result.topeEntrada) return responder(resumenLimite('entrada del modelo', { acciones: actions, vistas, pendientes, avance }), true);
       await state.usage(day, result.usage);
       usoTurno.prompt_tokens += Number(result.usage?.prompt_tokens) || 0;
       usoTurno.completion_tokens += Number(result.usage?.completion_tokens) || 0;
@@ -133,12 +150,10 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
       if (!calls.length) return responder(contenido);
 
       messages.push({ role: 'assistant', content: message.content || null, tool_calls: calls });
-      await correrHerramientas({ calls, toolset, controller, messages, actions, vistas, pendientes, retiradas, capturas });
+      await correrHerramientas({ calls, toolset, controller, messages, actions, vistas, pendientes, retiradas, capturas, avance });
     }
 
-    return responder('No he podido terminar: la petición necesitaba demasiados pasos. ' +
-      (actions.length ? `He hecho ${actions.length} consultas o acciones antes de parar; ` : '') +
-      'prueba a pedírmelo por partes.');
+    return responder(resumenLimite(`${maxRondas} vueltas`, { acciones: actions, vistas, pendientes, avance }), true);
   }
 
   async function hiloDe({ s, threadId, scope, text }) {
@@ -151,7 +166,7 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
     return nuevo;
   }
 
-  async function chat({ text, point = null, threadId = null, background = false, fuera = false, desdeElMovil = false, onProgress, requestId = null }) {
+  async function chat({ text, point = null, threadId = null, background = false, fuera = false, desdeElMovil = false, onProgress, onThread, requestId = null }) {
     text = texto(text, 12000);
     if (point) validarPunto(point);
     const scope = point ? point.workId : 'library';
@@ -188,6 +203,7 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
 
       const user = { id: randomUUID(), role: 'user', text, point, at: Date.now() };
       await state.update(next => { next.threads.find(t => t.id === thread.id).messages.push(user); });
+      onThread?.(thread.id);
 
       const vivas = (s.pendientes || []).filter(p => p.hilo === thread.id && Date.now() - p.at < CADUCIDAD);
 
@@ -250,7 +266,15 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
         title: 'Conversación de lectura', messages: t.messages.filter(m => m.point && antesOIgual(m.point, point)) })), s.pendientes),
       inbox: s.inbox.filter(m => m.point && antesOIgual(m.point, point)) };
   }
+  async function marcarLeido(id, point) {
+    await state.update(s => {
+      const hilo = s.threads.find(t => t.id === id && t.scope === (point?.workId || 'library'));
+      if (hilo) delete hilo.unreadAt;
+    });
+    return { ok: true };
+  }
   async function command({ action, args = {}, point = null, desdeElMovil = false }) {
+    if (action === 'markRead') return marcarLeido(args.id, point);
     if (action === 'receipt') return state.receipt(args);
 
     if (action === 'cancel') {
@@ -378,4 +402,4 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
   }
   return { state, chat, view, command, tick, contextFor };
 }
-module.exports = { crearAsistente, conSuObra };
+module.exports = { crearAsistente, conSuObra, MAX_RONDAS };

@@ -2,17 +2,37 @@ const REINTENTABLES = /ERR_FAILED|ERR_ABORTED|ERR_NETWORK_CHANGED|ERR_CONNECTION
 
 const dormir = (ms) => new Promise(r => setTimeout(r, ms));
 
-async function cargarPagina(win, url, { intentos = 3, espera = 700 } = {}) {
-  exigirQueNoEnfrie(url);
+const turnos = new Map();
+const ultimaPeticion = new Map();
+async function conRitmo(url, tarea, minimo = 1200) {
+  const sitio = sitioDe(url);
+  const previo = turnos.get(sitio) || Promise.resolve();
+  const turno = previo.catch(() => {}).then(async () => {
+    exigirQueNoEnfrie(url);
+    const espera = Math.max(0, (ultimaPeticion.get(sitio) || 0) + minimo - Date.now());
+    if (espera) await dormir(espera);
+    exigirQueNoEnfrie(url);
+    try { return await tarea(); }
+    finally { ultimaPeticion.set(sitio, Date.now()); }
+  });
+  const cola = turno.then(() => {}, () => {});
+  turnos.set(sitio, cola);
+  cola.then(() => { if (turnos.get(sitio) === cola) turnos.delete(sitio); });
+  return turno;
+}
 
-  let codigo = 0;
-  const alNavegar = (_e, _url, code) => { codigo = code || codigo; };
-  win.webContents.on?.('did-navigate', alNavegar);
-  try {
-    return await cargarConReintentos(win, url, { intentos, espera }, () => codigo, () => { codigo = 0; });
-  } finally {
-    win.webContents.removeListener?.('did-navigate', alNavegar);
-  }
+async function cargarPagina(win, url, { intentos = 3, espera = 700 } = {}) {
+  return conRitmo(url, async () => {
+
+    let codigo = 0;
+    const alNavegar = (_e, _url, code) => { codigo = code || codigo; };
+    win.webContents.on?.('did-navigate', alNavegar);
+    try {
+      return await cargarConReintentos(win, url, { intentos, espera }, () => codigo, () => { codigo = 0; });
+    } finally {
+      win.webContents.removeListener?.('did-navigate', alNavegar);
+    }
+  });
 }
 
 const LIMITADO = [418, 429];
@@ -88,7 +108,7 @@ async function cargoIgualmente(win) {
   }
 }
 
-const RETO = /just a moment|verify you are human|attention required|checking your browser|enable javascript and cookies|cf-chl/i;
+const RETO = /just a moment|verify you are human|attention required|checking your browser|enable javascript and cookies|cf-chl|un momento|verificaci[oó]n de seguridad en curso|comprueba que eres humano/i;
 
 const DENEGADO = /request temporarily denied|retry later/i;
 
@@ -113,7 +133,8 @@ async function muestraDePagina(win) {
   }
 }
 
-const FRASES_DE_RETO = ['just a moment', 'verify you are human', 'attention required', 'checking your browser', 'enable javascript and cookies'];
+const FRASES_DE_RETO = ['just a moment', 'verify you are human', 'attention required', 'checking your browser', 'enable javascript and cookies',
+  'un momento', 'verificación de seguridad en curso', 'comprueba que eres humano'];
 
 const PACIENCIA = `
   function mlSigueCargando() {
@@ -211,4 +232,4 @@ async function ejecutarAunqueNavegue(win, guion) {
   }
 }
 
-module.exports = { cargarPagina, exigirQueNoSeaUnReto, exigirQueNoEnfrie, enfriar, enfriandoHasta, limitado, muestraDePagina, PACIENCIA, mientrasAvance, ejecutarAunqueNavegue, ESPERA };
+module.exports = { cargarPagina, conRitmo, sitioDe, exigirQueNoSeaUnReto, exigirQueNoEnfrie, enfriar, enfriandoHasta, limitado, muestraDePagina, PACIENCIA, mientrasAvance, ejecutarAunqueNavegue, ESPERA };

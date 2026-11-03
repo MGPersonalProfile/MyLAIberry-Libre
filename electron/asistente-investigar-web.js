@@ -8,9 +8,9 @@ const { pertinencia } = require('./relevancia.js');
 const { JSDOM } = require('jsdom');
 const { CATEGORIA } = require('./etiquetas.js');
 
-const MAX_PASOS = 8;
+const MAX_PASOS = 64;
 
-const RESERVA_FICHAS = 4;
+const RESERVA_FICHAS = 32;
 const FUENTES = ['AO3', 'FanFiction.net', 'RoyalRoad', 'Wattpad'];
 const ORDEN = { popularidad: 'kudos_count', palabras: 'word_count', recientes: 'revised_at', relevancia: '_score' };
 
@@ -113,7 +113,8 @@ function crearInvestigador({ signal, progreso, navegador = crearNavegador({ sign
       if (sitio === 'Wattpad' && pagina > 1) break;
       if (navegador.paginas >= tope) break;
       try {
-        const argumento = { consulta: q, orden: ORDEN[orden] || ORDEN.popularidad, pagina,
+        const argumento = { consulta: sitio === 'AO3' && pareja ? consultaDe({ ...filtros, pareja: undefined }) : q,
+          pareja: sitio === 'AO3' ? pareja : undefined, orden: ORDEN[orden] || ORDEN.popularidad, pagina,
           completa, minPalabras };
         const adaptador = sitio === 'AO3' ? ao3 : sitio === 'FanFiction.net' ? ffn : sitio === 'Wattpad' ? wattpad : rr;
         await navegador.abrir(adaptador.urlDeBusqueda(argumento));
@@ -129,6 +130,7 @@ function crearInvestigador({ signal, progreso, navegador = crearNavegador({ sign
     }
     const unicas = ordenar(sinDuplicados(obras), orden);
     return { obras: unicas.slice(0, 30), encontradas: unicas.length, paginasVisitadas: navegador.paginas,
+      agotado: navegador.paginas >= tope,
       errores, aviso: 'Los filtros sin datos explícitos del sitio no se dan por confirmados. Wattpad sólo ofrece aquí su primera tanda pública: page=2 repite los resultados.' };
   }
 
@@ -223,7 +225,8 @@ function crearInvestigador({ signal, progreso, navegador = crearNavegador({ sign
       errores.push(...r.errores);
     }
     return { obras: ordenar(sinDuplicados(lotes), filtros.orden).slice(0, 20),
-      paginasVisitadas: navegador.paginas, pasos, errores };
+      paginasVisitadas: navegador.paginas, pasos, errores,
+      agotado: pasos >= MAX_PASOS || navegador.paginas >= tope };
   }
 
   let libre = null;
@@ -233,4 +236,4 @@ function crearInvestigador({ signal, progreso, navegador = crearNavegador({ sign
     cerrar: () => { navegador.cerrar(); libre?.cerrar(); }, get paginas() { return navegador.paginas + (libre?.paginas || 0); } };
 }
 
-module.exports = { crearInvestigador, consultaDe, coincide, sinDuplicados, breve, MAX_PASOS, RESERVA_FICHAS };
+module.exports = { crearInvestigador, consultaDe, casaPareja, coincide, sinDuplicados, breve, MAX_PASOS, RESERVA_FICHAS };

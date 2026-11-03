@@ -61,6 +61,14 @@ function registrar() {
       faltan: Math.max(0, obra.capitulos.length - listos - enCola.size) };
   });
 
+  ipcMain.handle('guardar-audio-obra', async (event, fanficId, { idioma = 'es' } = {}) => {
+    const { canceled, filePaths } = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow(), {
+      title: 'Guardar los MP3 de la obra', properties: ['openDirectory', 'createDirectory']
+    });
+    if (canceled || !filePaths?.[0]) return { status: 'cancelado' };
+    return require('../audio-obra.js').guardarEnCarpeta(String(fanficId), idioma, filePaths[0]);
+  });
+
   ipcMain.handle('guardar-audio-capitulo', async (event, fanficId, indice, { idioma = 'es' } = {}) => {
     const i = Number(indice);
     if (!indiceValido(i)) return { status: 'error', message: 'Capítulo no válido.' };

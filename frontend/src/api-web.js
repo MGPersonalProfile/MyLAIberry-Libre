@@ -92,6 +92,69 @@ function conCompartido(suscribirAviso) {
   };
 }
 
+export async function descargarEpub(base, id, opciones = {}) {
+  const t = opciones?.traducido === undefined ? '' : `?traducido=${opciones.traducido ? 1 : 0}`;
+  let r;
+  try { r = await fetch(`${base}/epub/${encodeURIComponent(id)}${t}`); } catch { throw falloDelPC('Sin conexión con tu PC.'); }
+  if (!r.ok) {
+    const cuerpo = await r.json().catch(() => ({}));
+    return { status: 'error', message: cuerpo.error || `El PC contestó ${r.status}.` };
+  }
+  const nombre = nombreDeDescarga(r.headers.get('Content-Disposition')) || 'obra.epub';
+  const enlace = document.createElement('a');
+  enlace.href = URL.createObjectURL(await r.blob());
+  enlace.download = nombre;
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  setTimeout(() => URL.revokeObjectURL(enlace.href), 60_000);
+  return { status: 'ok', capitulos: Number(r.headers.get('X-Capitulos')) || 0, total: Number(r.headers.get('X-Total')) || 0 };
+}
+
+export function descargarAudioObra(base, id, opciones = {}) {
+  const idioma = /^[a-z]{2}$/.test(opciones?.idioma || '') ? opciones.idioma : 'es';
+  const enlace = document.createElement('a');
+  enlace.href = `${base}/audio-obra/${encodeURIComponent(id)}?idioma=${idioma}`;
+  enlace.download = '';
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  return Promise.resolve({ status: 'ok', comoDescarga: true });
+}
+
+const TROZO_SUBIDA = 2 * 1024 * 1024;
+
+export async function subirLibro(base, fichero, alAvanzar = () => {}) {
+  const id = [...crypto.getRandomValues(new Uint8Array(12))].map(b => b.toString(16).padStart(2, '0')).join('');
+  const consulta = (extra) => `${base}/subir?id=${id}&nombre=${encodeURIComponent(fichero.name)}&total=${fichero.size}${extra}`;
+  let desde = 0, fallos = 0;
+  while (desde < fichero.size) {
+    let r;
+    try {
+      r = await fetch(consulta(`&desde=${desde}`), { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' },
+        body: fichero.slice(desde, desde + TROZO_SUBIDA) });
+    } catch { r = null; }
+    const cuerpo = r ? await r.json().catch(() => ({})) : {};
+    if (r?.ok && Number.isSafeInteger(cuerpo.recibidos)) { desde = cuerpo.recibidos; fallos = 0; alAvanzar(Math.round(desde / fichero.size * 100)); continue; }
+
+    if (r && r.status !== 409) return { status: 'error', message: cuerpo.error || `El PC contestó ${r.status}.` };
+    if (++fallos >= 3) return { status: 'error', message: r ? (cuerpo.error || 'La subida no avanza.') : 'Sin conexión con tu PC.' };
+    if (Number.isSafeInteger(cuerpo.recibidos)) desde = cuerpo.recibidos;
+  }
+  let fin;
+  try { fin = await fetch(`${base}/subir?id=${id}&fin=1`, { method: 'POST' }); } catch { return { status: 'error', message: 'Sin conexión con tu PC.' }; }
+  const cuerpo = await fin.json().catch(() => ({}));
+  if (!fin.ok || cuerpo.error) return { status: 'error', message: cuerpo.error || `El PC contestó ${fin.status}.` };
+  return cuerpo.valor || { status: 'error', message: 'El PC no dijo qué pasó.' };
+}
+
+export function nombreDeDescarga(cabecera) {
+  const c = String(cabecera || '');
+  const largo = c.match(/filename\*=UTF-8''([^;]+)/i);
+  if (largo) { try { return decodeURIComponent(largo[1]); } catch {  } }
+  return (c.match(/filename="([^"]+)"/i) || [])[1] || null;
+}
+
 export async function instalarApiWeb() {
   if (window.api) return false;
   const base = baseDelServidor();
@@ -107,6 +170,9 @@ export async function instalarApiWeb() {
     if (/^https?:\/\//i.test(String(url || ''))) window.open(url, '_blank', 'noopener,noreferrer');
     return { status: 'ok' };
   };
+  api.exportarEpub = (id, opciones) => descargarEpub(base, id, opciones);
+  api.guardarAudioObra = (id, opciones) => descargarAudioObra(base, id, opciones);
+  api.subirLibro = (fichero, alAvanzar) => subirLibro(base, fichero, alAvanzar);
   window.api = api;
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register(`${base}/sw.js`).catch(() => {});

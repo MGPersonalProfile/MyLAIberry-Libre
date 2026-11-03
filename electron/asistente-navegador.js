@@ -1,10 +1,9 @@
 const { BrowserWindow } = require('electron');
-const { cargarPagina } = require('./scrapers/navegar');
+const { cargarPagina, mientrasAvance, ejecutarAunqueNavegue, muestraDePagina, exigirQueNoSeaUnReto } = require('./scrapers/navegar');
 
 const SITIOS = new Set(['archiveofourown.org', 'www.fanfiction.net', 'www.royalroad.com', 'www.wattpad.com']);
-const MAX_PAGINAS = 12;
+const MAX_PAGINAS = 64;
 const ESPERA_PAGINA = 30000;
-const ESPERA_RETO = 120000;
 const PAUSA = 1200;
 const MAX_VENTANAS = 2;
 let ventanasAbiertas = 0;
@@ -76,9 +75,8 @@ function crearNavegador({ signal, progreso = () => {}, sitios = SITIOS, maxPagin
 
   function mostrarReto() {
     if (!win || win.isDestroyed()) return;
-    const patron = /just a moment|verify you are human|attention required|cf-chl|checking your browser|enable javascript and cookies/i;
-    const titulo = win.webContents.getTitle();
-    if (patron.test(titulo) && !win.isVisible()) {
+    const patron = /just a moment|verify you are human|attention required|cf-chl|checking your browser|enable javascript and cookies|un momento|verificaci[oó]n de seguridad en curso/i;
+    if (patron.test(win.webContents.getTitle()) && !win.isVisible()) {
       win.setTitle('MyLAIberry — comprobación del sitio');
       win.showInactive();
       progreso({ paginas, maxPaginas, url: win.webContents.getURL(), estado: 'comprobacion' });
@@ -86,20 +84,21 @@ function crearNavegador({ signal, progreso = () => {}, sitios = SITIOS, maxPagin
   }
 
   async function conPlazo(promesa) {
-    let reloj;
-    const inicio = Date.now();
-    const vencimiento = new Promise((_, reject) => {
-      reloj = setInterval(() => {
-        mostrarReto();
-        const limite = win?.isVisible() ? ESPERA_RETO : timeout;
-        if (Date.now() - inicio >= limite) {
-          reject(new Error(`La página no respondió en ${limite / 1000} s.`));
-          cerrar();
-        }
-      }, 500);
-    });
-    try { return await Promise.race([promesa, vencimiento]); }
-    finally { clearInterval(reloj); if (win && !win.isDestroyed() && win.isVisible()) win.hide(); }
+
+    const reto = setInterval(mostrarReto, 500);
+    try { return await mientrasAvance(win, promesa, 'La investigación', { quietoMs: Math.max(timeout, 60000) }); }
+    catch (e) {
+
+      const muestra = win && !win.isDestroyed() ? await Promise.race([
+        muestraDePagina(win), new Promise(resolve => setTimeout(() => resolve({}), 2000))
+      ]) : {};
+      if (muestra.titulo || muestra.texto) {
+        try { exigirQueNoSeaUnReto('La investigación', muestra); }
+        catch (reto) { if (reto.limitado || /reto de Cloudflare/.test(reto.message)) { cerrar(); throw reto; } }
+      }
+      cerrar(); throw e;
+    }
+    finally { clearInterval(reto); if (win && !win.isDestroyed() && win.isVisible()) win.hide(); }
   }
 
   async function abrir(direccion) {
@@ -137,7 +136,7 @@ function crearNavegador({ signal, progreso = () => {}, sitios = SITIOS, maxPagin
 
   async function ejecutar(guion) {
     if (!win || win.isDestroyed()) throw new Error('No hay una página abierta.');
-    return conPlazo(win.webContents.executeJavaScript(guion));
+    return conPlazo(ejecutarAunqueNavegue(win, guion));
   }
 
   return { abrir, ejecutar, cerrar, get paginas() { return paginas; }, maxPaginas };

@@ -17,6 +17,7 @@ const { TECHO_DEL_FICHERO } = require('../epub.js');
 const { obraDePdf } = require('../pdf-importar.js');
 const { tipoLibro } = require('../libro-enlace.js');
 const { obraDeHtmlAo3 } = require('../html-ao3-importar.js');
+const { obraDeTexto } = require('../texto-importar.js');
 
 const capitulosGuardados = (n) => `${n} ${n === 1 ? 'capítulo guardado' : 'capítulos guardados'}`;
 const { crearProveedor } = require('../asistente-proveedor.js');
@@ -44,7 +45,7 @@ function camposFrescos(fresh) {
   };
 }
 
-async function repararCapitulos(id, fresh) {
+async function repararCapitulos(id, fresh, { conservarTraducciones = false, traduccionesDudosas = [] } = {}) {
   if (!Array.isArray(fresh.chapterContents) || fresh.chapterContents.length === 0) return 0;
 
   const dir = dirDeFanfic(id);
@@ -59,7 +60,8 @@ async function repararCapitulos(id, fresh) {
 
     await saveChapterContent(id, i, nuevo);
 
-    for (const idioma of ['es', 'en']) {
+    const sirve = conservarTraducciones && !traduccionesDudosas.includes(i);
+    for (const idioma of sirve ? [] : ['es', 'en']) {
       const t = path.join(dir, `chapter_${i}.${idioma}.html`);
       if (fs.existsSync(t)) fs.unlinkSync(t);
     }
@@ -95,6 +97,7 @@ function obraParaGuardar(storyData) {
     progress: 0,
     url: storyData.url,
     source: storyData.source,
+    ...(storyData.urlOrigen ? { urlOrigen: storyData.urlOrigen } : {}),
     ...(storyData.language || storyData.idiomaOriginal ? { idiomaOriginal: storyData.language || storyData.idiomaOriginal } : {}),
     chapterList: storyData.chapters,
     ...(storyData.needsChapterSelection === true ? { needsChapterSelection: true } : {}),
@@ -137,6 +140,8 @@ function bajarPortada(saved) {
   });
 }
 
+const esObraDeAo3 = (obra) => /^https:\/\/archiveofourown\.org\/works\/\d+$/.test(obra?.url || '');
+
 async function ampliarHtmlAo3(saved, storyData, sendProgress) {
   const anteriores = saved.chapterList || [];
   if (!/^https:\/\/archiveofourown\.org\/works\/\d+$/.test(saved.url)
@@ -176,10 +181,14 @@ async function importarLibro(ruta, sendProgress, { proveedor = crearProveedor(),
     })
     : tipo === 'html' ? obraDeHtmlAo3(datos, urlOrigen) : await obraDeEpub(datos, ruta);
 
+  return importarDatos(storyData, sendProgress, tipo);
+}
+
+async function importarDatos(storyData, sendProgress, tipo = 'texto') {
   sendProgress({ step: 'saving_metadata', message: 'Guardando metadatos...' });
   const saved = await addFanfic(obraParaGuardar(storyData));
 
-  if (tipo === 'html') {
+  if (tipo === 'html' || esObraDeAo3(storyData)) {
     const ampliada = await ampliarHtmlAo3(saved, storyData, sendProgress);
     if (ampliada) return ampliada;
   }
@@ -204,7 +213,15 @@ async function importarLibro(ruta, sendProgress, { proveedor = crearProveedor(),
   return { status: 'success', data: saved };
 }
 
+async function importarTexto(entrada, sendProgress = () => {}) {
+  return importarDatos(obraDeTexto(entrada), sendProgress);
+}
+
 function registrar() {
+  ipcMain.handle('importar-texto', async (_event, entrada) => {
+    try { return await importarTexto(entrada); }
+    catch (e) { return { status: 'error', message: e.message }; }
+  });
 
   let reanudar = null;
   let reanudaA = null;
@@ -341,7 +358,9 @@ function registrar() {
 
       const res = await updateChapterList(id, fresh.chapters, camposFrescos(fresh));
 
-      const reparados = res.conservado ? 0 : await conDisco(() => repararCapitulos(id, fresh));
+      const reparados = res.conservado ? 0 : await conDisco(() => repararCapitulos(id, fresh, {
+        conservarTraducciones: !!res.realineado?.porTitulo, traduccionesDudosas: res.realineado?.dudosas
+      }));
 
       const nuevos = res.nuevos;
 
@@ -402,4 +421,4 @@ function registrar() {
 
 }
 
-module.exports = { registrar, importarLibro, obraParaGuardar, camposFrescos };
+module.exports = { registrar, importarLibro, importarTexto, obraParaGuardar, camposFrescos };

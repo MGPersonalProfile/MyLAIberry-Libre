@@ -1,7 +1,8 @@
 const dns = require('node:dns').promises;
 const net = require('node:net');
+const { cargarPagina } = require('./scrapers/navegar');
 
-const MAX_PAGINAS = 25;
+const MAX_PAGINAS = 64;
 const ESPERA_PAGINA = 30000;
 const ESPERA_RETO = 25000;
 
@@ -12,10 +13,13 @@ const VEDADOS = [
   'accounts.google.com', 'myaccount.google.com', 'mail.google.com', 'drive.google.com', 'docs.google.com',
   'photos.google.com', 'takeout.google.com', 'pay.google.com', 'passwords.google.com', 'console.cloud.google.com',
   'aistudio.google.com', 'login.live.com', 'account.live.com', 'outlook.live.com', 'outlook.office.com',
-  'paypal.com', 'discord.com', 'discordapp.com', 'chatgpt.com', 'claude.ai', 'console.anthropic.com',
+  'paypal.com', 'discord.com', 'discordapp.com', 'chatgpt.com', 'chat.openai.com', 'claude.ai', 'console.anthropic.com',
   'platform.openai.com', 'platform.deepseek.com', 'github.com', 'dash.cloudflare.com', 'vercel.com', 'login.tailscale.com'
 ];
 const vedado = host => VEDADOS.some(d => host === d || host.endsWith('.' + d));
+const sharePublico = u => u.protocol === 'https:' && ['chatgpt.com', 'chat.openai.com'].includes(u.hostname)
+  && /^\/share\/[a-z0-9-]+\/?$/i.test(u.pathname);
+
 const NOMBRES_DE_CASA = /(^localhost$|\.localhost$|\.local$|\.lan$|\.home$|\.internal$|\.ts\.net$)/i;
 
 function ipPrivada(ip) {
@@ -34,7 +38,7 @@ function comprobarForma(direccion) {
   const host = u.hostname.replace(/^\[|\]$/g, '').toLowerCase();
   if (!['https:', 'http:'].includes(u.protocol) || u.username || u.password) throw new Error('Sólo se abren páginas http(s) sin credenciales en la dirección.');
   if (NOMBRES_DE_CASA.test(host) || (net.isIP(host) && ipPrivada(host))) throw new Error('Las direcciones de la red de casa no se abren desde el asistente.');
-  if (vedado(host)) throw new Error(`${host} es una página de cuentas: el asistente no la abre. Si hace falta, ábrela tú.`);
+  if (vedado(host) && !sharePublico(u)) throw new Error(`${host} es una página de cuentas: el asistente no la abre. Si hace falta, ábrela tú.`);
   return u;
 }
 
@@ -100,7 +104,7 @@ function crearWebLibre({ signal, progreso = () => {}, maxPaginas = MAX_PAGINAS, 
     progreso({ paginas, maxPaginas, url: u.toString(), estado: 'cargando' });
     let reloj;
     const plazo = new Promise((_, no) => { reloj = setTimeout(() => no(new Error('La página no respondió en 30 s.')), ESPERA_PAGINA); });
-    try { await Promise.race([w.loadURL(u.toString()), plazo]); } catch (e) {
+    try { await Promise.race([cargarPagina(w, u.toString()), plazo]); } catch (e) {
       if (/no respondió/.test(e.message) || !w.webContents.getURL()) throw e;
     } finally { clearTimeout(reloj); }
     await pasarReto(w);
@@ -126,7 +130,15 @@ function crearWebLibre({ signal, progreso = () => {}, maxPaginas = MAX_PAGINAS, 
 
   async function leer(direccion, { desde = 0, captura = false } = {}) {
     const w = await abrir(direccion);
-    const p = await w.webContents.executeJavaScript(LECTOR);
+    let p = await w.webContents.executeJavaScript(LECTOR);
+
+    if (sharePublico(new URL(w.webContents.getURL()))) {
+      for (let t = 0; t < 12000 && p.largo < 150; t += 500) {
+        if (signal?.aborted) throw new Error('Petición cancelada.');
+        await dormir(500);
+        p = await w.webContents.executeJavaScript(LECTOR);
+      }
+    }
     const trozo = p.texto.slice(desde, desde + LARGO_TEXTO);
     let foto = {};
     if (captura) {

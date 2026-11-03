@@ -116,7 +116,7 @@ function sinLasDeLaMisma(lista, c) {
   return (Array.isArray(lista) ? lista : []).filter(o => !(autor && n(o.author) === autor) && !(titulo && n(o.title).includes(titulo)));
 }
 
-const SOLO_DEL_ASISTENTE = ['abrir-obra-en-pantalla'];
+const SOLO_DEL_ASISTENTE = ['abrir-obra-en-pantalla', 'importar-texto'];
 
 function sugerenciasEnCorto(lista, filtro) {
   const n = (t) => String(t || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
@@ -290,9 +290,22 @@ const CATALOGO = [
     args: async (a) => [a.url], descripcion: 'Trae a descubrimientos los marcadores públicos de un usuario de AO3.' },
   { nombre: 'exportar_epub', enLectura: true, nivel: 'accion', canal: 'exportar-epub', parametros: { obra, traducido: { type: 'boolean' } },
     requeridos: ['obra'], args: conObra((id, a) => [id, a.traducido === undefined ? {} : { traducido: a.traducido }]),
+    alternativaMovil: 'En el móvil o cliente web, abre la ficha de la obra y toca «Exportar EPUB»: se descargará en este dispositivo.',
 
     resultado: (r) => guardadoEn(r), enLecturaDevuelve: (r) => guardadoEn(r),
     descripcion: 'Exporta una obra a EPUB. Se abre el diálogo de guardar: el usuario elige dónde, y la herramienta vuelve cuando ya está guardado.' },
+
+  { nombre: 'mp3_de_la_obra', enLectura: true, nivel: 'accion', canal: 'audio-obra',
+    parametros: { obra, idioma: { type: 'string', enum: ['es', 'en'] }, preparar: { type: 'boolean' } }, requeridos: ['obra'],
+    args: conObra((id, a) => [id, { idioma: a.idioma || 'es', pedir: a.preparar !== false }]),
+    enLecturaDevuelve: (r) => r,
+    descripcion: 'Cuántos capítulos de una obra están ya en MP3 (voces neuronales) y, con preparar (por defecto), pone en la cola los que faltan, sin prioridad: una obra larga son horas. Si dice que faltan las voces, en Windows se instalan desde el botón del lector («Instalar las voces»). Para llevárselos todos de una vez, guardar_mp3_de_la_obra.' },
+  { nombre: 'guardar_mp3_de_la_obra', nivel: 'accion', canal: 'guardar-audio-obra',
+    parametros: { obra, idioma: { type: 'string', enum: ['es', 'en'] } }, requeridos: ['obra'],
+    args: conObra((id, a) => [id, { idioma: a.idioma || 'es' }]),
+    alternativaMovil: 'En el móvil, en el lector: ajustes del lector, «Toda la obra», «Bajar los N MP3 de una vez» (baja un ZIP a este dispositivo).',
+    resultado: (r) => (r?.status === 'ok' ? { guardadoEn: r.ruta, capitulos: r.capitulos, deTotal: r.total } : r),
+    descripcion: 'Guarda en el PC, de una vez, los MP3 de una obra que ya estén hechos: se abre el diálogo para elegir carpeta y la herramienta vuelve cuando están copiados. Los que falten siguen en la cola (mp3_de_la_obra dice cuántos).' },
 
   { nombre: 'abrir_obra', nivel: 'accion', soloEnElPc: true, canal: 'abrir-obra-en-pantalla', parametros: { obra, leer: { type: 'boolean' } },
     enElMovil: 'En el móvil, la obra se abre tocando su portada en la Biblioteca.',
@@ -303,6 +316,14 @@ const CATALOGO = [
     args: async a => [a.url], resultado: r => ({ titulo: r.data?.title, capitulos: r.data?.totalChapters, yaEstaba: !!r.yaEstaba, aviso: r.aviso }),
     resumen: a => `Descargar e importar el libro de ${dominio(a.url)}.`,
     descripcion: 'Descarga un EPUB, PDF o HTML de AO3 de un enlace directo dado por el usuario (una tienda sin DRM, Project Gutenberg, su propia nube). Lo añade a la biblioteca sin descargar a mano. Si es una página que exige sesión o un botón, ofrece abrir_importador_web en el PC.' },
+  { nombre: 'importar_texto', nivel: 'accion', canal: 'importar-texto',
+    parametros: { titulo: { type: 'string', minLength: 1, maxLength: 300 },
+      texto: { type: 'string', minLength: 1, maxLength: 2097152 },
+      autor: { type: 'string', maxLength: 300 }, fuente: { type: 'string', maxLength: 100 },
+      url_origen: { type: 'string', maxLength: 4000 } }, requeridos: ['titulo', 'texto'],
+    args: async a => [{ titulo: a.titulo, texto: a.texto, autor: a.autor, fuente: a.fuente, urlOrigen: a.url_origen }],
+    resultado: r => ({ titulo: r.data?.title, capitulos: r.data?.totalChapters, yaEstaba: !!r.yaEstaba, aviso: r.aviso }),
+    descripcion: 'Añade a la biblioteca un texto pegado por el usuario o el texto de una obra que acabas de leer con navegar_web; sirve también para un share público de ChatGPT. Pasa el texto completo, un título y, si constan, autor, fuente y url_origen. Separa capítulos por encabezados. No descargues nada para esta herramienta.' },
   { nombre: 'abrir_importador_web', nivel: 'confirmar', canal: 'abrir-importador-web', parametros: { url: { type: 'string', minLength: 1, maxLength: 4000 } }, requeridos: [],
     args: async a => [a.url], resumen: a => `Abrir el importador web en ${a.url ? dominio(a.url) : 'Project Gutenberg'}.`, descripcion: 'Abre en el PC un navegador en la web que diga el usuario (si no dice ninguna, Project Gutenberg). El usuario entra en su cuenta si hace falta y pulsa el EPUB, PDF o HTML de AO3; la app captura la descarga y lo importa. No eliges libros por tu cuenta. Abrir la ventana NO significa libro importado.' },
 

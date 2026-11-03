@@ -148,6 +148,33 @@ export default function ImportModal({ isOpen, onClose, onImportSuccess, urlInici
     }
   };
 
+  const ficheroRef = useRef(null);
+  const handleSubirLibro = async (fichero) => {
+    if (!fichero) return;
+    enCursoRef.current = LIBRO;
+    setStatus('scraping');
+    setDetails(fichero.name);
+    setProgressMsg(t('import.uploading', { n: 0 }));
+    try {
+      const r = await window.api.subirLibro(fichero, n => setProgressMsg(t('import.uploading', { n })));
+      if (r?.status === 'error') {
+        setStatus('error');
+        setProgressMsg(t('import.error'));
+        setDetails(r.message);
+      } else if (r?.status === 'success') {
+        setStatus('success');
+        setProgressMsg(t(r.yaEstaba ? 'import.already_had' : 'import.imported_named', { titulo: r.data?.title || fichero.name }));
+        setTimeout(() => { alTerminarRef.current?.(); cerrarRef.current?.(); }, 2000);
+      }
+    } catch (err) {
+      setStatus('error');
+      setProgressMsg(t('import.error'));
+      setDetails(err?.message || '');
+    } finally {
+      if (ficheroRef.current) ficheroRef.current.value = '';
+    }
+  };
+
   const tierIcons = {
     1: <Zap className="w-4 h-4" />,
     2: <Server className="w-4 h-4" />,
@@ -309,6 +336,16 @@ export default function ImportModal({ isOpen, onClose, onImportSuccess, urlInici
               >
                 {t('import.from_disk')}
               </button>
+            )}
+            {status === 'idle' && !window.api?.importarLibro && window.api?.subirLibro && (
+              <>
+                <input ref={ficheroRef} type="file" accept=".epub,.pdf,.html,.htm,application/epub+zip,application/pdf,text/html"
+                  className="hidden" data-subir-libro onChange={(e) => handleSubirLibro(e.target.files?.[0])} />
+                <button type="button" onClick={() => ficheroRef.current?.click()}
+                  className="w-full mt-3 min-h-11 text-sm text-gray-400 hover:text-white underline decoration-dotted transition-colors">
+                  {t('import.from_phone')}
+                </button>
+              </>
             )}
             {status === 'idle' && <ImportarWeb url={url.trim()} alImportar={() => { onImportSuccess?.(); handleClose(); }} />}
 

@@ -117,7 +117,16 @@ async function leerCapitulos(buffer, p) {
 
   const opf = leerXml(texto(rutaOpf));
   const carpeta = path.posix.dirname(rutaOpf);
+  const { leerIndice } = require('./epub-indice');
+  const indice = leerIndice(opf, carpeta, texto, { xml: leerXml, html: leerHtml });
 
+  const { documentos, esGutenberg } = await documentosDelSpine(opf, carpeta, texto, leerHtml);
+  const capitulos = cortarCapitulos(documentos, indice, leerHtml);
+  return esGutenberg ? require('./epub-limpiar').podarGutenberg(capitulos) : capitulos;
+}
+
+async function documentosDelSpine(opf, carpeta, texto, leerHtml) {
+  const { quitarGutenberg, limpiarEnlacesEImagenes } = require('./epub-limpiar');
   const manifiesto = new Map();
   for (const item of opf.querySelectorAll('manifest > item')) {
     manifiesto.set(item.getAttribute('id'), {
@@ -126,9 +135,8 @@ async function leerCapitulos(buffer, p) {
     });
   }
 
-  const capitulos = [];
-  const { leerIndice, dividirPorIndice } = require('./epub-indice');
-  const indice = leerIndice(opf, carpeta, texto, { xml: leerXml, html: leerHtml });
+  const documentos = [];
+  let esGutenberg = false;
   let vistos = 0;
   for (const ref of opf.querySelectorAll('spine > itemref')) {
     if (++vistos % CAPITULOS_POR_TANDA === 0) await ceder();
@@ -136,8 +144,9 @@ async function leerCapitulos(buffer, p) {
     if (!item || !/xhtml|html/i.test(item.tipo)) continue;
 
     let html;
+    const ruta = resolverRuta(carpeta, item.href);
     try {
-      html = texto(resolverRuta(carpeta, item.href));
+      html = texto(ruta);
     } catch (e) {
       if (e.sobreElTecho) throw e;
       continue;
@@ -146,16 +155,25 @@ async function leerCapitulos(buffer, p) {
     const doc = leerHtml(html);
     const cuerpo = doc.querySelector('body');
     if (!cuerpo) continue;
-
+    esGutenberg = quitarGutenberg(doc) || esGutenberg;
+    limpiarEnlacesEImagenes(doc);
     if (cuerpo.textContent.trim().length < 200) continue;
-
-    const encabezado = cuerpo.querySelector('h1, h2, h3');
-    const title = encabezado?.textContent.trim().replace(/\s+/g, ' ')
-      || `Capítulo ${capitulos.length + 1}`;
-
-    capitulos.push(...dividirPorIndice(doc, indice.get(resolverRuta(carpeta, item.href)), title));
+    documentos.push({ ruta, doc, cuerpo });
   }
+  return { documentos, esGutenberg };
+}
 
+function cortarCapitulos(documentos, indice, leerHtml) {
+  const { dividirPorIndice, necesitaCorteGlobal, dividirGlobal } = require('./epub-indice');
+  const tituloDe = (cuerpo, n) => cuerpo.querySelector('h1, h2, h3')?.textContent.trim().replace(/\s+/g, ' ')
+    || `Capítulo ${n}`;
+  if (documentos.length && necesitaCorteGlobal(documentos, indice)) {
+    return dividirGlobal(leerHtml, documentos, indice, tituloDe(documentos[0].cuerpo, 1));
+  }
+  const capitulos = [];
+  for (const { ruta, doc, cuerpo } of documentos) {
+    capitulos.push(...dividirPorIndice(doc, indice.get(ruta), tituloDe(cuerpo, capitulos.length + 1)));
+  }
   return capitulos;
 }
 
@@ -183,4 +201,4 @@ function leerMetadatos(buffer, p) {
   };
 }
 
-module.exports = { leerCapitulos, leerMetadatos, leerEntradas, extraer, lectoresJsdom, TECHO_POR_ENTRADA, TECHO_DEL_FICHERO };
+module.exports = { leerCapitulos, leerMetadatos, leerEntradas, extraer, lectoresJsdom, lectorDeTexto, resolverRuta, TECHO_POR_ENTRADA, TECHO_DEL_FICHERO };

@@ -1,11 +1,17 @@
 const crypto = require('crypto');
 const path = require('path');
 const { leerCapitulos, leerMetadatos, lectoresJsdom } = require('./epub.js');
+const { htmlDeEpubAo3 } = require('./epub-ao3.js');
+
+function leerMetadatosDe(buffer) {
+  const p = lectoresJsdom();
+  try { return leerMetadatos(buffer, p); } catch { return {}; } finally { p.cerrar(); }
+}
 
 const PREFIJO = 'epub:';
 
 function esDelDisco(url) {
-  return /^(epub|pdf|ao3-html):/.test(String(url || ''));
+  return /^(epub|pdf|ao3-html|texto):/.test(String(url || ''));
 }
 
 function tituloDelFichero(nombre) {
@@ -14,6 +20,14 @@ function tituloDelFichero(nombre) {
 }
 
 async function obraDeEpub(buffer, nombre) {
+
+  const htmlAo3 = htmlDeEpubAo3(buffer);
+  if (htmlAo3) {
+    const { obraDeHtmlAo3 } = require('./html-ao3-importar.js');
+    const obra = obraDeHtmlAo3(Buffer.from(htmlAo3, 'utf8'));
+    const idioma = leerMetadatosDe(buffer).language;
+    return { ...obra, ...(idioma ? { language: idioma } : {}) };
+  }
   const p = lectoresJsdom();
   let meta, capitulos;
   try {
