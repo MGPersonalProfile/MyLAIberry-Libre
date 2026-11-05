@@ -163,7 +163,7 @@ contextBridge.exposeInMainWorld('api', {
     return () => ipcRenderer.removeListener('ajustes-cambiados', oyente);
   },
 
-  saveScrollPosition: (id, chapterIndex, position) => ipcRenderer.invoke('save-scroll-position', id, chapterIndex, position),
+  saveScrollPosition: (id, chapterIndex, position, meta) => ipcRenderer.invoke('save-scroll-position', id, chapterIndex, position, meta),
   getScrollPosition: (id, chapterIndex) => ipcRenderer.invoke('get-scroll-position', id, chapterIndex),
 
   resumeDownload: (fanficId) => ipcRenderer.invoke('resume-download', fanficId),

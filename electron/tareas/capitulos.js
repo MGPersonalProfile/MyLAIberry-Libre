@@ -40,7 +40,7 @@ async function comprobarCapitulos({ fanficId }) {
   if (res?.nuevos > 0) {
     console.log(`[Capítulos] "${fanfic.title}": ${res.nuevos} nuevo(s).`);
 
-    await cola.encolar('descargar-capitulos', { fanficId: id });
+    await cola.encolar('descargar-capitulos', fanfic.origen === 'descubierta' ? { fanficId: id, hasta: 1 } : { fanficId: id });
     avisar('chapters-updated', { fanficId: id, nuevos: res.nuevos });
 
     const ajustesAviso = await getSettings();

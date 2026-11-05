@@ -3,10 +3,13 @@ import { MessageSquare, Sparkles } from 'lucide-react';
 import Asistente from './Asistente';
 import PanelIniciativa from './PanelIniciativa';
 import { useI18n } from '../../i18n/I18nContext';
+import { useAlPedirAlAsistente } from '../../preguntaAlAsistente';
 
 export default function VistaAsistente() {
   const { t } = useI18n();
   const [vista, setVista] = useState('chat');
+
+  useAlPedirAlAsistente(() => setVista('chat'));
 
   return (
     <div className="flex flex-col h-full">

@@ -3,11 +3,12 @@ import { LECTOR } from './textos/lector';
 import { IMPORTAR } from './textos/importar';
 import { ASISTENTE } from './textos/asistente';
 import { AJUSTES } from './textos/ajustes';
+import { DESCUBRIR } from './textos/descubrir';
 
 export const LANGS = ['es', 'en'];
 export const DEFAULT_LANG = 'es';
 
-export const UI = { ...BIBLIOTECA, ...LECTOR, ...IMPORTAR, ...ASISTENTE, ...AJUSTES };
+export const UI = { ...BIBLIOTECA, ...LECTOR, ...IMPORTAR, ...ASISTENTE, ...AJUSTES, ...DESCUBRIR };
 
 function interpolate(text, params) {
   return text.replace(/\{(\w+):([^|}]*)\|([^}]*)\}/g, (match, name, uno, varios) =>

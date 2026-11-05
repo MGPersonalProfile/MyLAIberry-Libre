@@ -85,4 +85,21 @@ async function descartarObra(id) {
   return { status: 'ok' };
 }
 
-module.exports = { getPreferenciasDescubrimientos, decidirDescubrimientos, descartarObra };
+async function marcarPropuesta(id, propuesta) {
+  const d = await leer();
+  const o = d.fanfics.find(f => String(f.id) === String(id));
+
+  const quitaMarca = propuesta?.adoptadaAlVencer === null;
+  if (!o || (o.origen !== 'descubierta' && !quitaMarca)) return null;
+  o.propuesta = { ...(o.propuesta || {}), ...propuesta };
+  await writeDB();
+  return o;
+}
+
+async function propuestasVencidas(ahora = Date.now()) {
+  const d = await leer();
+  return d.fanfics.filter(o => o.origen === 'descubierta' && o.propuesta?.vence && o.propuesta.vence <= ahora && !o.propuesta.adoptadaAlVencer)
+    .map(o => ({ id: String(o.id), title: o.title }));
+}
+
+module.exports = { getPreferenciasDescubrimientos, decidirDescubrimientos, descartarObra, marcarPropuesta, propuestasVencidas };

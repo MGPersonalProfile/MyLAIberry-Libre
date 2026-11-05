@@ -1,25 +1,39 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
-import { anclaDe, alturaDeAncla, hojasDe } from '../components/lector/ancla';
+import { posicionDeV2, resolverEnDom } from '../components/lector/anclaDom';
+import { limitar } from '../components/lector/limitar';
 
-export default function useAnclaEstable({ scrollRef, capitulo, claves }) {
+export default function useAnclaEstable({ scrollRef, capitulo, variante, claves }) {
   const vivaRef = useRef(null);
 
   useEffect(() => {
     const caja = scrollRef.current;
     if (!caja) return undefined;
-    const anotar = () => {
-      vivaRef.current = { capitulo, ancla: anclaDe(caja.scrollTop, hojasDe(caja)) };
+    let turno = 0;
+    const anotar = async () => {
+      if (caja.dataset.restaurando === '1') return;
+      const este = ++turno;
+      const posicion = await posicionDeV2(caja, { capitulo, variante });
+      if (este === turno) vivaRef.current = { capitulo, posicion };
     };
-    caja.addEventListener('scroll', anotar, { passive: true });
-    return () => caja.removeEventListener('scroll', anotar);
-  }, [scrollRef, capitulo]);
+
+    const limitada = limitar(anotar, 150);
+    caja.addEventListener('scroll', limitada.llamar, { passive: true });
+    return () => { turno++; limitada.cancelar(); caja.removeEventListener('scroll', limitada.llamar); };
+  }, [scrollRef, capitulo, variante]);
 
   useLayoutEffect(() => {
     const caja = scrollRef.current;
     const viva = vivaRef.current;
-    if (!caja || !viva || viva.capitulo !== capitulo || !viva.ancla) return;
-    const top = alturaDeAncla(viva.ancla, hojasDe(caja));
-    if (top !== null) caja.scrollTop = top;
+    if (!caja || !viva || viva.capitulo !== capitulo || !viva.posicion) return;
+    let activo = true;
+    const antes = caja.scrollTop;
+    resolverEnDom(viva.posicion, caja, variante).then(({ top }) => {
+      if (!activo || caja.scrollTop !== antes) return;
+      caja.dataset.restaurando = '1';
+      caja.scrollTop = top;
+      requestAnimationFrame(() => { delete caja.dataset.restaurando; });
+    });
+    return () => { activo = false; };
 
   }, claves);
 }

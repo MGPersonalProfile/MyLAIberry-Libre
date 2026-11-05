@@ -5,6 +5,8 @@ import { Compass, X, Play, Plus, Check, Clock } from 'lucide-react';
 import Cover from './Cover';
 import BarraDeFiltros from './descubrimientos/BarraDeFiltros';
 import Preferencias from './descubrimientos/Preferencias';
+import PorDecidir from './descubrimientos/PorDecidir';
+import { porDecidir } from './descubrimientos/plazo';
 import { aplicarFiltro, resumenDe, sePuedeLeer, FILTRO_VACIO } from './descubrimientos/filtros';
 import { usaPortadaDelSitio } from '../portada';
 import { useI18n } from '../i18n/I18nContext';
@@ -15,8 +17,10 @@ export default function Descubrimientos({ items = [], onAbrir, onDetalle, onDesc
   const { t } = useI18n();
   const [filtro, setFiltro] = useState(FILTRO_VACIO);
 
-  const resumen = useMemo(() => resumenDe(items), [items]);
-  const visibles = useMemo(() => aplicarFiltro(items, filtro), [items, filtro]);
+  const pendientes = useMemo(() => new Set(porDecidir(items).map(o => o.id)), [items]);
+  const resto = useMemo(() => items.filter(o => !pendientes.has(o.id)), [items, pendientes]);
+  const resumen = useMemo(() => resumenDe(resto), [resto]);
+  const visibles = useMemo(() => aplicarFiltro(resto, filtro), [resto, filtro]);
 
   if (items.length === 0) {
     return (
@@ -37,12 +41,13 @@ export default function Descubrimientos({ items = [], onAbrir, onDetalle, onDesc
       <h2 className={TITULO_PAGINA}>{t('carousel.discoveries')}</h2>
       <p className={SUBTITULO_PAGINA}>{t('discover.subtitle')}</p>
       <Preferencias alCambiar={alCambiar} />
+      <PorDecidir items={items} onDetalle={onDetalle} onGuardar={onGuardar} onDescartar={onDescartar} />
 
       <BarraDeFiltros
         filtro={filtro}
         alCambiar={setFiltro}
         resumen={resumen}
-        total={items.length}
+        total={resto.length}
         mostrados={visibles.length}
       />
 

@@ -5,7 +5,7 @@ const {
   getFanficById, saveChapterContent, updateDownloadCount, countChaptersOnDisk,
   firstMissingChapter, medirPalabras, getSettings, getChapterContent
 } = require('../db.js');
-const { exigirCapitulo, textoPlano, huella, ocultarAntirrobo } = require('../capitulo-valido.js');
+const { exigirCapitulo, textoPlano, huella, paraGuardar } = require('../capitulo-valido.js');
 const { detectScraper } = require('../scrapers/index.js');
 const { avisar } = require('../ventana.js');
 const { dirDeFanfic } = require('../rutas.js');
@@ -50,7 +50,7 @@ function crearGuardador({ id, total, enDiscoInicial, ajustes, alGuardar }) {
 
   return async (fid, indice, crudo) => {
 
-    const contenido = ocultarAntirrobo(crudo);
+    const contenido = paraGuardar(crudo);
 
     try {
       huellas.set(indice, exigirCapitulo(contenido, { anterior: await huellaDelAnterior(fid, indice) }));

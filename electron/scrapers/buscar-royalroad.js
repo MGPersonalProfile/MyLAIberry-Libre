@@ -82,8 +82,8 @@ const LECTOR = [
 
 const { numero, dato: datoEtiquetado } = require('./numeros.js');
 
-async function buscar({ consulta, orden, pagina }) {
-  if (!String(consulta || '').trim()) return [];
+async function buscar({ consulta, orden, pagina, url }) {
+  if (!url && !String(consulta || '').trim()) return [];
 
   const win = new BrowserWindow({
     width: 1200, height: 900, show: false,
@@ -92,7 +92,7 @@ async function buscar({ consulta, orden, pagina }) {
 
   let crudos = [];
   try {
-    await cargarPagina(win, urlDeBusqueda({ consulta, orden, pagina }));
+    await cargarPagina(win, url || urlDeBusqueda({ consulta, orden, pagina }));
     await dormir(2500);
     crudos = await win.webContents.executeJavaScript(LECTOR);
     if (!crudos.length) exigirQueNoSeaUnReto('RoyalRoad', await muestraDePagina(win));

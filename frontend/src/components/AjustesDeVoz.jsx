@@ -55,30 +55,30 @@ export default function AjustesDeVoz({ voces, ajustes, alCambiar }) {
 
   return (
     <div>
-      <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-3">
+      <p className="text-caption text-text-secondary font-semibold uppercase tracking-wider mb-3">
         {t('reader.voice')}
       </p>
-      <label className="block text-xs text-gray-500 mb-1" htmlFor="voz-narracion">
+      <label className="block text-footnote text-text-secondary mb-1" htmlFor="voz-narracion">
         {t('reader.voice_narration')}
       </label>
       <select
         id="voz-narracion"
         value={ajustes.vozNarracion}
         onChange={(e) => alCambiar({ vozNarracion: e.target.value })}
-        className="w-full bg-black/30 border border-white/5 rounded-lg px-3 py-2 text-sm mb-3"
+        className="w-full bg-surface-secondary border border-border rounded-md px-3 py-2 text-callout text-text-primary mb-3"
       >
         <option value="">{t('reader.voice_automatic')}</option>
         {opciones}
       </select>
 
-      <label className="block text-xs text-gray-500 mb-1" htmlFor="voz-dialogo">
+      <label className="block text-footnote text-text-secondary mb-1" htmlFor="voz-dialogo">
         {t('reader.voice_dialogue')}
       </label>
       <select
         id="voz-dialogo"
         value={ajustes.vozDialogo}
         onChange={(e) => alCambiar({ vozDialogo: e.target.value })}
-        className="w-full bg-black/30 border border-white/5 rounded-lg px-3 py-2 text-sm mb-3"
+        className="w-full bg-surface-secondary border border-border rounded-md px-3 py-2 text-callout text-text-primary mb-3"
       >
         <option value="">{t('reader.voice_dialogue_auto')}</option>
         {opciones}
@@ -87,12 +87,12 @@ export default function AjustesDeVoz({ voces, ajustes, alCambiar }) {
       <div className="grid grid-cols-2 gap-2 mb-1">
         {[['vozMujer', 'reader.voice_women'], ['vozHombre', 'reader.voice_men']].map(([clave, texto]) => (
           <div key={clave} className="min-w-0">
-            <label className="block text-xs text-gray-500 mb-1" htmlFor={`voz-${clave}`}>{t(texto)}</label>
+            <label className="block text-footnote text-text-secondary mb-1" htmlFor={`voz-${clave}`}>{t(texto)}</label>
             <select
               id={`voz-${clave}`}
               value={ajustes[clave] || ''}
               onChange={(e) => alCambiar({ [clave]: e.target.value })}
-              className="w-full bg-black/30 border border-white/5 rounded-lg px-2 py-2 text-xs"
+              className="w-full bg-surface-secondary border border-border rounded-md px-2 py-2 text-footnote text-text-primary"
             >
               <option value="">{t('reader.voice_gender_auto')}</option>
               {opciones}
@@ -100,10 +100,10 @@ export default function AjustesDeVoz({ voces, ajustes, alCambiar }) {
           </div>
         ))}
       </div>
-      <p className="text-[11px] text-gray-600 mb-3">{t('reader.voice_gender_hint')}</p>
+      <p className="text-caption text-text-tertiary mb-3">{t('reader.voice_gender_hint')}</p>
 
       <div className="flex items-center gap-3">
-        <label className="text-xs text-gray-500 shrink-0" htmlFor="velocidad-voz">
+        <label className="text-footnote text-text-secondary shrink-0" htmlFor="velocidad-voz">
           {t('reader.voice_speed')}
         </label>
         <input
@@ -111,27 +111,27 @@ export default function AjustesDeVoz({ voces, ajustes, alCambiar }) {
           type="range" min="0.6" max="2" step="0.1"
           value={ajustes.velocidadVoz}
           onChange={(e) => alCambiar({ velocidadVoz: Number(e.target.value) })}
-          className="flex-1 accent-red-600"
+          className="flex-1 accent-accent"
         />
-        <span className="font-mono text-xs tabular-nums w-8 text-right">
+        <span className="font-mono text-footnote text-text-primary tabular-nums w-8 text-right">
           {ajustes.velocidadVoz}×
         </span>
       </div>
 
       <details className="mt-4 group">
-        <summary className="cursor-pointer list-none text-xs text-gray-400 hover:text-gray-200">
+        <summary className="cursor-pointer list-none text-footnote text-text-secondary hover:text-text-primary">
           {t('reader.character_voices')}
           {Object.keys(asignaciones).length > 0 && (
-            <span className="ml-2 text-gray-600">{Object.keys(asignaciones).length}</span>
+            <span className="ml-2 text-text-tertiary">{Object.keys(asignaciones).length}</span>
           )}
         </summary>
         <div className="mt-3 space-y-2">
           {personajes.map(personaje => (
             <div key={personaje} className="flex items-center gap-2">
-              <span className="w-24 truncate text-xs text-gray-400" title={personaje}>
+              <span className="w-24 truncate text-footnote text-text-secondary" title={personaje}>
                 {personaje}
                 {generos[personaje] && (
-                  <span className="block text-[10px] text-gray-600">
+                  <span className="block text-caption text-text-tertiary">
                     {t(generos[personaje] === 'f' ? 'reader.character_woman' : 'reader.character_man')}
                   </span>
                 )}
@@ -140,7 +140,7 @@ export default function AjustesDeVoz({ voces, ajustes, alCambiar }) {
                 value={asignaciones[personaje] || ''}
                 onChange={(evento) => asignar(personaje, evento.target.value)}
                 aria-label={`${t('reader.character_voice_for')} ${personaje}`}
-                className="min-w-0 flex-1 bg-black/30 border border-white/5 rounded-lg px-2 py-2 text-xs"
+                className="min-w-0 flex-1 bg-surface-secondary border border-border rounded-md px-2 py-2 text-footnote text-text-primary"
               >
                 <option value="">{t('reader.voice_dialogue_auto')}</option>
                 {opciones}
@@ -150,7 +150,7 @@ export default function AjustesDeVoz({ voces, ajustes, alCambiar }) {
                   type="button"
                   onClick={() => asignar(personaje, '')}
                   aria-label={`${t('reader.character_voice_remove')} ${personaje}`}
-                  className="w-8 h-8 text-gray-600 hover:text-gray-300"
+                  className="w-8 h-8 text-text-tertiary hover:text-text-primary"
                 >
                   ×
                 </button>
@@ -163,13 +163,13 @@ export default function AjustesDeVoz({ voces, ajustes, alCambiar }) {
               onChange={(evento) => setNuevo(evento.target.value)}
               placeholder={t('reader.character_name')}
               aria-label={t('reader.character_name')}
-              className="min-w-0 flex-1 bg-black/30 border border-white/5 rounded-lg px-3 py-2 text-xs"
+              className="min-w-0 flex-1 bg-surface-secondary border border-border rounded-md px-3 py-2 text-footnote text-text-primary"
             />
             <button
               type="submit"
               disabled={!nuevo.trim()}
               aria-label={t('reader.character_add')}
-              className="w-9 rounded-lg border border-white/5 text-gray-400 disabled:opacity-30"
+              className="w-9 rounded-md border border-border text-text-secondary disabled:opacity-30"
             >
               +
             </button>

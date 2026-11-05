@@ -1,9 +1,11 @@
 const { getTrabajos, setTrabajos, origenesDeObras } = require('./db.js');
+const { sitioDeTarea, pausasDe } = require('./cola-sitios.js');
 
 const RESPIRO_POR_DEFECTO = 1500;
 const INTENTOS_MAXIMOS = 3;
 
 const manejadores = new Map();
+let tareaActual = null;
 let enVuelo = false;
 let temporizador = null;
 
@@ -26,10 +28,11 @@ function cambiarLista(cambiar) {
 }
 
 class ErrorDeRitmo extends Error {
-  constructor(mensaje, esperarMs) {
+  constructor(mensaje, esperarMs, sitio = '') {
     super(mensaje);
     this.name = 'ErrorDeRitmo';
     this.esperarMs = esperarMs;
+    this.sitio = sitio;
   }
 }
 
@@ -53,8 +56,13 @@ async function encolar(tipo, carga, { prioritario = false } = {}) {
     creadaEn: Date.now()
   };
 
-  const agregada = await cambiarLista(lista => {
+  const agregada = await cambiarLista(actual => {
+
+    const sobra = t => tipo === 'descargar-capitulos' && carga?.fanficId !== undefined && !carga.hasta && t.tipo === tipo &&
+      t.carga?.hasta && t.carga.fanficId === carga.fanficId && t.id !== tareaActual;
+    const lista = actual.filter(t => !sobra(t));
     const ya = lista.find(t => clave(t.tipo, t.carga) === k);
+    if (ya && lista.length !== actual.length) return prioritario ? [ya, ...lista.filter(t => t !== ya)] : lista;
 
     if (ya) return prioritario && lista[0] !== ya ? [ya, ...lista.filter(t => t !== ya)] : null;
     return prioritario ? [tarea, ...lista] : [...lista, tarea];
@@ -111,14 +119,22 @@ function programar(ms) {
   temporizador = setTimeout(procesar, ms);
 }
 
-function trasElFallo(tarea, err) {
+function trasElFallo(tarea, err, lista, obras) {
 
   tarea.ultimoError = String(err?.message || err).slice(0, 300);
 
   if (err instanceof ErrorDeRitmo || err?.limitado) {
 
-    tarea.noAntesDe = Date.now() + (err.esperarMs || 10 * 60 * 1000);
-    console.warn(`[Cola] ${tarea.tipo}: ${err.message}. Pausa de ${Math.round((err.esperarMs || 600000) / 60000)} min.`);
+    const ahora = Date.now();
+    const sitio = err.sitio || sitioDeTarea(tarea, obras);
+    const hasta = ahora + (err.esperarMs || 10 * 60 * 1000);
+    const yaEnPausa = sitio && pausasDe(lista, ahora).has(sitio);
+    tarea.noAntesDe = hasta;
+    if (sitio) tarea.pausaSitio = { sitio, hasta };
+    if (!yaEnPausa) {
+      console.warn(sitio ? `[Cola] ${sitio} en pausa hasta ${new Date(hasta).toISOString()}: ${err.message}`
+        : `[Cola] ${tarea.tipo}: ${err.message}. Pausa de ${Math.round((err.esperarMs || 600000) / 60000)} min.`);
+    }
     return () => devolver(tarea, { alFrente: true });
   }
 
@@ -140,19 +156,22 @@ const DE_UNA_OBRA = new Set(['descargar-capitulos', 'traducir-sinopsis', 'clasif
 function esDeTuBiblioteca(tarea, origenes) {
   if (SIEMPRE_TUYOS.has(tarea.tipo)) return true;
   if (!DE_UNA_OBRA.has(tarea.tipo)) return false;
-  const origen = origenes[String(tarea.carga?.fanficId)];
+  const dato = origenes[String(tarea.carga?.fanficId)];
+  const origen = typeof dato === 'object' ? dato?.origen : dato;
   return origen !== undefined && origen !== 'descubierta' && origen !== 'descartada';
 }
 
 function elegirTarea(lista, ahora, origenes = {}) {
-  const listas = lista.filter(t => manejadores.has(t.tipo) && (t.noAntesDe || 0) <= ahora);
+  const pausas = pausasDe(lista, ahora);
+  const hastaDe = t => Math.max(t.noAntesDe || 0, pausas.get(sitioDeTarea(t, origenes)) || 0);
+  const listas = lista.filter(t => manejadores.has(t.tipo) && hastaDe(t) <= ahora);
 
   const tarea = listas.find(t => esDeTuBiblioteca(t, origenes)) || listas[0];
   if (tarea) return { tarea };
 
   const esperas = lista
     .filter(t => manejadores.has(t.tipo))
-    .map(t => (t.noAntesDe || 0) - ahora)
+    .map(t => hastaDe(t) - ahora)
     .filter(ms => ms > 0);
 
   return { tarea: null, esperar: esperas.length > 0 ? Math.min(...esperas) : null };
@@ -177,7 +196,8 @@ async function procesar() {
     const lista = await getTrabajos();
     if (lista.length === 0) { sinTrabajoListo = true; return; }
 
-    const { tarea, esperar } = elegirTarea(lista, Date.now(), await origenesDeObras().catch(() => ({})));
+    const obras = await origenesDeObras().catch(() => ({}));
+    const { tarea, esperar } = elegirTarea(lista, Date.now(), obras);
     if (!tarea) {
       sinTrabajoListo = true;
       siguiente = esperar;
@@ -187,11 +207,12 @@ async function procesar() {
     const { fn, respiro } = manejadores.get(tarea.tipo);
     siguiente = respiro;
 
+    tareaActual = tarea.id;
     try {
       await fn(tarea.carga);
       confirmarResultado = () => quitar(tarea.id);
     } catch (err) {
-      confirmarResultado = trasElFallo(tarea, err);
+      confirmarResultado = trasElFallo(tarea, err, lista, obras);
     }
 
     await confirmarResultado();
@@ -201,6 +222,7 @@ async function procesar() {
     siguiente = RESPIRO_POR_DEFECTO;
   } finally {
     enVuelo = false;
+    tareaActual = null;
     if (sinTrabajoListo && despertarPendiente) siguiente = 0;
     if (siguiente !== null) programar(siguiente);
   }

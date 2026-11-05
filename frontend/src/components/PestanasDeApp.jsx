@@ -7,10 +7,13 @@ import Inicio, { InicioVacio } from './inicio/Inicio';
 import Rejilla from './biblioteca/Rejilla';
 import VistaAsistente from './asistente/VistaAsistente';
 import PantallaMas from './movil/PantallaMas';
+import { useAlPedirAlAsistente } from '../preguntaAlAsistente';
 
 export default function PestanasDeApp({ app }) {
   const { nav, ficha, bib, acciones, importador } = app;
   const verFicha = ficha.setObra;
+
+  useAlPedirAlAsistente(() => { if (nav.vista !== 'asistente') nav.irA('asistente'); });
 
   if (nav.vista === 'mas') {
     return <PantallaMas alIrA={nav.irA} alImportar={importador.abrir} />;
@@ -71,7 +74,14 @@ export default function PestanasDeApp({ app }) {
   }
 
   if (nav.vista === 'biblioteca') {
-    return <Rejilla obras={app.filtradas} consulta={nav.consulta} alAbrir={verFicha} />;
+    return (
+      <Rejilla
+        obras={app.filtradas}
+        consulta={nav.consulta}
+        alBuscar={nav.setConsulta}
+        alAbrir={verFicha}
+      />
+    );
   }
 
   if (!bib.cargada && !bib.library.length) return <div className="min-h-dvh" aria-busy="true" />;

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { BookOpen, Moon, Sun, Type } from 'lucide-react';
 
 import { Seccion, Opciones } from './piezas';
+import { Divider } from '../ui/List';
 import { useI18n } from '../../i18n/I18nContext';
 import RitmoDeLectura from './RitmoDeLectura';
 import AjustesDeVoz from '../AjustesDeVoz';
@@ -35,8 +36,8 @@ function TamanoDeLetra({ ajustes, alGuardarDiferido, alVolcar }) {
   };
   return (
     <div>
-      <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">
-        {t('reader.size')} · <span className="tabular-nums text-gray-400">{valor} px</span>
+      <p className="text-caption uppercase tracking-wider text-text-secondary mb-2">
+        {t('reader.size')} · <span className="tabular-nums text-text-primary">{valor} px</span>
       </p>
       <input
         type="range" min={LETRA_MINIMA} max={LETRA_MAXIMA} step="1"
@@ -45,9 +46,9 @@ function TamanoDeLetra({ ajustes, alGuardarDiferido, alVolcar }) {
         onPointerUp={enElMovil() ? undefined : alVolcar}
         onKeyUp={enElMovil() ? undefined : alVolcar}
         aria-label={t('reader.size')}
-        className="w-full max-w-xs accent-red-600"
+        className="w-full max-w-xs accent-accent"
       />
-      <p className="mt-3 text-gray-400" style={{ fontSize: `${valor}px` }}>
+      <p className="mt-3 text-text-secondary" style={{ fontSize: `${valor}px` }}>
         {t('settings.size_preview')}
       </p>
     </div>
@@ -67,9 +68,9 @@ export default function SeccionLectura({ ajustes, alGuardar, alGuardarDiferido, 
   };
   return (
     <Seccion icono={BookOpen} titulo={t('settings.reading')} descripcion={t('settings.reading_desc')}>
-      <div className="space-y-6">
+      <div className="space-y-5">
         <div>
-          <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">{t('reader.theme')}</p>
+          <p className="text-caption uppercase tracking-wider text-text-secondary mb-2">{t('reader.theme')}</p>
           <Opciones
             valor={ajustes.theme}
             onChange={(v) => alGuardar({ theme: v })}
@@ -80,8 +81,9 @@ export default function SeccionLectura({ ajustes, alGuardar, alGuardarDiferido, 
             ]}
           />
         </div>
+        <Divider />
         <div>
-          <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">{t('reader.font')}</p>
+          <p className="text-caption uppercase tracking-wider text-text-secondary mb-2">{t('reader.font')}</p>
           <Opciones
             valor={ajustes.font}
             onChange={(v) => alGuardar({ font: v })}
@@ -91,9 +93,11 @@ export default function SeccionLectura({ ajustes, alGuardar, alGuardarDiferido, 
             ]}
           />
         </div>
+        <Divider />
         <TamanoDeLetra ajustes={ajustes} alGuardarDiferido={alGuardarDiferido} alVolcar={alVolcar} />
-
+        <Divider />
         <AjustesDeVoz voces={voces} ajustes={ajustesVoz} alCambiar={alGuardar} />
+        <Divider />
         <RitmoDeLectura />
       </div>
     </Seccion>

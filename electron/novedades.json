@@ -1,0 +1,108 @@
+[
+  {
+    "version": "2026.11.5",
+    "fecha": "2026-11-05",
+    "resumen": "Vuelve el aspecto de siempre: fondo negro con el rojo de la baya y la letra de antes. En el móvil la app llega de borde a borde, el lector no pierde dónde ibas si bloqueas el teléfono y la app ya no se cae por un aviso interno.",
+    "detalle": [
+      {
+        "que": "Lo que el asistente deja en «Por decidir» ya no se descarga dos veces al adoptarlo, no se adopta solo si lo descartaste mientras tanto, no reaparece desde otro sitio si ya lo descartaste, y volver a proponerlo no le alarga el plazo.",
+        "porque": "La revisión de A51 encontró que el plazo se reiniciaba y que una obra descartada podía contarse como adoptada."
+      },
+      {
+        "que": "El lector vuelve exactamente al párrafo y la frase donde ibas, también entre el móvil y el PC: si lees en uno y sigues en el otro, no se pierde ni el capítulo ni el punto.",
+        "porque": "Al volver a una obra caías cerca de donde ibas, pero no en el sitio exacto."
+      },
+      {
+        "que": "El aviso de «hay una versión nueva» (y Ajustes → Versión) tiene un botón «¿Qué trae?» que abre el asistente y le pregunta qué trae esa versión.",
+        "porque": "Pediste enterarte de lo nuevo de cada actualización sin tener que ir a buscarlo."
+      },
+      {
+        "que": "Colores y letra de antes: fondo #141414, el rojo de la baya como color de acento e Inter para la interfaz (Merriweather sigue para leer).",
+        "porque": "El rediseño 9.7 había puesto grises y azul de Apple y la letra del sistema; dijiste que la paleta no te encantaba y que perdía esencia."
+      },
+      {
+        "que": "En el móvil, la cabecera y la barra de pestañas tienen el mismo color que las barras del sistema: ya no quedan franjas de otro color arriba y abajo.",
+        "porque": "La app parecía no cubrir toda la pantalla del móvil."
+      },
+      {
+        "que": "La app instalada en el móvil se abre a pantalla completa: llega arriba del todo, sin la franja de la barra de estado encima de la cabecera. La hora y la batería se ven deslizando desde arriba.",
+        "porque": "Quedaba un hueco encima de la cabecera."
+      },
+      {
+        "que": "El lector guarda la posición en cuanto bloqueas el móvil, cambias de app o cierras, y también si vuelves al principio del capítulo.",
+        "porque": "Antes solo guardaba medio segundo después de dejar de desplazarte, y quien cerraba justo al leer perdía el último tramo."
+      },
+      {
+        "que": "Un aviso interno escrito en una consola que ya no existe no tumba la aplicación.",
+        "porque": "Salía el diálogo «A JavaScript error occurred in the main process» (EPIPE)."
+      },
+      {
+        "que": "En el móvil, la cabecera se vuelve de cristal al bajar: translúcida y desenfocada, y las carátulas se ven pasar por debajo. Arriba del todo se funde con la portada.",
+        "porque": "Al desplazarte quedaba una franja casi opaca que cortaba las carátulas, en vez de hacerse transparente."
+      },
+      {
+        "que": "Leer en el móvil lo que guardaste sin conexión vuelve a ser inmediato aunque la red esté colgada (Tailscale encendido sin datos, cobertura mala): el capítulo sale en menos de un segundo.",
+        "porque": "Con la red colgada el móvil esperaba hasta minuto y medio por cosas que no estaban guardadas antes de enseñarte el capítulo, y parecía que no funcionaba."
+      },
+      {
+        "que": "La ficha de una obra vuelve a enseñar la carátula en grande: en el móvil, el cartel centrado sobre sus propios colores desenfocados; en el ordenador, la portada de fondo con el título encima.",
+        "porque": "El rediseño 9.7 la había cambiado por una franja lisa con la portada pequeña, y echabas de menos lo que se había hecho con las carátulas."
+      },
+      {
+        "que": "En el móvil sin conexión, la ficha de una obra ya no dice «Sin conexión con tu PC: no se ha hecho» si no has pedido nada: enseña tus estanterías de la última vez.",
+        "porque": "Al abrirla, la app consultaba tus estanterías al PC y el móvil lo trataba como si hubieras pedido hacer algo; con la red colgada además esperaba tres minutos."
+      },
+      {
+        "que": "Guardar en el móvil una obra larga ya no depende de tener la ficha delante: el móvil encadena él los tramos de capítulos mientras el navegador lo deje.",
+        "porque": "Cada tramo de doce lo pedía la pantalla, y si cambiabas de app o bloqueabas el teléfono la descarga se quedaba a medias."
+      },
+      {
+        "que": "Los capítulos de FanFiction.net ya no traen anuncios metidos en mitad del texto («Discover more», «Anime manga merchandise» y recuadros vacíos). Se limpian solos los que ya tenías: 199 capítulos de 16 obras, entre ellas «¿Sueño o pesadilla?». El texto de la historia estaba entero, y lo que bajes a partir de ahora ya se guarda sin ellos.",
+        "porque": "La página de FanFiction.net mete los anuncios de Google dentro del propio capítulo, y la app los copiaba con él."
+      },
+      {
+        "que": "Las obras de más de doce capítulos las descarga ahora el propio Chrome, con su aviso en las notificaciones, y siguen aunque bloquees el teléfono. La primera vez Chrome te pregunta si permites notificaciones y si dejas que la página descargue varios archivos: di que sí. Si dices que no, se guarda como antes.",
+        "porque": "Con el teléfono bloqueado, Chrome congelaba la descarga a los pocos minutos y la obra se quedaba a medias."
+      },
+      {
+        "que": "La primera vez que abres la app en el móvil, se prepara para funcionar sin conexión aunque la red falle justo en ese momento.",
+        "porque": "Si la primera consulta al PC fallaba, el móvil se quedaba sin lo que guarda la app para abrirla sin red."
+      },
+      {
+        "que": "El asistente busca con los filtros de cada página: «fics de Naruto en FanFiction.net, recientes, más de 40.000 palabras, de humor» usa la sección de Naruto con esos filtros, y lo mismo en AO3, Royal Road, Wattpad, Webnovel, WeTriedTLs y Gutenberg. Te enseña la premisa de cada una y te dice qué filtró la página y qué no se pudo comprobar.",
+        "porque": "Pediste que use los propios filtros de los sitios, en todas las páginas, no solo FanFiction.net."
+      },
+      {
+        "que": "Lo que encuentra te lo puede dejar en Descubrimientos → Por decidir: ahí ves cuánto le queda a cada una y la guardas o la descartas. Si no la descartas en 24 horas (lo cambias en Ajustes), se descarga entera sola. También puede leerse el primer capítulo para decirte qué tal, sin meterla en tu biblioteca.",
+        "porque": "Querías aceptarlas o descartarlas durante un rato antes de que se descarguen."
+      },
+      {
+        "que": "En el móvil sin conexión, las obras que guardaste salen siempre en la biblioteca y su ficha se abre, aunque el navegador haya tirado la copia de la lista o la lista sea de antes de guardarlas.",
+        "porque": "La lista sin conexión salía de una copia que el móvil podía perder o tener vieja, y entonces lo guardado no aparecía aunque sus capítulos estuvieran en el teléfono."
+      },
+      {
+        "que": "Pregúntale al asistente «¿qué hay de nuevo?»: te cuenta lo que trae cada actualización desde la última que viste, por encima o a fondo (qué cambia y por qué).",
+        "porque": "Pediste que el asistente pudiera explicarte qué trae cada versión que se sube."
+      },
+      {
+        "que": "Si una web como FanFiction.net pide una comprobación humana y no hay nadie delante (el servidor, o el asistente usado desde el móvil), el asistente la deja en menos de 5 segundos, te dice que no pudo consultarla y sigue con los demás sitios en vez de quedarse esperando; nunca la da por «sin resultados».",
+        "porque": "Una búsqueda que tocaba FanFiction.net se quedaba más de un minuto en «comprobación» y volvía vacía."
+      }
+    ]
+  },
+  {
+    "version": "2026.11.4",
+    "fecha": "2026-11-03",
+    "resumen": "Rediseño 9.7 (fases 1 a 7): componentes comunes, Ajustes, Biblioteca, ficha de la obra y diálogos de importación con el mismo sistema; y la cola de descargas espera por sitio cuando una web te limita.",
+    "detalle": [
+      {
+        "que": "Ajustes, Biblioteca, la ficha de cada obra y los diálogos de importar usan los mismos botones, listas, interruptores y hojas.",
+        "porque": "Orden del 28-10: la app entera controlable desde la interfaz, con un diseño común."
+      },
+      {
+        "que": "Si AO3 u otro sitio responde que vas demasiado rápido o está en mantenimiento, la cola deja de pedirle cosas a ESE sitio hasta la hora que diga, y sigue con los demás.",
+        "porque": "Con AO3 caído se lanzaba una comprobación cada 90 segundos que fallaba al momento."
+      }
+    ]
+  }
+]

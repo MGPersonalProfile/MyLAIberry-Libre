@@ -54,9 +54,9 @@ function obrasDeRespuesta(json) {
   });
 }
 
-async function buscar({ consulta, orden, pagina = 1 } = {}, { pedir = fetch } = {}) {
-  if (!String(consulta || '').trim()) return [];
-  const r = await pedir(urlDeBusqueda({ consulta, orden, pagina }), {
+async function buscar({ consulta, orden, pagina = 1, url } = {}, { pedir = fetch } = {}) {
+  if (!url && !String(consulta || '').trim()) return [];
+  const r = await pedir(url || urlDeBusqueda({ consulta, orden, pagina }), {
     signal: AbortSignal.timeout(30000),
     headers: { Accept: 'application/json' }
   });

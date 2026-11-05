@@ -22,7 +22,7 @@ function App() {
 
   return (
     <div
-      className={`min-h-screen bg-[#141414] text-white font-sans selection:bg-red-600 selection:text-white overflow-x-hidden ${sinRellenoAbajo ? '' : 'pb-20'}`}
+      className={`min-h-screen bg-background text-text-primary font-sans selection:bg-accent selection:text-white overflow-x-hidden ${sinRellenoAbajo ? '' : 'pb-20'}`}
       style={esMovil ? { paddingBottom: 'calc(49px + env(safe-area-inset-bottom) + 24px)' } : undefined}
     >
       <AvisoDeConflicto equipo={bib.conflictoSync} alCerrar={() => bib.setConflictoSync(null)} />
@@ -32,7 +32,7 @@ function App() {
 
       <CapasDeApp app={app} />
 
-      <div className={`transition-opacity duration-500 ${tapado ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+      <div className={`transition-opacity duration-150 ${tapado ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         {esMovil ? (
           <CabeceraMovil
             scrolled={nav.scrolled}

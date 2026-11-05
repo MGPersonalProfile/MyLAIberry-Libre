@@ -13,12 +13,12 @@ export default function HojaMovil({ alCerrar, cabecera, children }) {
       animate={{ y: 0 }}
       exit={{ y: '100%' }}
       transition={{ type: 'spring', damping: 34, stiffness: 340 }}
-      className="fixed inset-0 z-[150] bg-[#181818] overflow-y-auto overscroll-contain"
+      className="fixed inset-0 z-[150] bg-surface text-text-primary overflow-y-auto overscroll-contain"
       role="dialog"
       aria-modal="true"
     >
       {cabecera}
-      <div className="px-5 pb-[calc(env(safe-area-inset-bottom)+2rem)]">{children}</div>
+      <div className="px-5 pt-4 pb-[calc(env(safe-area-inset-bottom)+2rem)]">{children}</div>
     </motion.div>
   );
 }

@@ -255,7 +255,8 @@ async function scrape(url, onProgress, { respaldoFicHub = false } = {}) {
     const todoLimite = !noExiste && limites.length > 0 && duros === 0;
     throw Object.assign(new Error(`No se pudo leer esta obra de AO3. ${problemas.join(' · ')}`), { noExiste },
       todoLimite ? { limitado: true, mantenimiento: limites.some(e => e.mantenimiento) || undefined,
-        esperarMs: Math.max(...limites.map(e => e.esperarMs || 0)) || undefined } : {});
+        esperarMs: Math.max(...limites.map(e => e.esperarMs || 0)) || undefined,
+        sitio: 'archiveofourown.org' } : {});
   }
 
   if (!resultado.author) resultado.author = 'Autor desconocido';

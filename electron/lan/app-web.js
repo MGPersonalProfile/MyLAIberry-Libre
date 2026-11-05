@@ -144,6 +144,18 @@ function leerCuerpo(req) {
   });
 }
 
+async function servirCapitulo(res, [id, n], llamar) {
+  const indice = Number(n);
+  if (!/^[\w.-]{1,160}$/.test(id) || !Number.isInteger(indice) || indice < 0 || indice > 20000) {
+    return json(res, 400, { error: 'Capítulo no válido.' });
+  }
+  try {
+    return json(res, 200, { valor: (await llamar('get-chapter-content', [id, indice])) ?? null });
+  } catch (e) {
+    return json(res, 500, { error: String(e?.message || e) });
+  }
+}
+
 async function llamarApi(req, res, canal, llamar) {
   const permitidos = new Set(Object.values(puenteParaElMovil().metodos));
 
@@ -186,6 +198,7 @@ async function atenderApp(req, res, partes, url, ctx) {
   if (primero === 'puente.json' && !resto.length) { json(res, 200, puenteParaElMovil()); return true; }
   if (primero === 'eventos' && !resto.length) { eventos.suscribir(req, res); return true; }
   if (primero === 'epub' && resto.length === 1) { await servirEpub(res, resto[0], url, ctx.epub); return true; }
+  if (primero === 'capitulo' && resto.length === 2) { await servirCapitulo(res, resto, ctx.llamar); return true; }
   if (primero === 'audio-obra' && resto.length === 1) { await servirAudioObra(res, resto[0], url, ctx.audioObra); return true; }
   if (primero === 'fichero' && !resto.length) {
     servirFichero(res, url.searchParams.get('ruta'), typeof ctx.raizDatos === 'function' ? ctx.raizDatos() : ctx.raizDatos);

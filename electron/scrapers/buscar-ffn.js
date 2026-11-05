@@ -56,25 +56,46 @@ const LECTOR = [
   '});'
 ].join('\n');
 
-async function buscar({ consulta, orden, pagina }) {
-  if (!String(consulta || '').trim()) return [];
+const LECTOR_PERSONAJES = '(function () { var s = document.querySelector("select[name=characterid1]"); ' +
+  'return s ? Array.prototype.map.call(s.options, function (o) { return o.value + "=" + (o.textContent || "").trim(); }) : []; })()';
 
+async function leerListado(url, { personajes = false } = {}) {
   const win = new BrowserWindow({
     width: 1200, height: 900, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });
-
-  let crudos = [];
   try {
-    await cargarPagina(win, urlDeBusqueda({ consulta, orden, pagina }));
+    await cargarPagina(win, url);
     await dormir(3000);
-    crudos = await win.webContents.executeJavaScript(LECTOR);
-    if (!crudos.length) exigirQueNoSeaUnReto('FanFiction.net', await muestraDePagina(win));
+    const crudos = await win.webContents.executeJavaScript(LECTOR);
+    const opciones = personajes ? await win.webContents.executeJavaScript(LECTOR_PERSONAJES) : [];
+    if (!crudos.length && !opciones.length) exigirQueNoSeaUnReto('FanFiction.net', await muestraDePagina(win));
+    return { crudos, opciones };
   } finally {
     if (!win.isDestroyed()) win.destroy();
   }
+}
 
+async function buscar({ consulta, orden, pagina }) {
+  if (!String(consulta || '').trim()) return [];
+  const { crudos } = await leerListado(urlDeBusqueda({ consulta, orden, pagina }));
   return parsearCrudos(crudos, orden, consulta);
+}
+
+function personajesDeMeta(crudo) {
+  const trozos = String(crudo || '').replace(/\s+/g, ' ').split(' - ').map(t => t.trim());
+  const iPub = trozos.findIndex(t => /^Published\s*:/i.test(t));
+  const resto = iPub >= 0 ? trozos.slice(iPub + 1).filter(t => t && !/^(Complete|id\s*:)/i.test(t)) : [];
+  const tags = [];
+  for (const texto of resto) {
+    for (const [, dentro] of texto.matchAll(/\[([^\]]+)\]/g)) {
+      const nombres = dentro.split(',').map(n => n.trim()).filter(Boolean);
+      if (nombres.length >= 2) tags.push({ name: nombres.join('/'), category: 'relationship' });
+    }
+    texto.replace(/[[\]]/g, ',').split(',').map(n => n.trim()).filter(n => n && n.length < 40)
+      .forEach(name => tags.push({ name, category: 'character' }));
+  }
+  return tags;
 }
 
 function parsearCrudos(crudos, orden, consulta) {
@@ -90,7 +111,7 @@ function parsearCrudos(crudos, orden, consulta) {
       sinopsis = sinopsis.slice(0, sinopsis.length - r.metaCrudo.replace(/\s+/g, ' ').trim().length).trim();
     }
 
-    const tags = meta.tags || [];
+    const tags = [...(meta.tags || []), ...personajesDeMeta(r.metaCrudo)];
 
     obras.push({
       idOrigen: m[1],
@@ -129,4 +150,4 @@ function ordenar(obras, orden = 'kudos_count', consulta = '') {
   return criterio ? [...obras].sort(criterio) : obras;
 }
 
-module.exports = { buscar, urlDeBusqueda, ordenar, LECTOR, parsearCrudos };
+module.exports = { buscar, leerListado, urlDeBusqueda, ordenar, LECTOR, LECTOR_PERSONAJES, parsearCrudos, personajesDeMeta };

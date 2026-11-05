@@ -1,17 +1,51 @@
 import { useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, LayoutGrid, List } from 'lucide-react';
 import Baldosa from './Baldosa';
+import Cover from '../Cover';
 import { useI18n } from '../../i18n/I18nContext';
 import useIniciativa from '../../hooks/useIniciativa';
-import { PAGINA, TITULO_PAGINA, SUBTITULO_PAGINA, REJILLA } from '../pagina';
+import { PAGINA, REJILLA } from '../pagina';
+import { PageHeader } from '../ui/Layout';
+import { SearchField, SegmentedControl } from '../ui/Controls';
+import { InsetGroupedList, ActionCell, Divider } from '../ui/List';
+import { EmptyState, Tag } from '../ui/Feedback';
 
 const SOLO = ['shelves'];
 const ESTADOS = [['en pausa', 'reading_status.paused'], ['abandonada', 'reading_status.dropped'], ['leída fuera', 'reading_status.read_elsewhere']];
 
-export default function Rejilla({ obras, consulta, alAbrir }) {
+function ListaDeObras({ obras, alAbrir }) {
+  return (
+    <InsetGroupedList>
+      {obras.map((obra, idx) => {
+        const capActual = (obra.currentChapter || 0) + 1;
+        const capTotal = obra.totalChapters || '?';
+        return (
+          <div key={obra.id}>
+            {idx > 0 && <Divider inset />}
+            <ActionCell
+              icon={() => (
+                <div className="w-10 h-14 rounded-sm overflow-hidden shrink-0 border border-border/60">
+                  <Cover story={obra} className="w-full h-full" imgClassName="w-full h-full object-cover" />
+                </div>
+              )}
+              title={obra.title}
+              subtitle={obra.author}
+              detail={obra.totalChapters > 0 ? `${capActual}/${capTotal}` : undefined}
+              chevron
+              onClick={() => alAbrir(obra)}
+            />
+          </div>
+        );
+      })}
+    </InsetGroupedList>
+  );
+}
+
+export default function Rejilla({ obras, consulta, alBuscar, alAbrir }) {
   const { t } = useI18n();
   const { estanterias } = useIniciativa(null, { solo: SOLO });
   const [filtro, setFiltro] = useState(null);
+  const [modoVista, setModoVista] = useState('rejilla');
 
   const estados = ESTADOS.filter(([e]) => obras.some(o => o.estadoLectura === e));
   const conObras = estanterias.filter(e => e.ids.length);
@@ -21,45 +55,66 @@ export default function Rejilla({ obras, consulta, alAbrir }) {
   const vistas = !vigente ? obras
     : vigente.estado ? obras.filter(o => o.estadoLectura === vigente.estado)
     : obras.filter(o => estante.ids.map(String).includes(String(o.id)));
-  const chip = (activo) => `px-3 py-1 rounded-full border text-xs transition-colors ${activo
-    ? 'border-white/40 bg-white/10 text-white' : 'border-white/15 text-gray-400 hover:border-white/30 hover:text-gray-200'}`;
+
+  const subtitulo = `${vistas.length} ${vistas.length === 1 ? t('library.story_one') : t('library.story_other')}`;
 
   return (
     <main className={PAGINA}>
-      <h2 className={TITULO_PAGINA}>
-        {consulta ? t('library.results_for', { q: consulta }) : t('library.mine')}
-      </h2>
-      <p className={SUBTITULO_PAGINA}>
-        {vistas.length} {vistas.length === 1 ? t('library.story_one') : t('library.story_other')}
-      </p>
+      <PageHeader
+        title={consulta ? t('library.results_for', { q: consulta }) : t('library.mine')}
+        subtitle={subtitulo}
+        actions={
+          <div className="flex items-center gap-3 flex-wrap">
+            {alBuscar && (
+              <SearchField
+                value={consulta}
+                onChange={alBuscar}
+                placeholder={t('nav.search_placeholder')}
+                className="w-56 md:w-64"
+              />
+            )}
+            <SegmentedControl
+              value={modoVista}
+              onChange={setModoVista}
+              options={[
+                { id: 'rejilla', label: t('library.view_grid'), icon: LayoutGrid },
+                { id: 'lista', label: t('library.view_list'), icon: List }
+              ]}
+            />
+          </div>
+        }
+      />
 
       {(estados.length > 0 || conObras.length > 0) && (
         <div className="flex flex-wrap gap-2 mb-6" data-filtros-biblioteca>
-          <button onClick={() => setFiltro(null)} aria-pressed={!vigente} className={chip(!vigente)}>{t('library.filter_all')}</button>
+          <Tag onClick={() => setFiltro(null)} active={!vigente}>{t('library.filter_all')}</Tag>
           {estados.map(([e, clave]) => (
-            <button key={e} onClick={() => setFiltro({ estado: e })} aria-pressed={vigente?.estado === e} className={chip(vigente?.estado === e)}>
+            <Tag key={e} onClick={() => setFiltro({ estado: e })} active={vigente?.estado === e}>
               {t(clave)}
-            </button>
+            </Tag>
           ))}
           {conObras.map(e => (
-            <button key={e.id} onClick={() => setFiltro({ estanteria: e.id })} aria-pressed={vigente?.estanteria === e.id}
-                    className={chip(vigente?.estanteria === e.id)}>
+            <Tag key={e.id} onClick={() => setFiltro({ estanteria: e.id })} active={vigente?.estanteria === e.id}>
               {e.name}
-            </button>
+            </Tag>
           ))}
         </div>
       )}
 
       {vistas.length > 0 ? (
-        <div className={REJILLA}>
-          {vistas.map(obra => <Baldosa key={obra.id} obra={obra} alAbrir={alAbrir} />)}
-        </div>
+        modoVista === 'lista' ? (
+          <ListaDeObras obras={vistas} alAbrir={alAbrir} />
+        ) : (
+          <div className={REJILLA}>
+            {vistas.map(obra => <Baldosa key={obra.id} obra={obra} alAbrir={alAbrir} />)}
+          </div>
+        )
       ) : (
-        <div className="flex flex-col items-center justify-center py-32 text-gray-500">
-          <Search className="w-16 h-16 mb-4 opacity-30" />
-          <p className="text-xl font-medium">{t('library.no_results')}</p>
-          <p className="text-sm mt-2">{t('library.no_results_hint')}</p>
-        </div>
+        <EmptyState
+          icon={Search}
+          title={t('library.no_results')}
+          description={t('library.no_results_hint')}
+        />
       )}
     </main>
   );

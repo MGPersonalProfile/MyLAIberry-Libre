@@ -1,4 +1,5 @@
 const { esIdValido } = require('./rutas-seguras.js');
+const { posicionValida } = require('../lector/posicion.js');
 
 const MAXIMO = 2048;
 
@@ -16,6 +17,16 @@ function progresoValido(p, ahora = Date.now()) {
   if (!esIdValido(p.obra) || !Number.isInteger(p.capitulo) || p.capitulo < 0 || p.capitulo > 100000) return null;
   const ancla = anclaValida(p.ancla);
   if (ancla === undefined) return null;
+  if (p.deviceId !== undefined || p.mutationId !== undefined || p.baseRevision !== undefined) {
+    if (typeof p.deviceId !== 'string' || !/^[\w-]{1,80}$/.test(p.deviceId)
+      || typeof p.mutationId !== 'string' || !/^[\w-]{1,80}$/.test(p.mutationId)
+      || !Number.isInteger(p.baseRevision) || p.baseRevision < 0) return null;
+    const posicion = p.posicion === undefined ? undefined : posicionValida(p.posicion);
+    if (posicion === null || (posicion?.v === 2 && (posicion.obra !== p.obra
+      || posicion.capitulo !== p.capitulo))) return null;
+    return { obra: p.obra, capitulo: p.capitulo, ancla, deviceId: p.deviceId,
+      mutationId: p.mutationId, baseRevision: p.baseRevision, posicion };
+  }
   if (!numero(p.en) || p.en > ahora + 60_000) return null;
   return { obra: p.obra, capitulo: p.capitulo, ancla, en: Math.round(p.en) };
 }
@@ -57,7 +68,12 @@ async function atenderProgreso(req, guardar) {
   }
   const p = progresoValido(cuerpo);
   if (!p) return [400, 'Progreso no válido.'];
-  return (await guardar(p)) ? [204, ''] : [409, 'Llegó tarde: ya hay una lectura más reciente.'];
+  const resultado = await guardar(p);
+  if (resultado && typeof resultado === 'object') {
+    return [resultado.aceptada ? 204 : 409,
+      resultado.aceptada ? '' : 'Conflicto de revisión.', resultado];
+  }
+  return resultado ? [204, ''] : [409, 'Llegó tarde: ya hay una lectura más reciente.'];
 }
 
 const TOPE_DE_DRENAJE = 8 * 1024 * 1024;

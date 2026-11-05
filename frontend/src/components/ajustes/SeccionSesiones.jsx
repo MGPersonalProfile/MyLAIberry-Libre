@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { LogIn } from 'lucide-react';
 
 import { Seccion } from './piezas';
+import { PrimaryButton, SecondaryButton } from '../ui/Buttons';
+import { Tag, Notice } from '../ui/Feedback';
+import { Card } from '../ui/Layout';
 import { useI18n } from '../../i18n/I18nContext';
 
 function OtroSitio() {
@@ -19,21 +22,20 @@ function OtroSitio() {
     } catch (e) { setEstado({ error: e.message }); }
   };
   return (
-    <div className="mt-4 max-w-2xl bg-white/[0.03] border border-white/10 rounded-lg px-4 py-3">
-      <p className="text-sm text-white">{t('settings.sessions_other')}</p>
-      <p className="text-xs text-gray-500 mt-0.5">{t('settings.sessions_other_desc')}</p>
-      <div className="flex gap-2 mt-2">
+    <Card className="mt-4 max-w-2xl bg-surface-secondary">
+      <p className="text-callout font-medium text-text-primary">{t('settings.sessions_other')}</p>
+      <p className="text-footnote text-text-secondary mt-0.5">{t('settings.sessions_other_desc')}</p>
+      <div className="flex gap-2 mt-2.5">
         <input value={direccion} onChange={e => setDireccion(e.target.value)} onKeyDown={e => e.key === 'Enter' && entrar()}
           placeholder={t('settings.sessions_other_placeholder')} aria-label={t('settings.sessions_other')}
-          className="flex-1 min-w-0 bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white" />
-        <button onClick={entrar} disabled={estado?.esperando || !direccion.trim()}
-          className="px-3 py-1.5 rounded-lg text-xs bg-white text-black font-semibold hover:bg-gray-200 disabled:opacity-40 shrink-0">
+          className="flex-1 min-w-0 bg-surface border border-border rounded-md px-3 py-1.5 text-callout text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent" />
+        <PrimaryButton size="sm" onClick={entrar} disabled={estado?.esperando || !direccion.trim()}>
           {estado?.esperando ? t('settings.sessions_waiting') : t('settings.sessions_in_action')}
-        </button>
+        </PrimaryButton>
       </div>
-      {estado?.hecho && <p className="text-xs text-emerald-400 mt-2">{estado.hecho}</p>}
-      {estado?.error && <p className="text-xs text-red-400 mt-2">{estado.error}</p>}
-    </div>
+      {estado?.hecho && <Notice tone="success" className="mt-2">{estado.hecho}</Notice>}
+      {estado?.error && <Notice tone="danger" className="mt-2">{estado.error}</Notice>}
+    </Card>
   );
 }
 
@@ -45,47 +47,43 @@ export default function SeccionSesiones({ sitios, entrandoEn, alEntrar, alSalir,
         {sitios.map(s => (
           <li
             key={s.id}
-            className="flex items-center justify-between gap-4 bg-white/[0.03] border border-white/10 rounded-lg px-4 py-3"
+            className="flex items-center justify-between gap-4 bg-surface-secondary border border-border rounded-md px-4 py-3"
           >
             <div className="min-w-0">
-              <p className="text-sm text-white flex items-center gap-2">
+              <p className="text-callout font-medium text-text-primary flex items-center gap-2">
                 {s.nombre}
                 {s.dentro === true && (
-                  <span className="text-[10px] uppercase tracking-wider text-emerald-400 border border-emerald-400/40 rounded px-1.5 py-0.5">
+                  <Tag tone="success">
                     {s.usuario || t('settings.sessions_in')}
-                  </span>
+                  </Tag>
                 )}
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-footnote text-text-secondary mt-0.5">
                 {s.dentro === true ? t('settings.sessions_benefit_on') : s.gana}
               </p>
             </div>
 
             {s.dentro === true ? (
-              <button
-                onClick={() => alSalir(s.id)}
-                className="px-3 py-1.5 rounded-lg text-xs border border-white/10 text-gray-300 hover:border-red-500/60 hover:text-red-400 transition-colors shrink-0"
-              >
+              <SecondaryButton size="sm" onClick={() => alSalir(s.id)}>
                 {t('settings.sessions_out')}
-              </button>
+              </SecondaryButton>
             ) : movil ? (
-
-              <span className="text-xs text-gray-500 shrink-0">{t('settings.sessions_mobile_out')}</span>
+              <span className="text-footnote text-text-secondary shrink-0">{t('settings.sessions_mobile_out')}</span>
             ) : (
-              <button
+              <PrimaryButton
+                size="sm"
                 onClick={() => alEntrar(s.id)}
                 disabled={entrandoEn === s.id}
-                className="px-3 py-1.5 rounded-lg text-xs bg-white text-black font-semibold hover:bg-gray-200 transition-colors disabled:opacity-40 disabled:cursor-wait shrink-0"
               >
                 {entrandoEn === s.id ? t('settings.sessions_waiting') : t('settings.sessions_in_action')}
-              </button>
+              </PrimaryButton>
             )}
           </li>
         ))}
       </ul>
       {!movil && <OtroSitio />}
-      {movil && <p className="text-xs text-gray-400 mt-3 max-w-xl">{t('settings.sessions_mobile')}</p>}
-      <p className="text-xs text-gray-500 mt-3 max-w-xl">{t('settings.sessions_privacy')}</p>
+      {movil && <p className="text-footnote text-text-secondary mt-3 max-w-xl">{t('settings.sessions_mobile')}</p>}
+      <p className="text-footnote text-text-tertiary mt-3 max-w-xl">{t('settings.sessions_privacy')}</p>
     </Seccion>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Gauge } from 'lucide-react';
+import { SecondaryButton } from '../ui/Buttons';
 import { useI18n } from '../../i18n/I18nContext';
 
 export default function RitmoDeLectura() {
@@ -21,21 +22,21 @@ export default function RitmoDeLectura() {
 
   return (
     <div>
-      <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">{t('settings.pace')}</p>
-      <p className="flex items-center gap-2 text-sm text-gray-300 tabular-nums">
-        <Gauge className="w-4 h-4 text-gray-500" />
+      <p className="text-caption uppercase tracking-wider text-text-secondary mb-2">{t('settings.pace')}</p>
+      <p className="flex items-center gap-2 text-callout text-text-primary tabular-nums">
+        <Gauge className="w-4 h-4 text-text-secondary" />
         {ritmo.ppm
           ? t('settings.pace_value', { ppm: Math.round(ritmo.ppm), n: ritmo.medidas })
           : t('settings.pace_pending', { n: Math.max(1, ritmo.faltan || 1) })}
       </p>
       {ritmo.medidas > 0 && (
-        <button
+        <SecondaryButton
           onClick={olvidar}
           title={t('settings.pace_reset_desc')}
-          className="mt-3 px-4 py-2 rounded-lg border border-white/10 text-sm text-gray-300 hover:bg-white/5 hover:border-white/25 transition-colors"
+          className="mt-3"
         >
           {t('settings.pace_reset')}
-        </button>
+        </SecondaryButton>
       )}
     </div>
   );

@@ -3,6 +3,8 @@ const { leer, releerSiAbierta, writeDB, carpetaDeObra } = require('./nucleo.js')
 const { planDeRealineado, moverFicheros, remapearDatos, claveDeCapitulo } = require('../realinear-capitulos.js');
 const { mismaObra } = require('../misma-obra.js');
 const { escribirEntero } = require('../escritura-entera.js');
+const { updateProgress, saveScrollPosition, guardarProgresoRemoto,
+  getScrollPosition } = require('./lectura.js');
 
 async function getFanfics() {
   const datos = await leer();
@@ -43,23 +45,6 @@ async function addFanfic(fanfic) {
   return exists;
 }
 
-async function updateProgress(id, currentChapter) {
-  const datos = await leer();
-
-  const fanfic = datos.fanfics.find(f => f.id === id);
-  if (fanfic) {
-    fanfic.currentChapter = currentChapter;
-
-    fanfic.lastReadAt = Date.now();
-    fanfic.progresoEn = fanfic.lastReadAt;
-
-    if (fanfic.capitulosNuevos) fanfic.capitulosNuevos = 0;
-    await writeDB();
-    return fanfic;
-  }
-  return null;
-}
-
 async function marcarRevisado(id, nuevos) {
   const datos = await leer();
   const fanfic = datos.fanfics.find(f => String(f.id) === String(id));
@@ -74,9 +59,9 @@ async function saveChapterContent(fanficId, chapterIndex, content) {
   const fanficDir = carpetaDeObra(fanficId);
   await fs.mkdir(fanficDir, { recursive: true }).catch(() => {});
 
-  const { ocultarAntirrobo } = require('../capitulo-valido.js');
+  const { paraGuardar } = require('../capitulo-valido.js');
 
-  await escribirEntero(path.join(fanficDir, `chapter_${chapterIndex}.html`), ocultarAntirrobo(content));
+  await escribirEntero(path.join(fanficDir, `chapter_${chapterIndex}.html`), paraGuardar(content));
 }
 
 async function getChapterContent(fanficId, chapterIndex) {
@@ -139,42 +124,6 @@ async function updateCoverUrl(id, url) {
     return true;
   }
   return false;
-}
-
-async function saveScrollPosition(id, chapterIndex, position) {
-  const datos = await leer();
-  const fanfic = datos.fanfics.find(f => f.id === id || f.id === String(id));
-  if (fanfic) {
-    if (!fanfic.scrollPositions) fanfic.scrollPositions = {};
-    fanfic.scrollPositions[chapterIndex] = position;
-
-    fanfic.progresoEn = Date.now();
-    await writeDB();
-  }
-}
-
-async function guardarProgresoRemoto({ obra, capitulo, ancla, en }) {
-  const datos = await leer();
-  const fanfic = datos.fanfics.find(f => String(f.id) === String(obra));
-  if (!fanfic) return false;
-
-  const capitulos = Math.max((fanfic.chapterList || []).length, Number(fanfic.totalChapters) || 0);
-  if (capitulos && capitulo >= capitulos) return false;
-  if (en <= (Number(fanfic.progresoEn || fanfic.lastReadAt) || 0)) return false;
-  fanfic.currentChapter = capitulo;
-  fanfic.lastReadAt = en;
-  fanfic.progresoEn = en;
-  if (!fanfic.scrollPositions) fanfic.scrollPositions = {};
-  fanfic.scrollPositions[capitulo] = { px: 0, ancla: ancla || null };
-  if (fanfic.capitulosNuevos) fanfic.capitulosNuevos = 0;
-  await writeDB();
-  return true;
-}
-
-async function getScrollPosition(id, chapterIndex) {
-  const datos = await leer();
-  const fanfic = datos.fanfics.find(f => f.id === id || f.id === String(id));
-  return fanfic?.scrollPositions?.[chapterIndex] || 0;
 }
 
 function esImagenBinaria(datos) {
@@ -417,7 +366,7 @@ async function getFanficById(id) {
 
 async function origenesDeObras() {
   const datos = await leer();
-  return Object.fromEntries(datos.fanfics.map(f => [String(f.id), f.origen || 'propia']));
+  return Object.fromEntries(datos.fanfics.map(f => [String(f.id), { origen: f.origen || 'propia', source: f.source || '', url: f.url || '' }]));
 }
 
 async function elegirCapitulos(id, indices) {

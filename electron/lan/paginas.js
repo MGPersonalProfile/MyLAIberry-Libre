@@ -84,7 +84,8 @@ function pagina({ titulo, cuerpo, base, datos = '' }) {
     '<head>',
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
-    '<meta name="theme-color" content="#141418">',
+
+    '<meta name="theme-color" content="#141414">',
     '<meta name="apple-mobile-web-app-capable" content="yes">',
     '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">',
     '<title>' + escaparHtml(titulo) + '</title>',
@@ -172,7 +173,8 @@ function paginaObra(obra, capitulos, base) {
   const plantilla = base + '/obra/' + encodeURIComponent(obra.id) + '/cap/{n}';
   const seguir = hayDondeSeguir
     ? '<a class="seguir" href="' + plantilla.replace('{n}', vas) + '" data-obra="' + escaparHtml(obra.id) + '"' +
-      ' data-plantilla="' + escaparHtml(plantilla) + '"' + datoJson('progreso', { capitulo: vas, en: leidaEn(obra) }) +
+      ' data-plantilla="' + escaparHtml(plantilla) + '"' + datoJson('progreso', { capitulo: vas,
+        en: leidaEn(obra), revision: Number(obra.lecturaRevision) || 0 }) +
       '>Seguir por el capítulo ' + (vas + 1) + '</a>'
     : '';
 
@@ -190,9 +192,9 @@ function paginaObra(obra, capitulos, base) {
 }
 
 function posicionDelPc(obra, indice) {
-  if ((Number(obra.currentChapter) || 0) !== indice) return null;
   const guardada = obra.scrollPositions && obra.scrollPositions[indice];
-  return { capitulo: indice, ancla: (guardada && guardada.ancla) || null, en: leidaEn(obra) };
+  return { capitulo: indice, ancla: (guardada && guardada.ancla) || null,
+    en: leidaEn(obra), revision: Number(obra.lecturaRevision) || 0 };
 }
 
 function paginaCapitulo({ obra, indice, html, idioma, consulta, idiomas, capitulos, base }) {
@@ -240,7 +242,8 @@ function paginaCapitulo({ obra, indice, html, idioma, consulta, idiomas, capitul
     '</main>',
     '<nav class="pasos">' + pasos + '</nav>'
   ];
-  return pagina({ titulo: nombre, base, cuerpo: cuerpo.join('\n') });
+  return pagina({ titulo: nombre, base, cuerpo: cuerpo.join('\n'),
+    datos: datoJson('revision', Number(obra.lecturaRevision) || 0) });
 }
 
 module.exports = {

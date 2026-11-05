@@ -148,6 +148,8 @@ export const BIBLIOTECA = {
   'card.details_aria':     { es: 'Ver la ficha de {title}', en: 'View details for {title}' },
 
   'library.filter_all':      { es: 'Todas', en: 'All' },
+  'library.view_grid':       { es: 'Rejilla', en: 'Grid' },
+  'library.view_list':       { es: 'Lista', en: 'List' },
   'library.mine':            { es: 'Mi Biblioteca', en: 'My Library' },
   'library.results_for':     { es: 'Resultados para "{q}"', en: 'Results for "{q}"' },
   'library.story_one':       { es: 'historia', en: 'story' },

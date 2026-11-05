@@ -23,9 +23,11 @@ function manifiesto(base) {
 
     start_url: base + '/app/',
     scope: base + '/',
-    display: 'standalone',
-    background_color: '#141418',
-    theme_color: '#141418',
+
+    display_override: ['fullscreen', 'standalone'],
+    display: 'fullscreen',
+    background_color: '#141414',
+    theme_color: '#141414',
     icons: [
       { src: base + '/icono-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
       { src: base + '/icono-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }

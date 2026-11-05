@@ -54,7 +54,9 @@ function limpiarAvisosDeUnaObra(dir) {
 module.exports = { limpiarAvisosDeUnaObra, esBasura };
 
 function ocultarAntirroboDeUnaObra(dir) {
-  const { ocultarAntirrobo } = require('./capitulo-valido.js');
+  const { ocultarAntirrobo: soloAntirrobo } = require('./capitulo-valido.js');
+  const { sinPublicidad } = require('./limpiar-html.js');
+  const ocultarAntirrobo = (html) => sinPublicidad(soloAntirrobo(html));
   let ficheros;
   try { ficheros = fs.readdirSync(dir); } catch { return 0; }
   let limpiados = 0;

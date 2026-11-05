@@ -83,7 +83,7 @@ const ESPERAR_TARJETAS = () => `(function () { ${require('./navegar.js').PACIENC
   });
 })()`;
 
-async function buscar({ consulta, pagina = 1 } = {}) {
+async function buscar({ consulta, pagina = 1, url: dada } = {}) {
   if (!String(consulta || '').trim()) return [];
 
   const { BrowserWindow, session } = require('electron');
@@ -93,7 +93,7 @@ async function buscar({ consulta, pagina = 1 } = {}) {
   ses.setUserAgent(require('../sesiones.js').sinMarcaDeElectron(ses.getUserAgent()), IDIOMA);
   const win = new BrowserWindow({ show: false, width: 1280, height: 900, webPreferences: { session: ses, nodeIntegration: false, contextIsolation: true } });
   try {
-    const url = urlDeBusqueda({ consulta, pagina });
+    const url = dada || urlDeBusqueda({ consulta, pagina });
     const html = await mientrasAvance(win, (async () => {
       await cargarPagina(win, url);
       return win.webContents.executeJavaScript(ESPERAR_TARJETAS());

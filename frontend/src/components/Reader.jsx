@@ -19,7 +19,7 @@ import useSugerenciasDeFinal from '../hooks/useSugerenciasDeFinal';
 import Mandos from './lector/Mandos';
 import IndiceLateral from './lector/IndiceLateral';
 import FinDeObra from './lector/FinDeObra';
-import { alturaGuardada } from './lector/ancla';
+import { restaurarTrasLayout } from './lector/restaurar';
 import ResumenPrevio from './lector/ResumenPrevio';
 import NavegacionCapitulos from './lector/NavegacionCapitulos';
 import avisoNoDescargado from './lector/avisoNoDescargado';
@@ -32,7 +32,8 @@ export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
   const [showTOC, setShowTOC] = useState(false);
   const [asistenteAbierto, setAsistenteAbierto] = useState(false);
 
-  const [currentChapterIndex, setCurrentChapterIndex] = useState(story.currentChapter || 0);
+  const [currentChapterIndex, setCurrentChapterIndex] = useState(story.currentChapter || 0),
+    [revisionLectura, setRevisionLectura] = useState(story.lecturaRevision || 0);
   const [chapterContent, setChapterContent] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [errorCarga, setErrorCarga] = useState(null);
@@ -54,7 +55,7 @@ export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
 
   const indiceVivoRef = useRef(currentChapterIndex);
   const traducidoRef = useRef(traducido);
-  const tokenCargaRef = useRef(0);
+  const tokenCargaRef = useRef(0), ultimoCargadoRef = useRef(null), emisorLecturaRef = useRef(null);
 
   useEffect(() => { traducidoRef.current = traducido; }, [traducido]);
 
@@ -200,12 +201,8 @@ export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
 
     const guardada = await window.api.getScrollPosition(story.id, index);
     if (!vigente()) return;
-
-    const antes = scrollRef.current?.scrollTop; setTimeout(() => {
-      if (!vigente() || !scrollRef.current || scrollRef.current.scrollTop !== antes) return;
-      const top = alturaGuardada(guardada, scrollRef.current);
-      scrollRef.current.scrollTo({ top, behavior: top ? 'instant' : 'smooth' });
-    }, 100);
+    await restaurarTrasLayout(scrollRef.current, guardada,
+      contenidoTraducido ? (lang || 'es') : 'original', vigente);
   }
 
   async function loadChapter(index) {
@@ -225,7 +222,10 @@ export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
       if (!window.api) {
         setChapterContent(`<p>${t('reader.no_db')}</p>`);
       } else {
-        window.api.updateProgress(story.id, index);
+        if (ultimoCargadoRef.current !== null && ultimoCargadoRef.current !== index) {
+          const subir = () => window.api.updateProgress(story.id, index); const progreso = await (emisorLecturaRef.current ? emisorLecturaRef.current.enSerie(subir) : subir()); if (!vigente()) return;
+          if (Number.isInteger(progreso?.lecturaRevision)) setRevisionLectura(progreso.lecturaRevision); }
+        ultimoCargadoRef.current = index;
 
         const { contenido, abortada } = await traerContenido(index, vigente);
         if (abortada) return;
@@ -276,10 +276,14 @@ export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
   }, [esperandoCapitulo, story.id, currentChapterIndex]);
 
   const avanceEnCapitulo = useMemoriaDeScroll({
-    scrollRef, storyId: story.id, capitulo: currentChapterIndex
+    scrollRef, storyId: story.id, capitulo: currentChapterIndex,
+    variante: contenidoTraducido ? (lang || 'es') : 'original',
+    revisionInicial: revisionLectura, emisorRef: emisorLecturaRef
   });
 
-  useAnclaEstable({ scrollRef, capitulo: currentChapterIndex, claves: [ajustes.cuerpo, ajustes.fuente, chapterContent] });
+  useAnclaEstable({ scrollRef, capitulo: currentChapterIndex,
+    variante: contenidoTraducido ? (lang || 'es') : 'original',
+    claves: [ajustes.cuerpo, ajustes.fuente, chapterContent] });
 
   const { punto: puntoDeLectura, parrafos: parrafosDelCapitulo } = useReciboDeLectura({
     storyId: story.id, capitulo: currentChapterIndex, avance: avanceEnCapitulo

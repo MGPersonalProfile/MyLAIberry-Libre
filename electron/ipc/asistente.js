@@ -9,7 +9,7 @@ const { avisar } = require('../ventana.js');
 const { crearLatido } = require('../asistente-latido.js');
 const { fichaDeObra } = require('../asistente-obra.js');
 const { esDeLaBiblioteca } = require('../origen.js');
-const { porFuente, fallo, claveDeObra, filtrarObras, filtrarPareja } = require('../asistente-busqueda.js');
+const { porFuente, fallo, claveDeObra } = require('../asistente-busqueda.js');
 const { reglasDe, leerRegla, glosarioDeReglas, traducirConReglas, COMO_ESCRIBIR_UNA_REGLA } = require('../asistente-traduccion.js');
 const { crearRegistro } = require('../asistente-peticiones.js');
 const peticiones = crearRegistro(avisar);
@@ -18,27 +18,23 @@ const { valorDeAjuste, CLAVES_DE_AJUSTE, POR_DEFECTO } = require('../asistente-a
 
 async function buscarEnTodos(consulta, orden = 'popularidad', filtros = {}) {
 
-  const columna = { popularidad: 'kudos_count', palabras: 'word_count', recientes: 'revised_at', relevancia: '_score' }[orden] || 'kudos_count';
-  let fuentes = [
-    ['AO3', () => require('../scrapers/ao3.js').buscar({ consulta, pareja: filtros.pareja, orden: columna, completa: filtros.completa, minPalabras: filtros.minPalabras, sinCrossovers: filtros.sinCrossovers })],
-    ['FanFiction.net', () => require('../scrapers/buscar-ffn.js').buscar({ consulta, orden: columna })],
-    ['RoyalRoad', () => require('../scrapers/buscar-royalroad.js').buscar({ consulta, orden: columna })],
-
-    ['Project Gutenberg', () => require('../scrapers/buscar-gutenberg.js').buscar({ consulta })],
-
-    ['WeTriedTLs', () => require('../scrapers/buscar-wetriedtls.js').buscar({ consulta, orden: columna })],
-    ['Webnovel', () => require('../scrapers/buscar-webnovel.js').buscar({ consulta })]
-  ];
+  const { FUENTES, resumen } = require('../filtros/index.js');
+  const { buscarEnSitio } = require('../filtros/buscar.js');
+  const pedido = { ...filtros, consulta, orden: orden || 'popularidad' };
+  let fuentes = FUENTES;
   if (filtros.fuente) {
     const fNorm = String(filtros.fuente).toLowerCase();
-    fuentes = fuentes.filter(([nombre]) => nombre.toLowerCase().includes(fNorm));
+    fuentes = fuentes.filter(nombre => nombre.toLowerCase().includes(fNorm));
   }
 
   const enBiblioteca = new Set((await db.getFanfics()).filter(esDeLaBiblioteca).map(f => claveDeObra(f.url)));
 
-  return Promise.all(fuentes.map(async ([nombre, buscar]) => {
+  return Promise.all(fuentes.map(async (nombre) => {
     try {
-      return porFuente(nombre, filtrarPareja(filtrarObras(await buscar(), filtros), filtros.pareja), enBiblioteca);
+      const { plan, obras, aviso } = await buscarEnSitio(nombre, { ...pedido, pagina: undefined }, { pagina: filtros.pagina || 1 });
+
+      require('../filtros/recientes.js').recordar(nombre, obras.slice(0, 8), resumen(plan));
+      return { ...porFuente(nombre, obras, enBiblioteca, resumen(plan)), ...(aviso ? { aviso } : {}) };
     } catch (e) {
       return fallo(nombre, e);
     }
@@ -179,6 +175,12 @@ function obtener() {
     library: async () => (await db.getFanfics()).filter(esDeLaBiblioteca).map(fichaDeObra),
     descargas: async () => ({ ...require('../asistente-obra.js').descargasDe(await cola.pendientes(), await db.getFanfics()), trabajandoAhora: cola.enCurso() }),
     search: buscarEnTodos,
+
+    proponer: (args) => require('../propuestas.js').proponer(args),
+    primerCapitulo: (args) => require('../propuestas.js').primerCapitulo(args),
+
+    novedades: async (args) => { const r = require('../novedades.js').queHayDeNuevo(args, { vista: (await db.getSettings())?.ultimaNovedadVista,
+      version: require('electron').app?.getVersion?.() }); if (r.marcar) await db.updateSettings({ ultimaNovedadVista: r.marcar }); return r; },
     crearInvestigador: opciones => require('../asistente-investigar-web').crearInvestigador(opciones),
 
     recommendations: (consulta, subreddit) => require('../scrapers/reddit.js').recomendaciones({ consulta, subreddit }),

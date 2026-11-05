@@ -159,6 +159,14 @@ export async function instalarApiWeb() {
   if (window.api) return false;
   const base = baseDelServidor();
   window.__MYLAIBERRY_BASE__ = base;
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register(`${base}/sw.js`).catch(() => {});
+
+    navigator.serviceWorker.addEventListener('message', (e) => {
+      if (e.data?.tipo === 'mylaiberry-fresco') window.dispatchEvent(new CustomEvent('mylaiberry-fresco', { detail: e.data.canal }));
+    });
+  }
   const { metodos, avisos } = await (await fetch(`${base}/puente.json`)).json();
   const suscribir = conectarAvisos(base);
   const api = {};
@@ -174,12 +182,5 @@ export async function instalarApiWeb() {
   api.guardarAudioObra = (id, opciones) => descargarAudioObra(base, id, opciones);
   api.subirLibro = (fichero, alAvanzar) => subirLibro(base, fichero, alAvanzar);
   window.api = api;
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register(`${base}/sw.js`).catch(() => {});
-
-    navigator.serviceWorker.addEventListener('message', (e) => {
-      if (e.data?.tipo === 'mylaiberry-fresco') window.dispatchEvent(new CustomEvent('mylaiberry-fresco', { detail: e.data.canal }));
-    });
-  }
   return true;
 }

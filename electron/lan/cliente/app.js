@@ -10,6 +10,9 @@
   var desfase = ahoraDelPc ? ahoraDelPc - Date.now() : (leerLocalCrudo('desfase') || 0);
   if (ahoraDelPc) { try { localStorage.setItem(CLAVE + 'desfase', JSON.stringify(desfase)); } catch (e) {  } }
   function ahora() { return Date.now() + desfase; }
+  function idUnico() {
+    return globalThis.crypto?.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2);
+  }
 
   function leerLocal(k) {
     try { return JSON.parse(localStorage.getItem(CLAVE + k) || 'null'); } catch (e) { return null; }
@@ -51,7 +54,12 @@
       }).then(function (r) {
         if (!r.ok && r.status !== 409) return;
         var ahora = pendientes();
-        if (ahora[obra] && ahora[obra].en === cola[obra].en) { delete ahora[obra]; guardarLocal('pendientes', ahora); }
+        if (ahora[obra]?.mutationId === cola[obra].mutationId) {
+          delete ahora[obra]; guardarLocal('pendientes', ahora);
+          var revision = Number(r.headers.get('X-Lectura-Revision'));
+          if (Number.isInteger(revision)) guardarLocal('rev:' + obra, revision);
+          if (r.status === 409) guardarLocal('pos:' + obra, null);
+        }
       }).catch(function () {  });
     });
   }
@@ -62,7 +70,8 @@
   if (seguir) {
     var local = leerLocal('pos:' + seguir.getAttribute('data-obra'));
     var delPc = datos(seguir, 'progreso');
-    if (local && (!delPc || local.en > delPc.en) && local.capitulo !== (delPc && delPc.capitulo)) {
+    if (local && (!delPc || local.baseRevision === delPc.revision)
+      && local.capitulo !== (delPc && delPc.capitulo)) {
       seguir.href = seguir.getAttribute('data-plantilla').replace('{n}', local.capitulo);
       seguir.textContent = 'Seguir por el capítulo ' + (local.capitulo + 1);
     }
@@ -99,13 +108,17 @@
 
   var delPc = datos(lectura, 'posicion');
   var mia = leerLocal('pos:' + obra);
-  var buena = [delPc, mia].filter(function (p) { return p && p.capitulo === capitulo; })
-    .sort(function (a, b) { return b.en - a.en; })[0];
+  var buena = mia && mia.baseRevision >= (Number(document.body.getAttribute('data-revision')) || 0)
+    && mia.capitulo === capitulo ? mia : delPc;
   if (buena) irA(buena.ancla);
 
   var espera = null;
   function apuntar() {
-    var p = { obra: obra, capitulo: capitulo, ancla: anclaActual(), en: ahora() };
+    var p = { obra: obra, capitulo: capitulo, ancla: anclaActual(), en: ahora(),
+      deviceId: leerLocal('deviceId') || idUnico(), mutationId: idUnico(),
+      baseRevision: Math.max(Number(leerLocal('rev:' + obra)) || 0,
+        Number(document.body.getAttribute('data-revision')) || 0) };
+    guardarLocal('deviceId', p.deviceId);
     guardarLocal('pos:' + obra, p);
     enviar(p);
   }
@@ -113,6 +126,7 @@
     clearTimeout(espera);
     espera = setTimeout(apuntar, 1500);
   }, { passive: true });
-  document.addEventListener('visibilitychange', function () { if (document.hidden) apuntar(); });
-  apuntar();
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden && espera) { clearTimeout(espera); espera = null; apuntar(); }
+  });
 })();

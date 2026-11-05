@@ -1,5 +1,5 @@
 import { Trash2, RefreshCw, Image as ImageIcon, Bell, Bookmark, FileDown, Plus, X } from 'lucide-react';
-
+import { SecondaryButton, DestructiveButton } from '../ui/Buttons';
 import { useI18n } from '../../i18n/I18nContext';
 
 function useAcciones(p) {
@@ -30,7 +30,7 @@ export default function AccionesDeGestion(p) {
   const acciones = useAcciones(p);
   if (p.movil) {
     return (
-      <div className="grid grid-cols-4 gap-y-3 mb-6">
+      <div className="grid grid-cols-4 gap-2 mb-6">
         {acciones.map(a => <AccionMovil key={a.id} {...a} />)}
       </div>
     );
@@ -49,28 +49,27 @@ function AccionMovil({ icono: Icono, texto, al, activa, girando, desactivada }) 
       type="button"
       onClick={al}
       disabled={desactivada}
-      className={`min-h-16 px-1 flex flex-col items-center justify-start gap-1.5 active:opacity-60 disabled:opacity-40 ${activa ? 'text-red-500' : 'text-gray-200'}`}
+      className={`min-h-14 py-2 px-1 rounded-md border border-border/60 bg-surface-secondary hover:bg-surface-hover flex flex-col items-center justify-center gap-1.5 active:scale-95 transition-all disabled:opacity-45 ${
+        activa ? 'text-accent border-accent/40 bg-accent-soft' : 'text-text-primary'
+      }`}
     >
-      <Icono className={`w-6 h-6 ${activa ? 'fill-current' : ''} ${girando ? 'animate-spin' : ''}`} />
-      <span className="text-[11px] leading-tight text-center line-clamp-2">{texto}</span>
+      <Icono className={`w-5 h-5 ${activa ? 'fill-current' : ''} ${girando ? 'animate-spin' : ''}`} />
+      <span className="text-[11px] leading-tight text-center text-text-secondary line-clamp-2 font-medium">{texto}</span>
     </button>
   );
 }
 
 function AccionEscritorio({ icono: Icono, texto, titulo, al, activa, girando, desactivada }) {
   return (
-    <button
-      type="button"
+    <SecondaryButton
       onClick={al}
       disabled={desactivada}
       title={titulo}
-      className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 whitespace-nowrap transition-colors border disabled:opacity-40 disabled:cursor-not-allowed ${
-        activa ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-gray-700 text-gray-300 hover:border-gray-400 hover:text-white'
-      }`}
+      className={activa ? 'border-accent/50 text-accent bg-accent-soft' : ''}
     >
       <Icono className={`w-4 h-4 shrink-0 ${activa && Icono === Bookmark ? 'fill-current' : ''} ${girando ? 'animate-spin' : ''}`} />
       {texto}
-    </button>
+    </SecondaryButton>
   );
 }
 
@@ -79,23 +78,23 @@ export function Borrar({ obra, movil, confirmandoBorrado, alBorrar, alPedirBorra
   if (confirmandoBorrado) {
     return (
       <div className={`flex items-center gap-2 ${movil ? 'w-full' : 'ml-auto'}`}>
-        <span className={`text-sm text-gray-400 whitespace-nowrap ${movil ? 'flex-1' : ''}`}>{t('detail.delete_sure')}</span>
-        <button type="button" onClick={() => alBorrar(obra.id)} className={`${movil ? 'h-11 px-4' : 'px-3 py-2'} rounded-lg text-sm font-bold whitespace-nowrap bg-red-600 text-white hover:bg-red-700 transition-colors`}>
+        <span className={`text-small text-text-secondary whitespace-nowrap ${movil ? 'flex-1' : ''}`}>{t('detail.delete_sure')}</span>
+        <DestructiveButton solid onClick={() => alBorrar(obra.id)}>
           {t('common.confirm')}
-        </button>
-        <button type="button" onClick={alCancelarBorrado} className={`${movil ? 'h-11 px-4' : 'px-3 py-2'} rounded-lg text-sm font-medium whitespace-nowrap bg-gray-700 text-white hover:bg-gray-600 transition-colors`}>
+        </DestructiveButton>
+        <SecondaryButton onClick={alCancelarBorrado}>
           {t('common.cancel')}
-        </button>
+        </SecondaryButton>
       </div>
     );
   }
   return (
-    <button
-      type="button"
+    <DestructiveButton
+      icon={Trash2}
       onClick={() => alPedirBorrado(obra.id)}
-      className={`${movil ? 'w-full h-11 justify-center' : 'ml-auto px-3 py-2'} rounded-lg text-sm font-medium flex items-center gap-2 whitespace-nowrap text-red-400 border border-red-500/20 hover:bg-red-500/10 active:bg-red-500/10 hover:border-red-500/40 transition-colors`}
+      className={movil ? 'w-full' : 'ml-auto'}
     >
-      <Trash2 className="w-4 h-4 shrink-0" /> {t('common.delete')}
-    </button>
+      {t('common.delete')}
+    </DestructiveButton>
   );
 }

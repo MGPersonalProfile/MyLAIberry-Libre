@@ -42,7 +42,13 @@ const AJUSTES = {
   autoTranslate: bool,
   readTranslated: bool,
   avisarCapitulos: bool,
-  seguirEnSegundoPlano: bool
+  seguirEnSegundoPlano: bool,
+
+  plazoPropuestasHoras: (v) => {
+    const n = Math.round(Number(String(v ?? '').replace(/h(oras)?$/i, '').trim()));
+    if (!Number.isFinite(n) || n < 1 || n > 168) throw new Error('El plazo de «Por decidir» va en horas, de 1 a 168.');
+    return n;
+  }
 };
 
 const POR_DEFECTO = require('./ajustes-por-defecto.js').ajustesPorDefecto();

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-
+import { SecondaryButton } from '../ui/Buttons';
 import { useI18n } from '../../i18n/I18nContext';
 
 export default function CapitulosNuevosEnTodas({ onHecho }) {
@@ -22,17 +22,16 @@ export default function CapitulosNuevosEnTodas({ onHecho }) {
   };
 
   return (
-    <div className="mt-5 flex items-start justify-between gap-4">
+    <div className="flex items-start justify-between gap-4">
       <div>
-        <p className="text-sm text-white font-medium">{t('settings.check_all_title')}</p>
-        <p className={`text-xs mt-0.5 max-w-lg ${estado?.tipo === 'error' ? 'text-red-400' : 'text-gray-500'}`} role="status">
+        <p className="text-callout text-text-primary font-medium">{t('settings.check_all_title')}</p>
+        <p className={`text-footnote mt-0.5 max-w-lg ${estado?.tipo === 'error' ? 'text-danger' : 'text-text-secondary'}`} role="status">
           {estado?.texto || t('settings.check_all_desc')}
         </p>
       </div>
-      <button onClick={lanzar} disabled={estado?.tipo === 'trabajando'}
-              className="shrink-0 px-4 py-2 max-md:min-h-11 rounded-lg border border-white/10 text-sm text-gray-300 hover:bg-white/5 hover:border-white/25 disabled:opacity-50 flex items-center gap-2 transition-colors">
+      <SecondaryButton onClick={lanzar} disabled={estado?.tipo === 'trabajando'} className="shrink-0">
         <RefreshCw className={`w-4 h-4 ${estado?.tipo === 'trabajando' ? 'animate-spin' : ''}`} /> {t('settings.check_all_go')}
-      </button>
+      </SecondaryButton>
     </div>
   );
 }

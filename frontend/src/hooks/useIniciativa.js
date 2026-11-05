@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { clavePunto, puntoDeClave } from '../punto';
+import { esSinConexion } from '../avisos';
 
 export default function useIniciativa(punto = null, { solo = null } = {}) {
   const disponible = !!window.api?.asistenteVer;
@@ -26,7 +27,8 @@ export default function useIniciativa(punto = null, { solo = null } = {}) {
         if (r?.status === 'ok') setVista(r.vista);
         else setError(r?.message || 'No se pudo leer el estado del asistente.');
       })
-      .catch(e => { if (vivo) setError(e?.message || 'No se pudo leer el estado del asistente.'); })
+
+      .catch(e => { if (vivo && !esSinConexion(e)) setError(e?.message || 'No se pudo leer el estado del asistente.'); })
       .finally(() => { if (vivo) setCargando(false); });
 
     return () => { vivo = false; };

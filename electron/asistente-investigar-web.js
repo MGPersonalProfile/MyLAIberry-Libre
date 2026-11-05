@@ -1,5 +1,5 @@
 const { crearNavegador } = require('./asistente-navegador');
-const { filtrarObras, claveDeObra } = require('./asistente-busqueda');
+const { claveDeObra } = require('./asistente-busqueda');
 const ao3 = require('./scrapers/ao3');
 const ffn = require('./scrapers/buscar-ffn');
 const rr = require('./scrapers/buscar-royalroad');
@@ -12,7 +12,6 @@ const MAX_PASOS = 64;
 
 const RESERVA_FICHAS = 32;
 const FUENTES = ['AO3', 'FanFiction.net', 'RoyalRoad', 'Wattpad'];
-const ORDEN = { popularidad: 'kudos_count', palabras: 'word_count', recientes: 'revised_at', relevancia: '_score' };
 
 function consultaDe(f) {
   return [f.consulta, f.fandom, f.pareja, f.personajes, f.etiquetas]
@@ -93,7 +92,38 @@ async function perfilRoyalRoad(actual, navegador) {
   return { obras: obras.slice(0, 25).map(breve), paginasVisitadas: navegador.paginas, hayMas };
 }
 
-function crearInvestigador({ signal, progreso, navegador = crearNavegador({ signal, progreso }) } = {}) {
+function filtrosComunes(f) {
+  const { RATINGS } = require('./filtros/modelo.js');
+  return { consulta: [f.consulta, f.etiquetas].flat().filter(Boolean).join(' ').slice(0, 300), fandom: f.fandom, pareja: f.pareja,
+    personajes: f.personajes, idioma: f.idioma, minPalabras: f.minPalabras, completa: f.completa, orden: f.orden,
+    rating: RATINGS.includes(f.valoracion) ? f.valoracion : undefined };
+}
+
+async function paginaDeSitio(navegador, sitio, comun, pagina) {
+  const { traducir, aplicarEnMemoria, idsDePersonajes } = require('./filtros/index.js');
+  let plan = traducir(sitio, comun, { pagina });
+  if (!plan.url) return [];
+  await navegador.abrir(plan.url);
+  if (sitio === 'FanFiction.net' && plan.seccion && (comun.pareja || comun.personajes)) {
+    const nombres = [...require('./filtros/buscar.js').nombresDePareja(comun.pareja), ...(comun.personajes || [])];
+    const ids = idsDePersonajes(await navegador.ejecutar(ffn.LECTOR_PERSONAJES), nombres);
+    const otro = traducir(sitio, comun, { pagina, idsPersonajes: ids });
+    if (otro.url !== plan.url) { plan = otro; await navegador.abrir(plan.url); }
+  }
+  const adaptador = sitio === 'AO3' ? ao3 : sitio === 'FanFiction.net' ? ffn : sitio === 'Wattpad' ? wattpad : rr;
+  const lista = sitio === 'AO3' || sitio === 'Wattpad'
+    ? adaptador.resultadosDeHtml(await navegador.ejecutar('document.documentElement.outerHTML'))
+    : adaptador.parsearCrudos(await navegador.ejecutar(adaptador.LECTOR), undefined, comun.consulta);
+  return aplicarEnMemoria(lista, comun, plan.memoria);
+}
+
+function resumenDeSitios(noConsultados, completada) {
+  const nombres = noConsultados.map(n => n.sitio).join(', ');
+  return completada ? `No consultado: ${nombres}. Los demás sitios sí.`
+    : `La búsqueda no pudo completarse: ${nombres ? `${nombres} no se pudo consultar` : 'ningún sitio se pudo consultar'}.`;
+}
+
+function crearInvestigador({ signal, progreso = () => {}, origen, navegador = crearNavegador({ signal, progreso, origen }) } = {}) {
   let pasos = 0;
   const paso = () => { if (++pasos > MAX_PASOS) throw new Error(`La investigación tiene un máximo de ${MAX_PASOS} pasos.`); };
 
@@ -108,30 +138,31 @@ function crearInvestigador({ signal, progreso, navegador = crearNavegador({ sign
     const sitios = fuente ? [fuente] : FUENTES;
     if (sitios.some(s => !FUENTES.includes(s))) throw new Error('Sitio de búsqueda no admitido.');
     paso();
-    const obras = [], errores = [];
+    const obras = [], errores = [], consultados = new Set(), fallidos = new Map();
+    const comun = filtrosComunes({ ...filtros, orden });
     for (const sitio of sitios) for (let pagina = 1; pagina <= paginas; pagina++) {
       if (sitio === 'Wattpad' && pagina > 1) break;
       if (navegador.paginas >= tope) break;
       try {
-        const argumento = { consulta: sitio === 'AO3' && pareja ? consultaDe({ ...filtros, pareja: undefined }) : q,
-          pareja: sitio === 'AO3' ? pareja : undefined, orden: ORDEN[orden] || ORDEN.popularidad, pagina,
-          completa, minPalabras };
-        const adaptador = sitio === 'AO3' ? ao3 : sitio === 'FanFiction.net' ? ffn : sitio === 'Wattpad' ? wattpad : rr;
-        await navegador.abrir(adaptador.urlDeBusqueda(argumento));
-        let lista;
-        if (sitio === 'AO3' || sitio === 'Wattpad') lista = adaptador.resultadosDeHtml(await navegador.ejecutar('document.documentElement.outerHTML'));
-        else lista = adaptador.parsearCrudos(await navegador.ejecutar(adaptador.LECTOR), argumento.orden, q);
+        let lista = await paginaDeSitio(navegador, sitio, comun, pagina);
+        consultados.add(sitio);
         if (!lista.length) break;
 
         if (sitio === 'Wattpad') lista = lista.filter(o => pertinencia(o, q) >= 2 / 3);
-        obras.push(...filtrarObras(lista, filtros).filter(o => coincide(o, filtros))
-          .map(o => ({ ...breve(o), sinVerificar: sinVerificar(o, filtros) })));
-      } catch (e) { errores.push(`${sitio}, página ${pagina}: ${e.message}`); break; }
+        obras.push(...lista.filter(o => coincide(o, filtros))
+          .map(o => ({ ...breve(o), sinVerificar: [...new Set([...sinVerificar(o, filtros), ...(o.sinComprobar || [])])] })));
+      } catch (e) { errores.push(`${sitio}, página ${pagina}: ${e.message}`); fallidos.set(sitio, e); break; }
     }
+
+    const noConsultados = [...fallidos].filter(([sitio]) => !consultados.has(sitio))
+      .map(([sitio, e]) => ({ sitio, motivo: e.reto ? 'comprobacion-humana' : 'error', mensaje: e.message }));
+    const completada = consultados.size > 0 || !fallidos.size;
+    if (noConsultados.length || !completada) progreso({ paginas: navegador.paginas, maxPaginas: navegador.maxPaginas, estado: 'comprobacion', mensaje: resumenDeSitios(noConsultados, completada) });
     const unicas = ordenar(sinDuplicados(obras), orden);
     return { obras: unicas.slice(0, 30), encontradas: unicas.length, paginasVisitadas: navegador.paginas,
-      agotado: navegador.paginas >= tope,
-      errores, aviso: 'Los filtros sin datos explícitos del sitio no se dan por confirmados. Wattpad sólo ofrece aquí su primera tanda pública: page=2 repite los resultados.' };
+      agotado: navegador.paginas >= tope, noConsultados, completada,
+      errores, aviso: (completada ? '' : 'La búsqueda no pudo completarse: ningún sitio se pudo consultar. ') +
+        'Los filtros sin datos explícitos del sitio no se dan por confirmados. Wattpad sólo ofrece aquí su primera tanda pública: page=2 repite los resultados.' };
   }
 
   async function ficha(url) {
@@ -212,7 +243,8 @@ function crearInvestigador({ signal, progreso, navegador = crearNavegador({ sign
   async function investigar({ consultas, ...filtros }) {
     const terminos = (consultas || []).filter(Boolean).slice(0, 3);
     if (!terminos.length) throw new Error('La investigación necesita una consulta.');
-    const lotes = [], errores = [];
+    const lotes = [], errores = [], noConsultados = [];
+    let completada = false;
     const tope = Math.max(navegador.maxPaginas - RESERVA_FICHAS, 1);
 
     if (navegador.paginas >= tope) {
@@ -223,9 +255,11 @@ function crearInvestigador({ signal, progreso, navegador = crearNavegador({ sign
       const r = await buscarHasta({ ...filtros, consulta, paginas: Math.min(filtros.paginas || 2, 2) }, tope);
       lotes.push(...r.obras.map(o => ({ ...o, motivo: `Apareció al buscar «${consulta}»; popularidad publicada: ${o.kudos || 0} ${o.medidaPopularidad} en ${o.source}.` })));
       errores.push(...r.errores);
+      noConsultados.push(...r.noConsultados.filter(n => !noConsultados.some(v => v.sitio === n.sitio)));
+      completada ||= r.completada;
     }
     return { obras: ordenar(sinDuplicados(lotes), filtros.orden).slice(0, 20),
-      paginasVisitadas: navegador.paginas, pasos, errores,
+      paginasVisitadas: navegador.paginas, pasos, errores, noConsultados, completada,
       agotado: pasos >= MAX_PASOS || navegador.paginas >= tope };
   }
 

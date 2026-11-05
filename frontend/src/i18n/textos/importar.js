@@ -30,4 +30,7 @@ export const IMPORTAR = {
   'import.tier_native':    { es: 'Extracción nativa', en: 'Native extraction' },
   'import.tier_fichub':    { es: 'Vía FicHub API', en: 'Via FicHub API' },
   'import.tier_universal': { es: 'Extractor universal', en: 'Universal extractor' },
+  'import.mode_all':       { es: 'Todo', en: 'All' },
+  'import.mode_link':      { es: 'Enlace', en: 'Link' },
+  'import.mode_file':      { es: 'Archivo / Web', en: 'File / Web' },
 };

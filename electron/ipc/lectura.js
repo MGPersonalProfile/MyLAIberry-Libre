@@ -16,17 +16,7 @@ const { tieneTraduccion, rutaTraduccion, traducirTitulos } = require('../transla
 const traduccion = require('../traduccion-anticipada.js');
 const { dirDeFanfic } = require('../rutas.js');
 const { enHilo } = require('../en-hilo.js');
-
-function posicionValida(p) {
-  const numero = (n) => typeof n === 'number' && Number.isFinite(n) && n >= 0;
-  if (numero(p)) return p;
-  if (!p || typeof p !== 'object' || !numero(p.px)) return null;
-  const a = p.ancla;
-  if (a == null) return { px: p.px, ancla: null };
-  if (!Number.isInteger(a.indice) || a.indice < 0 || !Number.isInteger(a.total) || a.total < 1
-    || !numero(a.fraccion) || a.fraccion > 1) return null;
-  return { px: p.px, ancla: { indice: a.indice, fraccion: a.fraccion, total: a.total } };
-}
+const { posicionValida } = require('../lector/posicion.js');
 
 function faltaParaElModelo(configIA) {
   const falta = queFaltaIA(configIA);
@@ -103,10 +93,15 @@ function registrar() {
     }
   });
 
-  ipcMain.handle('save-scroll-position', async (event, id, chapterIndex, position) => {
+  ipcMain.handle('save-scroll-position', async (event, id, chapterIndex, position, meta) => {
     const valida = posicionValida(position);
-    if (valida === null) return { status: 'error', message: 'Posición de lectura no válida' };
-    return await saveScrollPosition(id, chapterIndex, valida);
+    if (valida === null || (valida?.v === 2 && (valida.obra !== String(id)
+      || valida.capitulo !== chapterIndex))) return { status: 'error', message: 'Posición de lectura no válida' };
+    if (meta && (typeof meta.deviceId !== 'string' || !/^[\w-]{1,80}$/.test(meta.deviceId)
+      || typeof meta.mutationId !== 'string' || !/^[\w-]{1,80}$/.test(meta.mutationId)
+      || !Number.isInteger(meta.baseRevision) || meta.baseRevision < 0))
+      return { status: 'error', message: 'Revisión de lectura no válida' };
+    return await saveScrollPosition(id, chapterIndex, valida, meta);
   });
 
   ipcMain.handle('get-scroll-position', async (event, id, chapterIndex) => {

@@ -8,6 +8,7 @@ import CajaMensaje from './CajaMensaje';
 import { useI18n } from '../../i18n/I18nContext';
 import ResultadosWeb from './ResultadosWeb';
 import CapturasWeb from './CapturasWeb';
+import { useAlPedirAlAsistente, tomarPregunta } from '../../preguntaAlAsistente';
 
 function accionesLegibles(acciones, t) {
   const grupos = new Map();
@@ -72,6 +73,16 @@ export default function Asistente(props) {
   return <Conversacion key={props.punto?.workId || 'library'} {...props} />;
 }
 
+function usePreguntaExterna({ punto, disponible, pensando, preguntar }) {
+  const [aviso, setAviso] = useState(0);
+  useAlPedirAlAsistente(() => setAviso(n => n + 1), !punto);
+  useEffect(() => {
+    if (punto || !disponible || pensando) return;
+    const pedida = tomarPregunta();
+    if (pedida) preguntar(pedida, { fuera: false });
+  }, [punto, disponible, pensando, aviso]);
+}
+
 function Conversacion({ punto = null, alCerrar }) {
   const { t } = useI18n();
   const { hilo, hiloId, vista, abrirHilo, borrarHilo, pensando, respondiendo, nuevas, sinLeer, progreso, error, disponible, preguntar, cancelar, decidir } = useAsistente(punto);
@@ -83,6 +94,8 @@ function Conversacion({ punto = null, alCerrar }) {
   useEffect(() => {
     finRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [hilo.length, pensando]);
+
+  usePreguntaExterna({ punto, disponible, pensando, preguntar });
 
   const enviar = () => {
     if (!texto.trim() || pensando) return;
@@ -139,8 +152,8 @@ function Pensando({ cancelar, progreso }) {
   return (
           <div className="flex items-center gap-3 text-gray-400 text-sm px-1">
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span>{progreso ? t('assistant.research.progress', { pages: progreso.paginas, max: progreso.maxPaginas,
-              state: t(`assistant.research.${progreso.estado}`) }) : t('assistant.thinking')}</span>
+            <span>{progreso ? (progreso.mensaje || t('assistant.research.progress', { pages: progreso.paginas, max: progreso.maxPaginas,
+              state: t(`assistant.research.${progreso.estado}`) })) : t('assistant.thinking')}</span>
             <button
               onClick={cancelar}
               className="ml-2 flex items-center gap-1 min-h-[44px] px-2 text-[11px] opacity-60 hover:opacity-100 transition-opacity"

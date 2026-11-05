@@ -191,7 +191,7 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
       const memory = await conSuObra(point ? [] : gustosUnaVez(s.preferences).filter(p => p.status === 'confirmed' && p.kind !== 'mood'), services);
       const annotations = point ? await state.visible(point) : null;
       if (!point && !background && services.crearInvestigador) {
-        web = services.crearInvestigador({ signal: controller.signal, progreso: onProgress });
+        web = services.crearInvestigador({ signal: controller.signal, progreso: onProgress, origen: desdeElMovil ? 'movil' : 'local' });
       }
       const toolset = crearTools({ state, services: { ...services, web }, point, context, background, explicitText: text, desdeElMovil, hilo: thread.id });
 

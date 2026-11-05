@@ -78,7 +78,8 @@ function rechazoAcumulado(todas) {
 
 function ajustarDescubrimientos(ordenadas, todas, preferencias = {}) {
   const rechazo = rechazoAcumulado(todas);
-  return ordenadas.filter(o => !oculta(o, preferencias)).map(o => {
+
+  return ordenadas.filter(o => o.propuesta || !oculta(o, preferencias)).map(o => {
     const porFormato = rasgosDeFormato(o).reduce((n, r) => n + (rechazo.formato.get(r) || 0), 0);
     const veces = (rechazo.autores.get(claveAutor(o)) || 0)
       + fandomsDe(o).reduce((n, f) => n + (rechazo.fandoms.get(normal(f)) || 0), 0) + porFormato;

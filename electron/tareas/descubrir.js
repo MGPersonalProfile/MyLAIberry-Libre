@@ -115,7 +115,8 @@ async function guardarDescubrimiento(storyData) {
   const saved = await addFanfic({ ...datos, origen: 'descubierta' });
   if (!saved) return saved;
   const { preferencias } = await require('../db').getPreferenciasDescubrimientos();
-  if (saved.origen !== 'descubierta' || require('../descubrimientos-preferencias').oculta(saved, preferencias)) return saved;
+
+  if (saved.origen !== 'descubierta' || (!saved.propuesta && require('../descubrimientos-preferencias').oculta(saved, preferencias))) return saved;
 
   if (Array.isArray(saved.chapterList) && saved.chapterList.length > 0) {
     await cola.encolar('descargar-capitulos', { fanficId: String(saved.id), hasta: 1 });

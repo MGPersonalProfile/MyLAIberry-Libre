@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Bell, BellOff } from 'lucide-react';
-
+import { SecondaryButton } from '../ui/Buttons';
+import { Notice } from '../ui/Feedback';
 import { useI18n } from '../../i18n/I18nContext';
 import useIniciativa from '../../hooks/useIniciativa';
 import EstanteriasDeLaObra from './EstanteriasDeLaObra';
@@ -14,7 +15,7 @@ export default function OrganizarLaObra({ obraId }) {
     <>
       <EstanteriasDeLaObra obraId={obraId} estanterias={estanterias} accion={accion} />
       <VigilarRegreso obraId={obraId} radar={radar} accion={accion} />
-      {error && <p className="text-xs text-red-400 mt-2" role="alert">{error}</p>}
+      {error && <Notice variant="error" compact className="mt-2">{error}</Notice>}
     </>
   );
 }
@@ -26,33 +27,43 @@ function VigilarRegreso({ obraId, radar, accion }) {
 
   return (
     <div className="mt-6" data-vigilar-regreso>
-      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">{t('watch.title')}</h3>
+      <h3 className="text-caption font-semibold text-text-secondary uppercase tracking-wider mb-2">
+        {t('watch.title')}
+      </h3>
       {vivas.map(r => (
-        <div key={r.id} className="flex flex-wrap items-center gap-3 text-sm text-gray-300 mb-2">
-          <Bell className="w-4 h-4 text-amber-400/80" />
+        <div key={r.id} className="flex flex-wrap items-center gap-3 text-small text-text-primary mb-2">
+          <Bell className="w-4 h-4 text-warning" />
           <span>{r.condition === 'complete' ? t('watch.when_complete') : t('watch.when_chapters', { n: r.chapters })}</span>
-          <button onClick={() => accion('stopWatch', { id: r.id })}
-                  className="text-xs px-3 py-1 rounded-full border border-white/15 text-gray-400 hover:text-gray-200 flex items-center gap-1.5">
-            <BellOff className="w-3 h-3" /> {t('watch.stop')}
-          </button>
+          <SecondaryButton icon={BellOff} onClick={() => accion('stopWatch', { id: r.id })}>
+            {t('watch.stop')}
+          </SecondaryButton>
         </div>
       ))}
-      {!vivas.length && <p className="text-xs text-gray-600 mb-3">{t('watch.help')}</p>}
+      {!vivas.length && <p className="text-footnote text-text-secondary mb-3">{t('watch.help')}</p>}
       <div className="flex flex-wrap items-center gap-2">
-        <label className="flex items-center gap-2 text-xs text-gray-400">
+        <label className="flex items-center gap-2 text-footnote text-text-secondary">
           {t('watch.with')}
-          <input type="number" min={1} max={500} value={capitulos} aria-label={t('watch.chapters_label')}
-                 onChange={e => setCapitulos(Math.max(1, Math.min(500, Number(e.target.value) || 1)))}
-                 className="w-16 bg-transparent border-b border-white/20 focus:border-white/50 outline-none text-center text-sm text-gray-200" />
+          <input
+            type="number"
+            min={1}
+            max={500}
+            value={capitulos}
+            aria-label={t('watch.chapters_label')}
+            onChange={e => setCapitulos(Math.max(1, Math.min(500, Number(e.target.value) || 1)))}
+            className="w-16 bg-surface-secondary border border-border rounded-md px-2 py-1 text-center text-small text-text-primary focus:outline-none focus:border-accent"
+          />
         </label>
-        <button onClick={() => accion('watchReturn', { workId: obraId, condition: 'chapters', chapters: capitulos })}
-                className="text-xs px-3 py-1 rounded-full bg-white/10 hover:bg-white/15 flex items-center gap-1.5">
-          <Bell className="w-3 h-3" /> {t('watch.chapters_button', { n: capitulos })}
-        </button>
-        <button onClick={() => accion('watchReturn', { workId: obraId, condition: 'complete' })}
-                className="text-xs px-3 py-1 rounded-full border border-white/15 text-gray-400 hover:text-gray-200">
+        <SecondaryButton
+          icon={Bell}
+          onClick={() => accion('watchReturn', { workId: obraId, condition: 'chapters', chapters: capitulos })}
+        >
+          {t('watch.chapters_button', { n: capitulos })}
+        </SecondaryButton>
+        <SecondaryButton
+          onClick={() => accion('watchReturn', { workId: obraId, condition: 'complete' })}
+        >
           {t('watch.complete_button')}
-        </button>
+        </SecondaryButton>
       </div>
     </div>
   );

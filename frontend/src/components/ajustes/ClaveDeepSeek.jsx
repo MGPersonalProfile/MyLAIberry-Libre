@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { PrimaryButton } from '../ui/Buttons';
+import { Notice } from '../ui/Feedback';
 import { useI18n } from '../../i18n/I18nContext';
 
 const DONDE_SACARLA = 'https://platform.deepseek.com/api_keys';
@@ -51,8 +53,8 @@ export default function ClaveDeepSeek() {
   if (!estado) return null;
   return (
     <div className="max-w-xl" data-clave-deepseek>
-      <span className="block text-sm text-white font-medium">{t('settings.assistant_key')}</span>
-      <span className="block text-xs text-gray-500 mt-0.5 mb-2">{t('settings.assistant_key_desc')}</span>
+      <span className="block text-callout text-text-primary font-medium">{t('settings.assistant_key')}</span>
+      <span className="block text-footnote text-text-secondary mt-0.5 mb-2">{t('settings.assistant_key_desc')}</span>
       <div className="flex gap-2 flex-wrap">
         <input
           type="password"
@@ -62,40 +64,39 @@ export default function ClaveDeepSeek() {
           placeholder={estado.tiene ? '••••••••••••' : 'sk-…'}
           spellCheck={false}
           aria-label={t('settings.assistant_key')}
-          className="flex-1 min-w-[16rem] bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-white/30 font-mono"
+          className="flex-1 min-w-[16rem] bg-surface-secondary border border-border rounded-md px-4 py-2 text-callout text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent font-mono"
         />
-        <button
+        <PrimaryButton
           onClick={probar}
           disabled={probando || (!estado.tiene && !nueva.trim())}
-          className="px-4 py-2 rounded-lg bg-white text-black font-semibold text-sm hover:bg-gray-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {probando ? t('settings.ai_testing') : t('settings.ai_test')}
-        </button>
+        </PrimaryButton>
       </div>
       <button
         onClick={() => window.api?.abrirEnNavegador?.(DONDE_SACARLA)}
-        className="text-xs text-gray-400 hover:text-white underline underline-offset-2 mt-2 inline-block"
+        className="text-footnote text-text-secondary hover:text-text-primary underline underline-offset-2 mt-2 inline-block"
       >
         {t('settings.ai_get_key')} ↗
       </button>
 
-      {!estado.tiene && <p className="text-xs text-amber-400/90 mt-2">{t('settings.assistant_key_missing')}</p>}
-      {estado.ilegible && <p className="text-xs text-amber-400/90 mt-2">{t(estado.tiene ? 'settings.ai_key_other_device_file' : 'settings.ai_key_other_device')}</p>}
-      {estado.tiene && estado.origen === 'fichero' && !estado.ilegible && <p className="text-xs text-gray-500 mt-2">{t('settings.ai_key_from_file')}</p>}
+      {!estado.tiene && <Notice tone="warning" className="mt-2">{t('settings.assistant_key_missing')}</Notice>}
+      {estado.ilegible && <Notice tone="warning" className="mt-2">{t(estado.tiene ? 'settings.ai_key_other_device_file' : 'settings.ai_key_other_device')}</Notice>}
+      {estado.tiene && estado.origen === 'fichero' && !estado.ilegible && <p className="text-footnote text-text-secondary mt-2">{t('settings.ai_key_from_file')}</p>}
       {estado.tiene && estado.origen === 'ajustes' && (
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="text-footnote text-text-secondary mt-2">
           {t('settings.ai_key_saved')}{' '}
-          <span className="text-gray-600">{t('settings.ai_key_replace')}</span>
+          <span className="text-text-tertiary">{t('settings.ai_key_replace')}</span>
           {' · '}
-          <button onClick={borrar} className="text-gray-400 hover:text-red-400 underline underline-offset-2">
+          <button onClick={borrar} className="text-text-secondary hover:text-danger underline underline-offset-2">
             {t('settings.ai_key_clear')}
           </button>
         </p>
       )}
       {prueba && (
-        <p className={`text-xs mt-2 ${prueba.ok ? 'text-emerald-400' : 'text-red-400'}`}>
+        <Notice tone={prueba.ok ? 'success' : 'danger'} className="mt-2">
           {prueba.ok ? t('settings.assistant_key_ok') : t('settings.ai_test_fail') + (prueba.message || '')}
-        </p>
+        </Notice>
       )}
     </div>
   );

@@ -4,7 +4,9 @@ function ajustesPorDefecto() {
     autoTranslate: true, readTranslated: false,
     vozNarracion: '', vozDialogo: '', vozMujer: '', vozHombre: '', vocesPorPersonaje: {}, velocidadVoz: 1,
 
-    avisarCapitulos: true, seguirEnSegundoPlano: false
+    avisarCapitulos: true, seguirEnSegundoPlano: false,
+
+    plazoPropuestasHoras: 24
   };
 }
 

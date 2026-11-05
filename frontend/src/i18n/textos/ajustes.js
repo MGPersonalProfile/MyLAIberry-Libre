@@ -32,6 +32,8 @@ export const AJUSTES = {
   'update.install':         { es: 'Actualizar', en: 'Update' },
   'update.on_pc':           { es: 'La {version} está lista: se instala desde el PC.', en: '{version} is ready: install it from the PC.' },
   'update.install_version': { es: 'Actualizar a la {version}', en: 'Update to {version}' },
+  'update.whats_new':       { es: '¿Qué trae?', en: 'What’s new?' },
+  'update.whats_new_question': { es: '¿Qué trae de nuevo esta versión?', en: 'What’s new in this version?' },
   'update.installing':      { es: 'Actualizando… se cerrará y volverá a abrirse', en: 'Updating… it will close and reopen' },
 
   'settings.pace':               { es: 'Tu ritmo', en: 'Your pace' },

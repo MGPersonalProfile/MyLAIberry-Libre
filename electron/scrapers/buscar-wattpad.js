@@ -34,4 +34,18 @@ function fichaDeHtml(html, url) {
     tags, url, source: 'Wattpad', totalChapters: numero(text('[data-testid="partsCount"]')) || 0 };
 }
 
-module.exports = { urlDeBusqueda, resultadosDeHtml, fichaDeHtml };
+async function buscar({ consulta, url } = {}) {
+  if (!url && !String(consulta || '').trim()) return [];
+  const { BrowserWindow } = require('electron');
+  const { cargarPagina } = require('./navegar');
+  const win = new BrowserWindow({ show: false, width: 1200, height: 900, webPreferences: { nodeIntegration: false, contextIsolation: true } });
+  try {
+    await cargarPagina(win, url || urlDeBusqueda({ consulta }));
+    await new Promise(r => setTimeout(r, 3000));
+    return resultadosDeHtml(await win.webContents.executeJavaScript('document.documentElement.outerHTML'));
+  } finally {
+    if (!win.isDestroyed()) win.destroy();
+  }
+}
+
+module.exports = { buscar, urlDeBusqueda, resultadosDeHtml, fichaDeHtml };

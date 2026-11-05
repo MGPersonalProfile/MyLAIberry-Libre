@@ -5,8 +5,16 @@ const PLAZO_MS = 4000, PLAZO_INSTALAR = 60000, PLAZO_PAGINA = 1500, PLAZO_LECTUR
 const TECHO = 800;
 const ESENCIAL = ['/app/', '/manifest.webmanifest', '/icono-192.png', '/icono-512.png', '/puente.json'].map(r => BASE + r);
 const esNuestra = u => u.origin === self.location.origin && u.pathname.startsWith(BASE + '/');
-const DE_LEER = { has: c => /^(get|has|listar)-/.test(c) || ['translate-chapter', 'translate-synopsis'].includes(c) };
+
+const LECTURAS = new Set(['asistente-ver', 'repeated-works', 'check-repeated-chapters', 'search-in-work', 'detect-site']);
+const EN_VIVO = new Set(['queue-status', 'lan-estado', 'estado-voces', 'avisos-disponibles', 'avisos-via']);
+const DEL_AUDIO = new Set(['audio-capitulo', 'audio-obra']);
+const pideAlgo = args => Array.isArray(args) && args.some(a => a && typeof a === 'object' && a.pedir === true);
+const DE_LEER = { has: (c, args) => /^(get|has|listar)-/.test(c) || ['translate-chapter', 'translate-synopsis'].includes(c)
+  || LECTURAS.has(c) || EN_VIVO.has(c) || (DEL_AUDIO.has(c) && !pideAlgo(args)) };
 const ESENCIALES = new Set(['get-library', 'get-settings', 'get-chapter-content', 'translate-chapter']);
+const fallaSinCopia = c => ESENCIALES.has(c) || LECTURAS.has(c) || EN_VIVO.has(c) || DEL_AUDIO.has(c);
+const sinCopia = c => EN_VIVO.has(c) || DEL_AUDIO.has(c);
 const DE_PROGRESO = new Set(['update-progress', 'save-scroll-position']);
 
 const PROYECTABLES = new Set(['get-library', 'get-work', 'get-fanfic', 'get-scroll-position']);
@@ -33,6 +41,18 @@ const LARGAS = new Set(['asistente-chat', 'asistente-accion', 'translate-chapter
 const json = (datos, status = 200) => new Response(JSON.stringify(datos), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
 const claveDe = (canal, args) => `${self.location.origin}${BASE}/__api__/${canal}?a=${encodeURIComponent(JSON.stringify(args))}`;
 const progresoClave = obra => `${BASE}/__progreso__/${encodeURIComponent(obra)}`;
+const revisionClave = obra => `${BASE}/__revision__/${encodeURIComponent(obra)}`;
+async function revisionDe(obra) {
+  const r = await (await caches.open(ESTADO)).match(revisionClave(obra)); return r ? Number(await r.json()) || 0 : 0;
+}
+async function recordarRevision(obra, revision) {
+  if (Number.isInteger(revision) && revision >= 0) await (await caches.open(ESTADO)).put(revisionClave(obra), json(revision));
+}
+async function dispositivo() {
+  const cache = await caches.open(ESTADO), clave = `${BASE}/__dispositivo__`;
+  const r = await cache.match(clave); if (r) return r.json();
+  const id = crypto.randomUUID(); await cache.put(clave, json(id)); return id;
+}
 const cacheDe = url => {
   const ruta = new URL(url, self.location.origin).pathname;
   return ruta.startsWith(BASE + '/app/') || ESENCIAL.includes(ruta) ? APP : CACHE;
@@ -123,9 +143,18 @@ async function llamarAlPC(canal, args, plazo = PLAZO_LECTURA) {
   return { estado: r.status, cuerpo: await r.json() };
 }
 
+let sondeo = null;
+function sondearPC() {
+  sondeo ||= conPlazo(fetch(`${BASE}/puente.json`, { cache: 'no-store' }), PLAZO_MS).then(() => true, () => false)
+    .then(vivo => { pcContesta(vivo); setTimeout(() => { sondeo = null; }, vivo ? 0 : PC_CAIDO_MS); return vivo; });
+  return sondeo;
+}
+const mientrasElPCEste = red => Promise.race([red, sondearPC().then(vivo => vivo ? red : Promise.reject(new Error('sin PC')))]);
+
 async function llamada(peticion, canal, trabajos) {
   let args = [];
   try { args = await peticion.clone().json(); } catch {  }
+  const deLeer = DE_LEER.has(canal, args);
   if (DE_PROGRESO.has(canal)) return escribirProgreso(peticion, canal, args);
   if (RECIBOS.has(canal)) {
     await enSerie(async () => (await caches.open(ESTADO)).put(
@@ -135,7 +164,7 @@ async function llamada(peticion, canal, trabajos) {
   }
   trabajos.push(mandarProgreso().catch(() => {}));
   const clave = await claveContextual(canal, args);
-  const techo = LARGAS.has(canal) ? TECHO_LARGO : (DE_LEER.has(canal) ? TECHO_LECTURA : TECHO_ACCION);
+  const techo = LARGAS.has(canal) ? TECHO_LARGO : (deLeer ? TECHO_LECTURA : TECHO_ACCION);
   const servida = { copia: false };
   const red = conPlazo(vigilar(fetch(peticion)), techo).then(async r => {
     const cuerpo = await r.clone().json().catch(() => null);
@@ -147,13 +176,14 @@ async function llamada(peticion, canal, trabajos) {
   });
   trabajos.push(red.catch(() => {}));
 
-  const enCache = DE_LEER.has(canal) && await (await caches.open(CACHE)).match(clave);
+  const enCache = deLeer && await (await caches.open(CACHE)).match(clave);
   const fijado = canal === 'get-chapter-content' && !enCache
     && await leerViaje('capitulos', [String(args[0]), args[1]]).catch(() => null);
-  const conCopia = DE_LEER.has(canal) && (!!enCache || !!fijado);
+  const conCopia = deLeer && (!!enCache || !!fijado);
   if (conCopia && pcNoContesta()) { const g = await copia(canal, args, clave); if (g) { servida.copia = true; return g; } }
   try {
-    const actual = await conPlazo(red, DE_LEER.has(canal) ? (conCopia ? PLAZO_CON_COPIA : PLAZO_LECTURA) : techo);
+    const actual = await (deLeer && !conCopia && pcNoContesta() ? mientrasElPCEste(red)
+      : conPlazo(red, deLeer ? (conCopia ? PLAZO_CON_COPIA : PLAZO_LECTURA) : techo));
     if (!actual.ok && conCopia) {
       const guardada = await copia(canal, args, clave);
       if (guardada) { servida.copia = true; return guardada; }
@@ -161,13 +191,13 @@ async function llamada(peticion, canal, trabajos) {
     return actual;
   }
   catch (e) {
-    const guardada = DE_LEER.has(canal) && await copia(canal, args, clave);
+    const guardada = deLeer && await copia(canal, args, clave);
     if (guardada) { servida.copia = true; return guardada; }
-    if (e.message === 'plazo' && DE_LEER.has(canal)) {
-      try { return await red; } catch {  }
+    if (e.message === 'plazo' && deLeer) {
+      try { return await mientrasElPCEste(red); } catch {  }
     }
-    if (DE_LEER.has(canal) && !ESENCIALES.has(canal)) return json({ valor: null });
-    return json({ error: DE_LEER.has(canal)
+    if (deLeer && !fallaSinCopia(canal)) return json({ valor: null });
+    return json({ error: deLeer
       ? 'Sin conexión con tu PC: esto no estaba guardado en el móvil.'
       : 'Sin conexión con tu PC: no se ha hecho. Prueba cuando vuelva.' }, 503);
   }
@@ -177,13 +207,16 @@ async function avisarDeLoFresco(canal) {
   for (const c of await self.clients.matchAll()) c.postMessage({ tipo: 'mylaiberry-fresco', canal });
 }
 async function trasLlamar(canal, args, cuerpo, clave) {
-  if (DE_LEER.has(canal)) await guardarLectura(canal, args, cuerpo, clave);
+  if (DE_LEER.has(canal, args) && !sinCopia(canal)) await guardarLectura(canal, args, cuerpo, clave);
   if (canal === 'get-settings') await recordarAjustes(cuerpo.valor);
   if (canal === 'update-settings') await recordarAjustes(args[0]);
   if (canal === 'has-translation' && typeof args[2] === 'string')
     await (await caches.open(ESTADO)).put(`${BASE}/__idioma__`, json(args[2]));
   if (canal === 'get-chapter-content') await adelantarObra(args[0], Number(args[1]) + 1, 3);
   if (canal === 'get-library' && Array.isArray(cuerpo.valor)) await adelantarBiblioteca(cuerpo.valor);
+  const obras = Array.isArray(cuerpo.valor) ? cuerpo.valor : [cuerpo.valor];
+  for (const obra of obras) if (obra?.id && Number.isInteger(obra.lecturaRevision))
+    await recordarRevision(String(obra.id), obra.lecturaRevision);
 }
 async function recordarAjustes(ajustes) {
   if (!ajustes || typeof ajustes !== 'object') return;
@@ -251,6 +284,7 @@ async function apuntarProgreso(canal, args) {
     const cache = await caches.open(ESTADO), clave = progresoClave(obra);
     const previo = await cache.match(clave).then(r => r && r.json());
     const p = { obra, capitulo, en: Date.now(), revision: ++secuencia,
+      deviceId: await dispositivo(), mutationId: crypto.randomUUID(), baseRevision: await revisionDe(obra), posicion,
       ancla: canal === 'save-scroll-position' ? posicion?.ancla || null
         : (previo?.capitulo === capitulo ? previo.ancla : null) };
     await cache.put(clave, json(p));
@@ -261,7 +295,11 @@ async function apuntarProgreso(canal, args) {
 async function escribirProgreso(peticion, canal, args) {
 
   await mandarProgreso();
-  try { return await conPlazo(fetch(peticion), PLAZO_LECTURA); }
+  try {
+    const respuesta = await conPlazo(fetch(peticion), PLAZO_LECTURA), cuerpo = await respuesta.clone().json().catch(() => null);
+    if (respuesta.ok && Number.isInteger(cuerpo?.valor?.revision)) await recordarRevision(String(args[0]), cuerpo.valor.revision);
+    return respuesta;
+  }
   catch { await apuntarProgreso(canal, args); return json({ valor: null }); }
 }
 function mandarProgreso() {
@@ -284,7 +322,9 @@ async function enviarPendientes() {
           headers: { 'Content-Type': 'application/json' }, body: cuerpo })), PLAZO_LECTURA);
         contestadas.add(datos.obra);
         resuelto = r.status === 204 || r.status === 409;
-        if (r.status === 204) await actualizarCopias(datos);
+        const revision = Number(r.headers.get('X-Lectura-Revision'));
+        if (resuelto && Number.isInteger(revision)) await recordarRevision(datos.obra, revision);
+        if (r.status === 204) await actualizarCopias({ ...datos, revisionServidor: revision }); else if (r.status === 409) await cache.delete(claveDe('get-scroll-position', [datos.obra, datos.capitulo]));
       } else {
         const r = await llamarAlPC(datos.canal, datos.args);
         resuelto = r.estado === 200 && !r.cuerpo.error && r.cuerpo.valor?.status !== 'error';
@@ -298,12 +338,13 @@ async function enviarPendientes() {
   return contestadas;
 }
 function proyectar(canal, args, cuerpo, p, posicion) {
-  if (canal === 'get-scroll-position' && args[0] === p.obra && args[1] === p.capitulo)
+  if (canal === 'get-scroll-position' && args[0] === p.obra && args[1] === p.capitulo && (!Number.isInteger(cuerpo.valor?.revision) || cuerpo.valor.revision <= p.baseRevision))
     cuerpo.valor = posicion ?? { px: 0, ancla: p.ancla };
   const obras = Array.isArray(cuerpo.valor) ? cuerpo.valor : [cuerpo.valor];
   for (const o of obras) if (o && typeof o === 'object' && String(o.id) === p.obra
-    && Number(o.progresoEn || o.lastReadAt || 0) <= p.en) {
+    && (!Number.isInteger(o.lecturaRevision) || o.lecturaRevision <= p.baseRevision)) {
     o.currentChapter = p.capitulo; o.lastReadAt = p.en; o.progresoEn = p.en;
+    if (Number.isInteger(p.revisionServidor)) o.lecturaRevision = p.revisionServidor;
     o.scrollPositions = { ...o.scrollPositions, [p.capitulo]: posicion ?? { px: 0, ancla: p.ancla } };
   }
   return cuerpo;
@@ -330,6 +371,7 @@ async function copia(canal, args, clave) {
   const cuerpo = fijado ? { valor: fijado.html } : r ? await r.json() : { valor: null };
   let hay = !!fijado || !!r || !!posicion;
   if (posicion) cuerpo.valor = (await posicion.clone().json()).valor;
+  if (await conLoGuardado(canal, args, cuerpo)) hay = true;
   if (await conPendientes(canal, args, cuerpo)) hay = true;
   return hay ? json(cuerpo) : null;
 }

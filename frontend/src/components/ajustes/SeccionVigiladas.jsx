@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Bell, X, ChevronDown } from 'lucide-react';
 
 import { Seccion } from './piezas';
+import { PrimaryButton, SecondaryButton, IconButton } from '../ui/Buttons';
+import { Tag } from '../ui/Feedback';
+import { Card } from '../ui/Layout';
 import { useI18n } from '../../i18n/I18nContext';
 
 const DEFECTO = { kudosMinimos: 500, palabrasMinimas: 20000, capitulosMinimos: 1, soloCompletas: false };
@@ -9,22 +12,18 @@ const DEFECTO = { kudosMinimos: 500, palabrasMinimas: 20000, capitulosMinimos: 1
 function Liston({ etiqueta, ayuda, valor, opciones, onCambiar, formato }) {
   return (
     <div>
-      <p className="text-[11px] uppercase tracking-wide text-gray-500">{etiqueta}</p>
-      {ayuda && <p className="text-[11px] text-gray-600 mb-2 leading-snug">{ayuda}</p>}
+      <p className="text-caption uppercase tracking-wide text-text-secondary">{etiqueta}</p>
+      {ayuda && <p className="text-caption text-text-tertiary mb-2 leading-snug">{ayuda}</p>}
       <div className="flex gap-1.5 flex-wrap mt-1.5">
         {opciones.map(n => (
-          <button
+          <Tag
             key={n}
             onClick={() => onCambiar(n)}
-            aria-pressed={valor === n}
-            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors border ${
-              valor === n
-                ? 'border-red-500 text-red-400 bg-red-500/10'
-                : 'border-white/10 text-gray-400 hover:border-white/30 hover:text-white'
-            }`}
+            active={valor === n}
+            tone="accent"
           >
             {formato(n)}
-          </button>
+          </Tag>
         ))}
       </div>
     </div>
@@ -45,11 +44,10 @@ export default function SeccionVigiladas({ suscripciones, nueva, alEscribir, alA
         {suscripciones.length > 0 && (
           <ul className="space-y-2">
             {suscripciones.map(s => (
-              <li key={s.id} className="flex items-center justify-between gap-4 bg-white/[0.03] border border-white/10 rounded-lg px-4 py-3">
+              <li key={s.id} className="flex items-center justify-between gap-4 bg-surface-secondary border border-border rounded-md px-4 py-3">
                 <div className="min-w-0">
-                  <p className="text-sm text-white truncate">{s.consulta}</p>
-
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-callout font-medium text-text-primary truncate">{s.consulta}</p>
+                  <p className="text-footnote text-text-secondary mt-0.5">
                     {t('settings.watching_threshold', {
                       kudos: (s.umbral?.kudosMinimos ?? 0).toLocaleString(),
                       palabras: (s.umbral?.palabrasMinimas ?? 0).toLocaleString()
@@ -58,14 +56,12 @@ export default function SeccionVigiladas({ suscripciones, nueva, alEscribir, alA
                     {s.umbral?.soloCompletas && ` · ${t('settings.watching_only_done')}`}
                   </p>
                 </div>
-                <button
+                <IconButton
+                  icon={X}
+                  label={t('settings.watching_remove')}
                   onClick={() => alQuitar(s.id)}
-                  title={t('settings.watching_remove')}
-                  aria-label={t('settings.watching_remove')}
-                  className="p-2 rounded-full text-gray-500 hover:text-white hover:bg-white/10 transition-colors shrink-0"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                  size="sm"
+                />
               </li>
             ))}
           </ul>
@@ -81,28 +77,23 @@ export default function SeccionVigiladas({ suscripciones, nueva, alEscribir, alA
               onChange={(e) => alEscribir(e.target.value)}
               placeholder={t('settings.watching_placeholder')}
               aria-label={t('settings.watching_placeholder')}
-              className="flex-1 min-w-[16rem] bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-white/30"
+              className="flex-1 min-w-[16rem] bg-surface-secondary border border-border rounded-md px-4 py-2 text-callout text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent"
             />
-            <button
+            <SecondaryButton
               type="button"
               onClick={() => setAbierto(a => !a)}
               aria-expanded={abierto}
-              className="px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors border border-white/10 text-gray-400 hover:border-white/30 hover:text-white"
             >
               {t('settings.watching_bar')}
               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${abierto ? 'rotate-180' : ''}`} />
-            </button>
-            <button
-              type="submit"
-              disabled={!nueva.trim()}
-              className="px-4 py-2 rounded-lg bg-white text-black font-semibold text-sm hover:bg-gray-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
+            </SecondaryButton>
+            <PrimaryButton type="submit" disabled={!nueva.trim()}>
               {t('settings.watching_add')}
-            </button>
+            </PrimaryButton>
           </div>
 
           {!abierto && (
-            <p className="text-[11px] text-gray-600">
+            <p className="text-caption text-text-tertiary">
               {t('settings.watching_bar_summary', {
                 kudos: umbral.kudosMinimos.toLocaleString(),
                 palabras: umbral.palabrasMinimas.toLocaleString()
@@ -111,8 +102,8 @@ export default function SeccionVigiladas({ suscripciones, nueva, alEscribir, alA
           )}
 
           {abierto && (
-            <div className="p-5 rounded-xl bg-white/[0.03] border border-white/10 space-y-5">
-              <p className="text-xs text-gray-500 leading-relaxed max-w-2xl">
+            <Card className="bg-surface-secondary space-y-5">
+              <p className="text-footnote text-text-secondary leading-relaxed max-w-2xl">
                 {t('settings.watching_bar_why')}
               </p>
 
@@ -147,17 +138,16 @@ export default function SeccionVigiladas({ suscripciones, nueva, alEscribir, alA
                   type="checkbox"
                   checked={umbral.soloCompletas}
                   onChange={(e) => poner({ soloCompletas: e.target.checked })}
-                  className="mt-0.5 accent-red-600 w-4 h-4"
+                  className="mt-0.5 accent-accent w-4 h-4"
                 />
                 <span>
-                  <span className="text-sm text-white">{t('settings.watching_only_done')}</span>
-
-                  <span className="block text-[11px] text-gray-600 leading-snug mt-0.5">
+                  <span className="text-callout text-text-primary">{t('settings.watching_only_done')}</span>
+                  <span className="block text-caption text-text-tertiary leading-snug mt-0.5">
                     {t('settings.watching_only_done_help')}
                   </span>
                 </span>
               </label>
-            </div>
+            </Card>
           )}
         </form>
       </div>

@@ -1,4 +1,6 @@
 const BD_VIAJE = 'mylaiberry-viaje-1';
+
+const PRESUPUESTO_VIAJE_MS = 240000;
 let viajeEnCurso = null;
 
 const viajeCancelado = new Set();
@@ -65,10 +67,36 @@ async function borrarViaje(id) {
 }
 
 async function avisarViaje(id, estado) {
-  for (const c of await self.clients.matchAll()) c.postMessage({ tipo: 'viaje-estado', id, estado });
+
+  const sinFicha = estado && (({ ficha, ...resto }) => resto)(estado);
+  for (const c of await self.clients.matchAll()) c.postMessage({ tipo: 'viaje-estado', id, estado: sinFicha });
 }
 
-async function prepararViaje(id, total, forzar) {
+const fichaDeViaje = (f, id) => f && typeof f === 'object' && String(f.id) === id ? JSON.parse(JSON.stringify(f)) : null;
+
+async function lasGuardadas() {
+  return (await obrasDeViaje().catch(() => [])).filter(o => o?.ficha).map(o => o.ficha);
+}
+
+async function conLoGuardado(canal, args, cuerpo) {
+  if (!['get-library', 'get-work', 'get-fanfic'].includes(canal)) return false;
+  const fichas = await lasGuardadas();
+  if (canal === 'get-library') {
+    const lista = Array.isArray(cuerpo.valor) ? cuerpo.valor : [];
+    const ids = new Set(lista.map(o => String(o?.id)));
+    const faltan = fichas.filter(f => !ids.has(String(f.id)));
+    if (!faltan.length) return false;
+    cuerpo.valor = [...lista, ...faltan];
+    return true;
+  }
+  if (cuerpo.valor) return false;
+  const ficha = fichas.find(f => String(f.id) === String(args?.[0]));
+  if (!ficha) return false;
+  cuerpo.valor = ficha;
+  return true;
+}
+
+async function prepararViaje(id, total, forzar, ficha = null) {
   const anterior = await leerViaje('obras', id);
   const reintentarHuecos = !!anterior?.faltantes?.length && !anterior.continuar;
   const desde = forzar || reintentarHuecos ? 0
@@ -77,7 +105,8 @@ async function prepararViaje(id, total, forzar) {
   const estado = { id, total, guardados: desde, completa: false, continuar: true,
     revisionPendiente: forzar || !!anterior?.revisionPendiente,
     faltantes: forzar || reintentarHuecos ? [] : anterior?.faltantes || [],
-    almacenados: Math.max(total, anterior?.almacenados || anterior?.total || 0) };
+    almacenados: Math.max(total, anterior?.almacenados || anterior?.total || 0),
+    ficha: ficha || anterior?.ficha || null };
   await escribirViaje('obras', estado);
   return estado;
 }
@@ -111,6 +140,10 @@ async function descargarTramoViaje(estado) {
     await escribirViaje('obras', { ...estado });
     if (i % 5 === 4) await avisarViaje(estado.id, { ...estado, enCurso: true });
   }
+  return cerrarTramo(estado);
+}
+
+async function cerrarTramo(estado) {
   estado.continuar = estado.guardados < estado.total;
   if (!estado.continuar && estado.faltantes.length) {
     const numeros = estado.faltantes.slice(0, 3).map(i => i + 1).join(', ');
@@ -125,17 +158,65 @@ async function descargarTramoViaje(estado) {
   return estado;
 }
 
-async function descargarViaje(id, total, forzar = false) {
+const idDeFondo = id => `viaje-${id}`;
+const fondoDe = async id => (await self.registration.backgroundFetch?.get(idDeFondo(id)).catch(() => null)) || null;
+
+async function recogerFondo(registro) {
+  const id = String(registro.id).replace(/^viaje-/, '');
+  const estado = await leerViaje('obras', id).catch(() => null);
+  if (!estado) return;
+  const porIndice = new Map();
+  for (const r of await registro.matchAll()) porIndice.set(Number(new URL(r.request.url).pathname.split('/').pop()), r);
+  for (let i = estado.guardados; i < estado.total; i++) {
+    const r = porIndice.get(i);
+    if (!r && (estado.revisionPendiente || !await leerViaje('capitulos', [id, i]))) break;
+    if (r) {
+      const respuesta = await r.responseReady.catch(() => null);
+      const html = respuesta?.ok ? (await respuesta.json().catch(() => null))?.valor : null;
+      if (typeof html !== 'string' || !html.replace(/<[^>]*>/g, '').trim()) break;
+      await escribirViaje('capitulos', { obra: id, indice: i, html });
+      await (await caches.open(CACHE)).delete(claveDe('get-chapter-content', [id, i]));
+    }
+    estado.guardados = i + 1;
+  }
+  estado.enFondo = false;
+  await cerrarTramo(estado);
+  return avisarViaje(id, { ...estado, enCurso: false, terminada: !!estado.completa });
+}
+
+for (const tipo of ['backgroundfetchsuccess', 'backgroundfetchfail', 'backgroundfetchabort'])
+  self.addEventListener(tipo, e => e.waitUntil(recogerFondo(e.registration)));
+self.addEventListener('backgroundfetchclick', e => e.waitUntil(self.clients.openWindow?.(`${BASE}/app/`)));
+
+async function descargarViaje(id, total, forzar = false, ficha = null) {
   if (viajeEnCurso) {
 
-    if (viajeEnCurso !== id) await prepararViaje(id, total, forzar).catch(() => {});
+    if (viajeEnCurso !== id) await prepararViaje(id, total, forzar, ficha).catch(() => {});
     const guardado = await leerViaje('obras', id).catch(() => null);
     return avisarViaje(id, guardado && { ...guardado, enCurso: viajeEnCurso === id,
       esperandoOtraObra: viajeEnCurso !== id });
   }
   viajeEnCurso = id;
+
+  if (await fondoDe(id)) {
+    viajeEnCurso = null;
+    if (viajeCancelado.delete(id)) {
+      await (await fondoDe(id))?.abort().catch(() => {});
+      await borrarViaje(id).catch(() => {});
+      return avisarViaje(id, null);
+    }
+    const guardado = await leerViaje('obras', id).catch(() => null);
+    return avisarViaje(id, guardado && { ...guardado, enCurso: true, enFondo: true });
+  }
   let salida;
-  try { salida = await descargarTramoViaje(await prepararViaje(id, total, forzar)); }
+
+  let agotado = false;
+  const reloj = setTimeout(() => { agotado = true; }, PRESUPUESTO_VIAJE_MS);
+  try {
+    let estado = await descargarTramoViaje(await prepararViaje(id, total, forzar, ficha));
+    while (estado.continuar && !agotado && !viajeCancelado.has(id)) estado = await descargarTramoViaje(estado);
+    salida = estado;
+  }
   catch (e) {
     const estado = await leerViaje('obras', id).catch(() => null);
     const cuota = e.name === 'QuotaExceededError';
@@ -144,7 +225,7 @@ async function descargarViaje(id, total, forzar = false) {
     salida = { id, total, guardados: 0, ...estado, continuar: false, enCurso: false, error,
       reintentarAlConectar: !cuota };
     await escribirViaje('obras', salida).catch(() => {});
-  } finally { viajeEnCurso = null; }
+  } finally { clearTimeout(reloj); viajeEnCurso = null; }
   if (viajeCancelado.delete(id)) {
     await borrarViaje(id).catch(() => {});
     return avisarViaje(id, null);
@@ -182,6 +263,7 @@ async function mensajeViaje(d) {
       return avisarViaje(id, { ...estado, enCurso: true, cancelando: true });
     }
     try {
+      await (await fondoDe(id))?.abort().catch(() => {});
       await borrarViaje(id);
       return avisarViaje(id, null);
     } catch {
@@ -189,7 +271,14 @@ async function mensajeViaje(d) {
       return avisarViaje(id, { ...estado, error: 'No se pudo borrar la copia del móvil.' });
     }
   }
+
+  const ficha = fichaDeViaje(d.ficha, id);
+  if (d.tipo === 'viaje-fondo' && Number.isInteger(d.total) && d.total > 0 && d.total <= 20000) {
+    const estado = { ...await prepararViaje(id, d.total, false, ficha), enFondo: true };
+    await escribirViaje('obras', estado);
+    return avisarViaje(id, { ...estado, enCurso: true });
+  }
   if (['viaje-guardar', 'viaje-refrescar'].includes(d.tipo)
     && Number.isInteger(d.total) && d.total > 0 && d.total <= 20000)
-    return descargarViaje(id, d.total, d.tipo === 'viaje-refrescar');
+    return descargarViaje(id, d.total, d.tipo === 'viaje-refrescar', ficha);
 }

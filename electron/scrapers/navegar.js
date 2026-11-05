@@ -44,11 +44,12 @@ const limitado = (url, codigo = 429, texto = '') => {
     return Object.assign(new Error(`${dominio(url)} está cerrado por mantenimiento (${codigo}); suele durar horas. ` +
       'Su estado, en www.otwstatus.org para AO3. No es un bloqueo: lo de la cola espera solo.'),
 
-      { limitado: true, mantenimiento: true, esperarMs: ENFRIAMIENTO_MANTENIMIENTO });
+      { limitado: true, mantenimiento: true, esperarMs: ENFRIAMIENTO_MANTENIMIENTO, sitio: sitioDe(url) });
   }
   enfriar(url);
   return Object.assign(
-    new Error(`${dominio(url)} está limitando las peticiones (${codigo}): vuelve a intentarlo en unos minutos.`), { limitado: true, esperarMs: ENFRIAMIENTO });
+    new Error(`${dominio(url)} está limitando las peticiones (${codigo}): vuelve a intentarlo en unos minutos.`),
+    { limitado: true, esperarMs: ENFRIAMIENTO, sitio: sitioDe(url) });
 };
 const textoDe = async (win) => {
   try { return await win.webContents.executeJavaScript('document.body ? document.body.innerText.slice(0, 2000) : ""'); } catch { return ''; }
@@ -63,7 +64,8 @@ function exigirQueNoEnfrie(url, ahora = Date.now()) {
   const hasta = enfriandoHasta.get(sitioDe(url));
   if (!hasta || hasta <= ahora) return;
   const hora = new Date(hasta).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-  throw Object.assign(new Error(`${dominio(url)} nos ha pedido que esperemos: no se le vuelve a pedir hasta las ${hora}.`), { limitado: true, esperarMs: hasta - ahora });
+  throw Object.assign(new Error(`${dominio(url)} nos ha pedido que esperemos: no se le vuelve a pedir hasta las ${hora}.`),
+    { limitado: true, esperarMs: hasta - ahora, sitio: sitioDe(url) });
 }
 const dominio = (url) => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'El sitio'; } };
 
@@ -119,9 +121,11 @@ function exigirQueNoSeaUnReto(sitio, { titulo = '', texto = '', url = '' } = {})
 
   if (url && MANTENIMIENTO.test(muestra)) throw limitado(url, 503, muestra);
   if (MANTENIMIENTO.test(muestra)) {
-    throw Object.assign(new Error(`${sitio} está cerrado por mantenimiento; suele durar horas (estado de AO3: www.otwstatus.org).`), { limitado: true, mantenimiento: true, esperarMs: ENFRIAMIENTO_MANTENIMIENTO });
+    throw Object.assign(new Error(`${sitio} está cerrado por mantenimiento; suele durar horas (estado de AO3: www.otwstatus.org).`),
+      { limitado: true, mantenimiento: true, esperarMs: ENFRIAMIENTO_MANTENIMIENTO, sitio: sitio === 'AO3' ? 'archiveofourown.org' : '' });
   }
-  if (DENEGADO.test(muestra)) throw Object.assign(new Error(`${sitio} está limitando las peticiones: vuelve a intentarlo en unos minutos.`), { limitado: true, esperarMs: ENFRIAMIENTO });
+  if (DENEGADO.test(muestra)) throw Object.assign(new Error(`${sitio} está limitando las peticiones: vuelve a intentarlo en unos minutos.`),
+    { limitado: true, esperarMs: ENFRIAMIENTO, sitio: sitio === 'AO3' ? 'archiveofourown.org' : '' });
   if (String(texto).trim().length < 200) throw new Error(`${sitio} no devolvió la página de resultados.`);
 }
 

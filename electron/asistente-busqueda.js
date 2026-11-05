@@ -2,21 +2,25 @@ const MEDIDA = { AO3: 'kudos', 'FanFiction.net': 'favoritos', RoyalRoad: 'seguid
 
 const { claveDeObra } = require('./misma-obra');
 
-function porFuente(fuente, obras = [], enBiblioteca = new Set()) {
+function porFuente(fuente, obras = [], enBiblioteca = new Set(), filtros) {
   return {
     fuente,
+
+    ...(filtros ? { filtros } : {}),
 
     obras: obras.slice(0, 8).map(o => ({
       title: o.title,
       author: o.author,
       url: o.url,
-      synopsis: String(o.synopsis || '').slice(0, 300),
+
+      synopsis: String(o.synopsis || '').slice(0, 600),
       totalChapters: o.totalChapters,
       palabras: o.wordCount || undefined,
       popularidad: o.kudos ? `${o.kudos} ${MEDIDA[fuente] || 'kudos'}` : undefined,
       completa: o.completa,
       enBiblioteca: enBiblioteca.has(claveDeObra(o.url)) || undefined,
-      tags: (o.tags || []).map(t => t.name || t).slice(0, 10)
+      tags: (o.tags || []).map(t => t.name || t).slice(0, 10),
+      ...(o.sinComprobar ? { sinComprobar: o.sinComprobar } : {})
     }))
   };
 }

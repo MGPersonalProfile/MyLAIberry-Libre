@@ -183,10 +183,15 @@ async function atender(req, res, { fuente, base, codigo, anfitrionesValidos, app
 
   if (req.method === 'POST') {
     if (partes.length !== 1 || partes[0] !== 'progreso') return error(res, 405, 'Sólo GET.');
-    const [estado, mensaje] = await atenderProgreso(req, fuente.guardarProgreso);
+    const [estado, mensaje, revision] = await atenderProgreso(req, fuente.guardarProgreso);
 
-    if (estado !== 204) { await drenar(req); return error(res, estado, mensaje); }
-    res.writeHead(204, { 'Cache-Control': 'no-store' });
+    if (estado !== 204) {
+      await drenar(req);
+      if (revision) res.setHeader('X-Lectura-Revision', revision.revision);
+      return error(res, estado, mensaje);
+    }
+    res.writeHead(204, { 'Cache-Control': 'no-store',
+      ...(revision ? { 'X-Lectura-Revision': revision.revision } : {}) });
     return res.end();
   }
 

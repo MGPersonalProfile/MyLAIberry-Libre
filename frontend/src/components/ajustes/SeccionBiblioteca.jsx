@@ -1,6 +1,8 @@
 import { Library, Download } from 'lucide-react';
 
 import { Seccion, Dato } from './piezas';
+import { ProgressIndicator } from '../ui/Feedback';
+import { Divider } from '../ui/List';
 import RehacerTraducciones from './RehacerTraducciones';
 import CapitulosNuevosEnTodas from './CapitulosNuevosEnTodas';
 import { formatBytes } from './formato';
@@ -11,7 +13,7 @@ export default function SeccionBiblioteca({ stats, pct, onCambio }) {
   return (
     <Seccion icono={Library} titulo={t('settings.library')} descripcion={t('settings.library_desc')}>
       {stats ? (
-        <>
+        <div className="space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Dato valor={stats.fanfics} etiqueta={t('settings.stat_works')}
                   detalle={Object.entries(stats.porPlataforma).map(([k, v]) => `${v} ${k}`).join(' · ')} />
@@ -23,29 +25,27 @@ export default function SeccionBiblioteca({ stats, pct, onCambio }) {
                   detalle={formatBytes(stats.bytes)} />
           </div>
 
-          <div className="mt-4">
-            <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+          <div>
+            <div className="flex justify-between text-footnote text-text-secondary mb-1.5">
               <span>{t('settings.downloaded')}</span>
               <span className="tabular-nums">{pct} %</span>
             </div>
-            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-red-600 rounded-full transition-all duration-700"
-                   style={{ width: `${pct}%` }} />
-            </div>
+            <ProgressIndicator value={pct} />
             {stats.enCola > 0 && (
-              <p className="text-xs text-gray-500 mt-2 flex items-center gap-1.5">
-                <Download className="w-3 h-3" /> {t('settings.in_queue', { n: stats.enCola })}
+              <p className="text-footnote text-text-secondary mt-2 flex items-center gap-1.5">
+                <Download className="w-3.5 h-3.5" /> {t('settings.in_queue', { n: stats.enCola })}
               </p>
             )}
           </div>
 
+          <Divider />
           <CapitulosNuevosEnTodas onHecho={onCambio} />
+          <Divider />
           <RehacerTraducciones onHecho={onCambio} />
-        </>
+        </div>
       ) : (
-        <p className="text-sm text-gray-600">{t('settings.loading')}</p>
+        <p className="text-callout text-text-tertiary">{t('settings.loading')}</p>
       )}
     </Seccion>
-
   );
 }

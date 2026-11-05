@@ -73,3 +73,9 @@ function ocultarAntirrobo(html) {
 }
 
 module.exports.ocultarAntirrobo = ocultarAntirrobo;
+
+function paraGuardar(html) {
+  return ocultarAntirrobo(require('./limpiar-html.js').sinPublicidad(String(html || '')));
+}
+
+module.exports.paraGuardar = paraGuardar;

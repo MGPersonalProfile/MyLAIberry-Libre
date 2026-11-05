@@ -1,5 +1,7 @@
 const { app, BrowserWindow, nativeTheme } = require('electron');
 
+require('./consola-segura.js').protegerConsola();
+
 app.setName('mylaiberry-libre');
 
 nativeTheme.themeSource = 'dark';
@@ -138,6 +140,8 @@ app.whenReady().then(async () => {
   replanificarCadaHora(deFondo);
 
   require('./ipc/asistente.js').arrancarLatido();
+
+  require('./propuestas.js').arrancarVencimiento();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
