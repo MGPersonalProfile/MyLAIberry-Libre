@@ -49,6 +49,13 @@ export default function SeccionAsistente() {
             descripcion={t('settings.assistant_proactive_desc')}
           />
           <Divider />
+          <Interruptor
+            activo={ajustes.desarrollador === true}
+            onChange={(v) => cambiar({ desarrollador: v })}
+            titulo={t('settings.assistant_developer')}
+            descripcion={t('settings.assistant_developer_desc')}
+          />
+          <Divider />
           <div className="space-y-3">
             <Numero etiqueta={t('settings.assistant_daily')} valor={ajustes.dailyCalls} max={1000}
               onChange={(n) => cambiar({ dailyCalls: n })} />

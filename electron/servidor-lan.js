@@ -278,7 +278,8 @@ async function arrancar({ puerto = PUERTO_POR_DEFECTO, fuente, direcciones, codi
 
   const base = codigo ? '/' + codigo : '';
 
-  const contexto = { fuente, base, codigo, app, anfitrionesValidos: anfitrionesDe([...objetivos, ...nombres]) };
+  const contexto = { fuente, base, codigo, app: app && { ...app, codigoLan: !!codigo },
+    anfitrionesValidos: anfitrionesDe([...objetivos, ...nombres]) };
 
   const servidores = [];
   const sockets = new Set();

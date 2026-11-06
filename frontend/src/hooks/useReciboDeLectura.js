@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import useSesionDeLectura from './useSesionDeLectura.js';
 
 const SELECTOR = 'p,li,blockquote,h1,h2,h3,h4,h5,h6,pre,div';
 
@@ -13,6 +14,8 @@ export function contarParrafos(html) {
 }
 
 export default function useReciboDeLectura({ storyId, capitulo, avance }) {
+
+  useSesionDeLectura({ storyId, capitulo, avance });
 
   const [conteo, setConteo] = useState({ capitulo: -1, n: 0 });
   const parrafos = conteo.capitulo === capitulo ? conteo.n : 0;

@@ -4,6 +4,7 @@ import { SecondaryButton } from '../ui/Buttons';
 import { Notice } from '../ui/Feedback';
 import { prepararAlmacenamiento } from './espacioViaje';
 import { encargarAlNavegador } from './fondoViaje';
+import { llevarAnotacionesDeViaje } from './anotacionesDeViaje';
 
 function useViajeObra(obraId, total, disponible) {
   const [estado, setEstado] = useState(null);
@@ -67,6 +68,8 @@ export default function GuardarSinConexion({ obra }) {
       setPersistente(espacio.persistente);
       setActivo(true); setEstado(prev => prev && { ...prev, error: null });
     }
+
+    if (tipo === 'viaje-guardar' || tipo === 'viaje-refrescar') llevarAnotacionesDeViaje(window.api, obra.id).catch(() => {});
     const r = await navigator.serviceWorker.ready;
 
     const ficha = JSON.parse(JSON.stringify(obra));
@@ -91,7 +94,7 @@ export default function GuardarSinConexion({ obra }) {
         className="w-full"
       >
         {activo ? `Guardando en este móvil · ${guardados}/${total}`
-          : completo ? `Original sin conexión · ${total} capítulos`
+          : completo ? `${estado.idioma ? `Original y traducción (${estado.idioma})` : 'Original'} sin conexión · ${total} capítulos`
             : actualizar ? `Actualizar copia · ${estado.total} → ${total} capítulos`
               : guardados ? `Reanudar descarga · ${guardados}/${total}` : `Guardar ${total} capítulos en este móvil`}
       </SecondaryButton>

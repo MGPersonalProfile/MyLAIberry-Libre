@@ -7,10 +7,16 @@ const viajeCancelado = new Set();
 
 function abrirViaje() {
   return new Promise((ok, mal) => {
-    const r = indexedDB.open(BD_VIAJE, 1);
-    r.onupgradeneeded = () => {
-      r.result.createObjectStore('obras', { keyPath: 'id' });
-      r.result.createObjectStore('capitulos', { keyPath: ['obra', 'indice'] });
+    const r = indexedDB.open(BD_VIAJE, 3);
+
+    r.onupgradeneeded = (e) => {
+      const antes = (e && e.oldVersion) || 0;
+      if (antes < 1) {
+        r.result.createObjectStore('obras', { keyPath: 'id' });
+        r.result.createObjectStore('capitulos', { keyPath: ['obra', 'indice'] });
+      }
+      if (antes < 2) r.result.createObjectStore('sesiones', { keyPath: 'sessionId' });
+      if (antes < 3) r.result.createObjectStore('traducciones', { keyPath: ['obra', 'indice', 'idioma'] });
     };
     r.onsuccess = () => ok(r.result);
     r.onerror = () => mal(r.error);
@@ -41,15 +47,54 @@ async function escribirViaje(almacen, valor) {
   });
 }
 
-async function obrasDeViaje() {
+async function obrasDeViaje(almacen = 'obras') {
   const bd = await abrirViaje();
   return new Promise((ok, mal) => {
-    const tx = bd.transaction('obras', 'readonly');
-    const r = tx.objectStore('obras').getAll();
+    const tx = bd.transaction(almacen, 'readonly');
+    const r = tx.objectStore(almacen).getAll();
     r.onsuccess = () => ok(r.result || []);
     tx.oncomplete = () => bd.close();
     tx.onerror = () => { bd.close(); mal(tx.error || r.error); };
   });
+}
+
+const CANAL_SESIONES = 'registrar-sesion-lectura';
+const sesionesPendientes = () => obrasDeViaje('sesiones');
+let enviandoSesiones = null;
+
+async function quitarSesion(id) {
+  const bd = await abrirViaje();
+  return new Promise((ok, mal) => {
+    const tx = bd.transaction('sesiones', 'readwrite');
+    tx.objectStore('sesiones').delete(id);
+    tx.oncomplete = () => { bd.close(); ok(); };
+    tx.onerror = () => { bd.close(); mal(tx.error); };
+    tx.onabort = () => { bd.close(); mal(tx.error || new Error('Borrado local interrumpido.')); };
+  });
+}
+
+async function enviarSesionesAhora(forzar) {
+  if (!forzar && pcNoContesta()) return;
+  for (const sesion of await sesionesPendientes()) {
+    let r;
+    try { r = await vigilar(llamarAlPC(CANAL_SESIONES, [sesion])); } catch { return; }
+    const ack = r.cuerpo?.valor;
+    if (r.estado !== 200 || r.cuerpo?.error || !ack) return;
+    if (ack.aceptada === true || ack.motivo === 'no-valida') await quitarSesion(sesion.sessionId);
+  }
+}
+
+function enviarSesiones(forzar = false) {
+  enviandoSesiones ||= enviarSesionesAhora(forzar).finally(() => { enviandoSesiones = null; });
+  return enviandoSesiones;
+}
+
+async function atenderSesion(peticion, trabajos) {
+  const [sesion] = await peticion.clone().json().catch(() => []);
+  if (!sesion || typeof sesion.sessionId !== 'string') return json({ error: 'Sesión no válida.' }, 400);
+  await escribirViaje('sesiones', sesion);
+  trabajos.push(enviarSesiones().catch(() => {}));
+  return json({ valor: { aceptada: true, encolada: true } });
 }
 
 async function borrarViaje(id) {
@@ -57,9 +102,11 @@ async function borrarViaje(id) {
   if (!estado) return;
   const bd = await abrirViaje();
   await new Promise((ok, mal) => {
-    const tx = bd.transaction(['obras', 'capitulos'], 'readwrite');
+    const tx = bd.transaction(['obras', 'capitulos', 'traducciones'], 'readwrite');
     tx.objectStore('obras').delete(id);
     for (let i = 0; i < (estado.almacenados || estado.total); i++) tx.objectStore('capitulos').delete([id, i]);
+
+    tx.objectStore('traducciones').delete(IDBKeyRange.bound([id], [id, []]));
     tx.oncomplete = () => { bd.close(); ok(); };
     tx.onerror = () => { bd.close(); mal(tx.error); };
     tx.onabort = () => { bd.close(); mal(tx.error || new Error('Borrado local interrumpido.')); };
@@ -98,6 +145,7 @@ async function conLoGuardado(canal, args, cuerpo) {
 
 async function prepararViaje(id, total, forzar, ficha = null) {
   const anterior = await leerViaje('obras', id);
+  const idioma = await idiomaElegido();
   const reintentarHuecos = !!anterior?.faltantes?.length && !anterior.continuar;
   const desde = forzar || reintentarHuecos ? 0
     : anterior?.total === total ? anterior.guardados || 0
@@ -106,7 +154,7 @@ async function prepararViaje(id, total, forzar, ficha = null) {
     revisionPendiente: forzar || !!anterior?.revisionPendiente,
     faltantes: forzar || reintentarHuecos ? [] : anterior?.faltantes || [],
     almacenados: Math.max(total, anterior?.almacenados || anterior?.total || 0),
-    ficha: ficha || anterior?.ficha || null };
+    ficha: ficha || anterior?.ficha || null, ...(idioma ? { idioma } : {}) };
   await escribirViaje('obras', estado);
   return estado;
 }
@@ -125,6 +173,49 @@ async function traerCapituloViaje(id, indice) {
   throw new Error(`No se pudo traer el capítulo ${indice + 1} del PC. Se reanudará al reconectar.`);
 }
 
+const idiomaElegido = async () => { const a = await ajustesGuardados(); return a.readTranslated && typeof a.lang === 'string' ? a.lang : null; };
+const textoDe = html => typeof html === 'string' && html.replace(/<[^>]*>/g, '').trim() ? html : null;
+
+async function preguntarAlPC(canal, args, que) {
+  for (let intento = 0; intento < 3; intento++) {
+    try {
+      const { estado, cuerpo } = await llamarAlPC(canal, args);
+      if (estado === 200 && !cuerpo?.error) return cuerpo?.valor;
+    } catch {  }
+    if (intento < 2) await new Promise(ok => setTimeout(ok, 300 * (intento + 1)));
+  }
+  throw new Error(`No se pudo traer ${que} del PC. Se reanudará al reconectar.`);
+}
+
+async function traducirParaViaje(estado, indice) {
+  const { id, idioma } = estado;
+  if (!estado.revisionPendiente && await leerViaje('traducciones', [id, indice, idioma])) return;
+  const nombre = `la traducción del capítulo ${indice + 1}`;
+  if (!await preguntarAlPC('has-translation', [id, indice, idioma], nombre)) return;
+  const html = textoDe(await preguntarAlPC('translate-chapter', [id, indice, idioma], nombre));
+  if (html) await escribirViaje('traducciones', { obra: id, indice, idioma, html });
+}
+
+async function fijarTraduccionLeida(args, html) {
+  const id = String(args[0]), estado = await leerViaje('obras', id).catch(() => null);
+  if (!estado || !textoDe(html) || !Number.isInteger(args[1])) return;
+  await escribirViaje('traducciones', { obra: id, indice: args[1], idioma: args[2], html });
+  if (!viajeEnCurso && estado.idioma !== args[2]) await escribirViaje('obras', { ...estado, idioma: args[2] });
+}
+
+async function fijadoDe(canal, args) {
+  const id = String(args?.[0]);
+  if (canal === 'get-chapter-content') {
+    const c = await leerViaje('capitulos', [id, args[1]]).catch(() => null);
+    return c ? { valor: c.html } : null;
+  }
+  if ((canal === 'has-translation' || canal === 'translate-chapter') && typeof args?.[2] === 'string') {
+    const t = await leerViaje('traducciones', [id, args[1], args[2]]).catch(() => null);
+    return t ? { valor: canal === 'has-translation' ? true : t.html } : null;
+  }
+  return null;
+}
+
 async function descargarTramoViaje(estado) {
   const fin = Math.min(estado.total, estado.guardados + 12);
   for (let i = estado.guardados; i < fin; i++) {
@@ -136,6 +227,7 @@ async function descargarTramoViaje(estado) {
         await (await caches.open(CACHE)).delete(claveDe('get-chapter-content', [estado.id, i]));
       } else estado.faltantes.push(i);
     }
+    if (estado.idioma) await traducirParaViaje(estado, i);
     estado.guardados = i + 1;
     await escribirViaje('obras', { ...estado });
     if (i % 5 === 4) await avisarViaje(estado.id, { ...estado, enCurso: true });
@@ -161,6 +253,14 @@ async function cerrarTramo(estado) {
 const idDeFondo = id => `viaje-${id}`;
 const fondoDe = async id => (await self.registration.backgroundFetch?.get(idDeFondo(id)).catch(() => null)) || null;
 
+async function traducirLoGuardado(estado) {
+  if (!estado.idioma || estado.guardados < estado.total) return null;
+  for (let i = 0; i < estado.total; i++) {
+    try { await traducirParaViaje(estado, i); } catch (e) { estado.guardados = i; return e.message; }
+  }
+  return null;
+}
+
 async function recogerFondo(registro) {
   const id = String(registro.id).replace(/^viaje-/, '');
   const estado = await leerViaje('obras', id).catch(() => null);
@@ -180,7 +280,9 @@ async function recogerFondo(registro) {
     estado.guardados = i + 1;
   }
   estado.enFondo = false;
+  const fallo = await traducirLoGuardado(estado);
   await cerrarTramo(estado);
+  if (fallo) await escribirViaje('obras', Object.assign(estado, { completa: false, continuar: true, error: fallo, reintentarAlConectar: true }));
   return avisarViaje(id, { ...estado, enCurso: false, terminada: !!estado.completa });
 }
 
@@ -244,7 +346,11 @@ async function reanudarViaje(conectado) {
 }
 
 async function mensajeViaje(d) {
-  if (d.tipo === 'viaje-reanudar') return reanudarViaje(d.conectado === true);
+  if (d.tipo === 'viaje-reanudar') {
+    const sesiones = enviarSesiones(d.conectado === true).catch(() => {});
+    await reanudarViaje(d.conectado === true);
+    return sesiones;
+  }
   const id = d.id;
   if (typeof id !== 'string' || !/^[\w.-]{1,160}$/.test(id)) return;
   if (d.tipo === 'viaje-estado') {

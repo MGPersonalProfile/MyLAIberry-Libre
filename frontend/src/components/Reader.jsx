@@ -19,12 +19,13 @@ import useSugerenciasDeFinal from '../hooks/useSugerenciasDeFinal';
 import Mandos from './lector/Mandos';
 import IndiceLateral from './lector/IndiceLateral';
 import FinDeObra from './lector/FinDeObra';
-import { restaurarTrasLayout } from './lector/restaurar';
+import { restaurarCapitulo } from './lector/restaurar';
 import ResumenPrevio from './lector/ResumenPrevio';
 import NavegacionCapitulos from './lector/NavegacionCapitulos';
 import avisoNoDescargado from './lector/avisoNoDescargado';
 import AvisosDeCarga from './lector/AvisosDeCarga';
 import PanelAsistente from './lector/PanelAsistente';
+import MenuSubrayado from './lector/MenuSubrayado';
 
 export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
   const { t, lang } = useI18n();
@@ -192,18 +193,8 @@ export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
     return { contenido };
   }
 
-  async function restaurarScroll(index, vigente) {
-    if (!scrollRef.current) return;
-    if (!window.api) {
-      scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-
-    const guardada = await window.api.getScrollPosition(story.id, index);
-    if (!vigente()) return;
-    await restaurarTrasLayout(scrollRef.current, guardada,
-      contenidoTraducido ? (lang || 'es') : 'original', vigente);
-  }
+  const restaurarScroll = (index, vigente) =>
+    restaurarCapitulo(scrollRef.current, story.id, index, contenidoTraducido ? (lang || 'es') : 'original', vigente);
 
   async function loadChapter(index) {
 
@@ -323,6 +314,9 @@ export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
       ref={scrollRef}
       className={`fixed inset-0 z-[200] transition-colors duration-500 overflow-y-auto overflow-x-hidden ${ajustes.clases}`}
     >
+
+      <MenuSubrayado scrollRef={scrollRef} story={story} capitulo={currentChapterIndex}
+        variante={contenidoTraducido ? (lang || 'es') : 'original'} claves={[ajustes.cuerpo, ajustes.fuente, chapterContent]} />
 
       <div className="h-8 w-full drag-region fixed top-0 z-[210]" style={{ WebkitAppRegion: 'drag' }} />
 

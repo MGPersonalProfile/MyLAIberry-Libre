@@ -5,6 +5,7 @@ import { Seccion, Opciones } from './piezas';
 import { Divider } from '../ui/List';
 import { useI18n } from '../../i18n/I18nContext';
 import RitmoDeLectura from './RitmoDeLectura';
+import MiLectura from './MiLectura';
 import AjustesDeVoz from '../AjustesDeVoz';
 import { enElMovil } from '../../vistaGuardada';
 import { letraDelAparato, guardarLetra, LETRA_MINIMA, LETRA_MAXIMA } from '../../letraDelAparato';
@@ -99,6 +100,8 @@ export default function SeccionLectura({ ajustes, alGuardar, alGuardarDiferido, 
         <AjustesDeVoz voces={voces} ajustes={ajustesVoz} alCambiar={alGuardar} />
         <Divider />
         <RitmoDeLectura />
+        <Divider />
+        <MiLectura />
       </div>
     </Seccion>
   );

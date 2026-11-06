@@ -6,8 +6,8 @@ const TECHO = 800;
 const ESENCIAL = ['/app/', '/manifest.webmanifest', '/icono-192.png', '/icono-512.png', '/puente.json'].map(r => BASE + r);
 const esNuestra = u => u.origin === self.location.origin && u.pathname.startsWith(BASE + '/');
 
-const LECTURAS = new Set(['asistente-ver', 'repeated-works', 'check-repeated-chapters', 'search-in-work', 'detect-site']);
-const EN_VIVO = new Set(['queue-status', 'lan-estado', 'estado-voces', 'avisos-disponibles', 'avisos-via']);
+const LECTURAS = new Set(['asistente-ver', 'repeated-works', 'check-repeated-chapters', 'search-in-work', 'detect-site', 'estadisticas-lectura']);
+const EN_VIVO = new Set(['queue-status', 'lan-estado', 'estado-voces', 'avisos-disponibles', 'avisos-via', 'exportar-lectura']);
 const DEL_AUDIO = new Set(['audio-capitulo', 'audio-obra']);
 const pideAlgo = args => Array.isArray(args) && args.some(a => a && typeof a === 'object' && a.pedir === true);
 const DE_LEER = { has: (c, args) => /^(get|has|listar)-/.test(c) || ['translate-chapter', 'translate-synopsis'].includes(c)
@@ -177,8 +177,7 @@ async function llamada(peticion, canal, trabajos) {
   trabajos.push(red.catch(() => {}));
 
   const enCache = deLeer && await (await caches.open(CACHE)).match(clave);
-  const fijado = canal === 'get-chapter-content' && !enCache
-    && await leerViaje('capitulos', [String(args[0]), args[1]]).catch(() => null);
+  const fijado = (!enCache || canal === 'has-translation') && await fijadoDe(canal, args);
   const conCopia = deLeer && (!!enCache || !!fijado);
   if (conCopia && pcNoContesta()) { const g = await copia(canal, args, clave); if (g) { servida.copia = true; return g; } }
   try {
@@ -212,6 +211,7 @@ async function trasLlamar(canal, args, cuerpo, clave) {
   if (canal === 'update-settings') await recordarAjustes(args[0]);
   if (canal === 'has-translation' && typeof args[2] === 'string')
     await (await caches.open(ESTADO)).put(`${BASE}/__idioma__`, json(args[2]));
+  if (canal === 'translate-chapter' && typeof args[2] === 'string') await fijarTraduccionLeida(args, cuerpo.valor);
   if (canal === 'get-chapter-content') await adelantarObra(args[0], Number(args[1]) + 1, 3);
   if (canal === 'get-library' && Array.isArray(cuerpo.valor)) await adelantarBiblioteca(cuerpo.valor);
   const obras = Array.isArray(cuerpo.valor) ? cuerpo.valor : [cuerpo.valor];
@@ -365,10 +365,9 @@ async function conPendientes(canal, args, cuerpo) {
 }
 async function copia(canal, args, clave) {
   const cache = await caches.open(ESTADO), r = await (await caches.open(CACHE)).match(clave);
-  const fijado = canal === 'get-chapter-content' && !r
-    && await leerViaje('capitulos', [String(args[0]), args[1]]).catch(() => null);
+  const fijado = (!r || canal === 'has-translation') && await fijadoDe(canal, args);
   const posicion = canal === 'get-scroll-position' && await cache.match(claveDe(canal, args));
-  const cuerpo = fijado ? { valor: fijado.html } : r ? await r.json() : { valor: null };
+  const cuerpo = fijado ? { valor: fijado.valor } : r ? await r.json() : { valor: null };
   let hay = !!fijado || !!r || !!posicion;
   if (posicion) cuerpo.valor = (await posicion.clone().json()).valor;
   if (await conLoGuardado(canal, args, cuerpo)) hay = true;
@@ -400,7 +399,7 @@ self.addEventListener('fetch', e => {
   if (!esNuestra(url)) return;
   const api = url.pathname.startsWith(BASE + '/api/') && decodeURIComponent(url.pathname.slice(BASE.length + 5));
   if (!(e.request.method === 'POST' && api) && (e.request.method !== 'GET' || /\/eventos$/.test(url.pathname))) return;
-  const trabajos = [], respuesta = api ? llamada(e.request, api, trabajos) : primeroLaRed(e.request, trabajos);
+  const trabajos = [], respuesta = api === CANAL_SESIONES ? atenderSesion(e.request, trabajos) : api ? llamada(e.request, api, trabajos) : primeroLaRed(e.request, trabajos);
   e.respondWith(respuesta);
 
   e.waitUntil((async () => {

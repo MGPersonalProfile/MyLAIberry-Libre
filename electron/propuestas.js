@@ -21,9 +21,9 @@ async function plazoEnHoras() {
 async function proponerUna(url, { motivo, desde, vence, horas, guardar, obras }) {
   const vista = recientes.obtener(url);
   if (!vista) return { url, error: 'No sale en ninguna búsqueda de esta sesión: búscala con buscar_obras y propón la url que devuelva.' };
-  const existente = obras.find(f => mismaObra(f.url, url)) ||
 
-    obras.find(f => f.origen === 'descartada' && mismoTituloYAutor(f, vista.obra));
+  const candidatas = [obras.find(f => mismaObra(f.url, url)), ...obras.filter(f => mismoTituloYAutor(f, vista.obra))].filter(Boolean);
+  const existente = candidatas.find(esDeLaBiblioteca) || candidatas.find(f => f.origen === 'descartada') || candidatas[0];
   if (existente && esDeLaBiblioteca(existente)) return { url, title: existente.title, yaEnLaBiblioteca: true };
   if (existente?.origen === 'descartada') return { url, title: existente.title, descartadaAntes: true };
 
@@ -52,7 +52,9 @@ async function vencerPropuestas({ ahora = Date.now(), adoptar = require('./adopt
   const adoptadas = [];
   for (const o of await db.propuestasVencidas(ahora)) {
     await db.marcarPropuesta(o.id, { adoptadaAlVencer: ahora });
-    const r = await adoptar(o.id, { paraLeer: false });
+
+    const r = await adoptar(o.id, { paraLeer: false })
+      .catch(e => { console.warn(`[Propuestas] ${o.title}: ${e.message}`); return null; });
 
     if (r?.status === 'ok' && !r.yaEra) adoptadas.push(o.title);
     else await db.marcarPropuesta(o.id, { adoptadaAlVencer: null });
@@ -68,6 +70,7 @@ function arrancarVencimiento() {
   const pasar = () => vencerPropuestas().catch(e => console.warn(`[Propuestas] ${e.message}`));
   pasar();
   const reloj = setInterval(pasar, CADA);
+  reloj.unref?.();
   return () => clearInterval(reloj);
 }
 

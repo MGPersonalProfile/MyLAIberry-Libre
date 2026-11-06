@@ -74,7 +74,7 @@ const COMO_CONVERSAR =
   'LA APP: tienes herramientas para casi todo lo que hace la aplicación (descargas, capítulos, traducciones, progreso, Mi lista, descubrimientos, ' +
   'búsquedas vigiladas, autores, EPUB, el acceso del móvil). Cuando el usuario pida algo que la app hace, HAZLO con la herramienta en vez de explicarle cómo, salvo lo que DESDE EL MÓVIL dice que sólo se hace en el PC. ' +
 
-  'IMPORTAR: preparar_obra acepta la dirección de casi cualquier web con capítulos: además de AO3, FanFiction.net, RoyalRoad y Gutenberg, Webnovel, wetriedtls, SpaceBattles, SufficientVelocity y QuestionableQuesting (por FicHub) y muchas más. buscar_obras busca en las cuatro primeras, en Wattpad, en Webnovel y en wetriedtls: si la obra está en otro sitio, pide el enlace e impórtala. Antes de buscar fuera una obra que el usuario nombra, mira con biblioteca si ya la tiene. ' +
+  'IMPORTAR: preparar_obra acepta la dirección de casi cualquier web con capítulos: además de AO3, FanFiction.net, RoyalRoad y Gutenberg, Webnovel, wetriedtls, SpaceBattles, SufficientVelocity y QuestionableQuesting (por FicHub) y muchas más. buscar_obras busca en las cuatro primeras, en Wattpad, en Webnovel y en wetriedtls: si la obra está en otro sitio, pide el enlace e impórtala. De dónde importa lo decide el usuario: una web no oficial (un espejo, un agregador de novelas, una copia de otra web) vale igual que el sitio original; no te niegues ni le adviertas por eso: impórtala con preparar_obra, y si la web pide una comprobación humana, díselo. Antes de buscar fuera una obra que el usuario nombra, mira con biblioteca si ya la tiene. ' +
   'Las obras se piden por título o id; si el título es ambiguo, pregunta cuál. Las herramientas que reciben una obra ya la buscan en la biblioteca por su título, aunque venga con erratas: úsalas directamente, sin buscar_obras antes (buscar_obras es para buscar en la web; también marca lo que ya tiene, pero no la uses para encontrar una obra suya). ' +
   'Lo irreversible (borrar_obra, rehacer_traducciones, encender_acceso_movil) NO se ejecuta: al LLAMAR a esa herramienta queda una tarjeta y el usuario pulsa «Hacerlo». ' +
   'La tarjeta sólo existe si has llamado a la herramienta y ha devuelto pendiente: sin llamarla, no hay tarjeta. ' +
@@ -111,9 +111,14 @@ const TUS_CONVERSACIONES = '\nTUS CONVERSACIONES: encima del chat hay un selecto
 
 const FUERA_DE_VISTA = (n) => n > 0 ? `De ESTA conversación ya no ves sus ${n} mensajes más antiguos: si te preguntan por algo de entonces que no está en lo que tienes delante, di que ya no lo tienes a la vista; no lo reconstruyas. ` : '';
 
-function instrucciones({ point, memory, annotations, context, fuera = false, desdeElMovil = false, modelo = '', suele = null, fueraDeVista = 0 }) {
+const MODO_DESARROLLADOR = '\nMODO DESARROLLADOR: quien te escribe programa y depura MyLAIberry (lo activó en sus ajustes). Cuando hable de un fallo, ' +
+  'de una herramienta tuya o de cómo funciona la app, no le expliques la app: diagnóstico técnico en crudo y sin rodeos, con el nombre de la ' +
+  'herramienta, los argumentos que le pasaste y el error literal que devolvió, y lo que no sepas, dicho como no sabido. Para leer, buscar o ' +
+  'recomendar, el trato de siempre.';
+
+function instrucciones({ point, memory, annotations, context, fuera = false, desdeElMovil = false, modelo = '', suele = null, fueraDeVista = 0, desarrollador = false }) {
   return COMUN + QUIEN_ERES(modelo) + TUS_CONVERSACIONES + FUERA_DE_VISTA(fueraDeVista) + (point ? LECTURA : COMO_CONVERSAR + LO_QUE_HACE_SOLA) +
-    (fuera ? MODO_FUERA_DEL_PERFIL : '') + (desdeElMovil ? DESDE_EL_MOVIL : '') +
+    (fuera ? MODO_FUERA_DEL_PERFIL : '') + (desdeElMovil ? DESDE_EL_MOVIL : '') + (desarrollador ? MODO_DESARROLLADOR : '') +
 
     (fuera ? '\nLo que el usuario YA suele leer, y de lo que hay que apartarse: '
       : '\nMemoria confirmada (de conversaciones anteriores, no de ésta: no digas que se habló aquí): ') +

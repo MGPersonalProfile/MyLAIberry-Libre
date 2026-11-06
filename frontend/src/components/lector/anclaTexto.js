@@ -1,6 +1,6 @@
 export const normalizar = texto => String(texto || '').normalize('NFC').replace(/\s+/gu, ' ').trim();
 
-async function huella(texto) {
+export async function huellaDe(texto) {
   const bytes = new TextEncoder().encode(normalizar(texto));
   const resumen = await globalThis.crypto.subtle.digest('SHA-256', bytes);
   return `sha256:${[...new Uint8Array(resumen)].map(n => n.toString(16).padStart(2, '0')).join('')}`;
@@ -12,7 +12,7 @@ export async function crearAnclaTextual(textos, bloque, caracter, meta = {}) {
   return {
     v: 2, obra: String(meta.obra || ''), capitulo: meta.capitulo,
     variante: String(meta.variante || 'original'), bloque, totalBloques: textos.length,
-    caracter, huella: await huella(texto),
+    caracter, huella: await huellaDe(texto),
     contexto: { antes: texto.slice(Math.max(0, caracter - 32), caracter),
       despues: texto.slice(caracter, caracter + 32) }
   };
@@ -57,7 +57,7 @@ export async function resolverAnclaTextual(ancla, textos, variante) {
   if (variante !== ancla.variante) return aproximado;
   const iguales = [];
   for (let i = 0; i < textos.length; i++) {
-    if (await huella(textos[i]) === ancla.huella) iguales.push(i);
+    if (await huellaDe(textos[i]) === ancla.huella) iguales.push(i);
   }
   if (iguales.length) {
     const bloque = iguales.sort((a, b) => Math.abs(a - ancla.bloque) - Math.abs(b - ancla.bloque))[0];

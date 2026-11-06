@@ -99,31 +99,40 @@ function filtrosComunes(f) {
     rating: RATINGS.includes(f.valoracion) ? f.valoracion : undefined };
 }
 
-async function paginaDeSitio(navegador, sitio, comun, pagina) {
+async function paginaDeSitio(navegador, sitio, comun, pagina, vence = Infinity) {
+  const enPlazo = () => { if (Date.now() >= (typeof vence === 'function' ? vence() : vence)) throw Object.assign(
+    new Error('Límite de tiempo de la investigación agotado.'), { tiempoAgotado: true }); };
   const { traducir, aplicarEnMemoria, idsDePersonajes } = require('./filtros/index.js');
   let plan = traducir(sitio, comun, { pagina });
   if (!plan.url) return [];
+  enPlazo();
   await navegador.abrir(plan.url);
+  enPlazo();
   if (sitio === 'FanFiction.net' && plan.seccion && (comun.pareja || comun.personajes)) {
     const nombres = [...require('./filtros/buscar.js').nombresDePareja(comun.pareja), ...(comun.personajes || [])];
     const ids = idsDePersonajes(await navegador.ejecutar(ffn.LECTOR_PERSONAJES), nombres);
+    enPlazo();
     const otro = traducir(sitio, comun, { pagina, idsPersonajes: ids });
-    if (otro.url !== plan.url) { plan = otro; await navegador.abrir(plan.url); }
+    if (otro.url !== plan.url) { plan = otro; await navegador.abrir(plan.url); enPlazo(); }
   }
   const adaptador = sitio === 'AO3' ? ao3 : sitio === 'FanFiction.net' ? ffn : sitio === 'Wattpad' ? wattpad : rr;
   const lista = sitio === 'AO3' || sitio === 'Wattpad'
     ? adaptador.resultadosDeHtml(await navegador.ejecutar('document.documentElement.outerHTML'))
     : adaptador.parsearCrudos(await navegador.ejecutar(adaptador.LECTOR), undefined, comun.consulta);
+  enPlazo();
   return aplicarEnMemoria(lista, comun, plan.memoria);
 }
 
 function resumenDeSitios(noConsultados, completada) {
-  const nombres = noConsultados.map(n => n.sitio).join(', ');
-  return completada ? `No consultado: ${nombres}. Los demás sitios sí.`
-    : `La búsqueda no pudo completarse: ${nombres ? `${nombres} no se pudo consultar` : 'ningún sitio se pudo consultar'}.`;
+  const detalle = noConsultados.map(({ sitio, motivo, codigoHttp }) => motivo === 'comprobacion-humana'
+    ? `${sitio} pidió una comprobación humana` : motivo === 'tiempo-agotado'
+      ? `${sitio} quedó pendiente por límite de tiempo` : motivo === 'error-http'
+        ? `${sitio} devolvió HTTP ${codigoHttp}` : `${sitio} no se pudo consultar`).join('; ');
+  return `${completada ? 'Búsqueda parcial' : 'La búsqueda no pudo completarse'}: ${detalle || 'ningún sitio se pudo consultar'}.`;
 }
 
-function crearInvestigador({ signal, progreso = () => {}, origen, navegador = crearNavegador({ signal, progreso, origen }) } = {}) {
+function crearInvestigador({ signal, progreso = () => {}, origen, presupuestoMs, presupuestos = {},
+  navegador = crearNavegador({ signal, progreso, origen }) } = {}) {
   let pasos = 0;
   const paso = () => { if (++pasos > MAX_PASOS) throw new Error(`La investigación tiene un máximo de ${MAX_PASOS} pasos.`); };
 
@@ -140,28 +149,57 @@ function crearInvestigador({ signal, progreso = () => {}, origen, navegador = cr
     paso();
     const obras = [], errores = [], consultados = new Set(), fallidos = new Map();
     const comun = filtrosComunes({ ...filtros, orden });
+    const inicio = Date.now();
+    const desatendidoMs = presupuestos.desatendidoMs ?? 60000;
+    const interactivoMs = presupuestos.interactivoMs ?? 240000;
+    const vence = () => inicio + (presupuestoMs ?? (origen !== 'movil' && navegador.puedeResolverReto?.()
+      ? interactivoMs : desatendidoMs));
+    navegador.fijarPresupuesto?.(vence);
+    let agotadoTiempo = false;
+    const conPresupuesto = async tarea => {
+      const restante = vence() - Date.now();
+      if (restante <= 0) throw Object.assign(new Error('Límite de tiempo de la investigación agotado.'), { tiempoAgotado: true });
+      let reloj;
+      try {
+        return await Promise.race([tarea(), new Promise((_, rechazar) => {
+          reloj = setInterval(() => { if (Date.now() >= vence()) rechazar(Object.assign(
+            new Error('Límite de tiempo de la investigación agotado.'), { tiempoAgotado: true })); },
+          Math.max(10, Math.min(500, Math.floor(Math.min(presupuestoMs ?? desatendidoMs, interactivoMs) / 10))));
+        })]);
+      } catch (e) { if (e.tiempoAgotado) navegador.cerrar(); throw e; }
+      finally { clearInterval(reloj); }
+    };
     for (const sitio of sitios) for (let pagina = 1; pagina <= paginas; pagina++) {
       if (sitio === 'Wattpad' && pagina > 1) break;
       if (navegador.paginas >= tope) break;
+      if (Date.now() >= vence()) { agotadoTiempo = true; break; }
       try {
-        let lista = await paginaDeSitio(navegador, sitio, comun, pagina);
+        let lista = await conPresupuesto(() => paginaDeSitio(navegador, sitio, comun, pagina, vence));
         consultados.add(sitio);
         if (!lista.length) break;
 
         if (sitio === 'Wattpad') lista = lista.filter(o => pertinencia(o, q) >= 2 / 3);
         obras.push(...lista.filter(o => coincide(o, filtros))
           .map(o => ({ ...breve(o), sinVerificar: [...new Set([...sinVerificar(o, filtros), ...(o.sinComprobar || [])])] })));
-      } catch (e) { errores.push(`${sitio}, página ${pagina}: ${e.message}`); fallidos.set(sitio, e); break; }
+      } catch (e) { errores.push(`${sitio}, página ${pagina}: ${e.message}`); fallidos.set(sitio, e);
+        if (e.tiempoAgotado) agotadoTiempo = true;
+        break; }
+    }
+    if (agotadoTiempo) for (const sitio of sitios) {
+      if (!consultados.has(sitio) && !fallidos.has(sitio)) fallidos.set(sitio,
+        Object.assign(new Error('Pendiente por límite de tiempo.'), { tiempoAgotado: true }));
     }
 
-    const noConsultados = [...fallidos].filter(([sitio]) => !consultados.has(sitio))
-      .map(([sitio, e]) => ({ sitio, motivo: e.reto ? 'comprobacion-humana' : 'error', mensaje: e.message }));
+    const noConsultados = [...fallidos]
+      .map(([sitio, e]) => ({ sitio, motivo: e.reto ? 'comprobacion-humana' : e.tiempoAgotado ? 'tiempo-agotado'
+        : e.codigoHttp ? 'error-http' : 'error', mensaje: e.message, ...(e.codigoHttp ? { codigoHttp: e.codigoHttp } : {}) }));
     const completada = consultados.size > 0 || !fallidos.size;
     if (noConsultados.length || !completada) progreso({ paginas: navegador.paginas, maxPaginas: navegador.maxPaginas, estado: 'comprobacion', mensaje: resumenDeSitios(noConsultados, completada) });
     const unicas = ordenar(sinDuplicados(obras), orden);
+    navegador.fijarPresupuesto?.(null);
     return { obras: unicas.slice(0, 30), encontradas: unicas.length, paginasVisitadas: navegador.paginas,
-      agotado: navegador.paginas >= tope, noConsultados, completada,
-      errores, aviso: (completada ? '' : 'La búsqueda no pudo completarse: ningún sitio se pudo consultar. ') +
+      agotado: navegador.paginas >= tope || agotadoTiempo, noConsultados, completada,
+      errores, aviso: (noConsultados.length ? resumenDeSitios(noConsultados, completada) + ' ' : '') +
         'Los filtros sin datos explícitos del sitio no se dan por confirmados. Wattpad sólo ofrece aquí su primera tanda pública: page=2 repite los resultados.' };
   }
 
@@ -171,7 +209,8 @@ function crearInvestigador({ signal, progreso = () => {}, origen, navegador = cr
     const actual = win.webContents.getURL();
     const html = await navegador.ejecutar('document.documentElement.outerHTML');
     const preliminar = new JSDOM(html).window.document;
-    require('./scrapers/navegar').exigirQueNoSeaUnReto('La ficha', { titulo: preliminar.title, texto: preliminar.body?.textContent, url: actual });
+    require('./scrapers/navegar').exigirQueNoSeaUnReto('La ficha', { titulo: preliminar.title,
+      texto: preliminar.body?.textContent, documento: preliminar, url: actual });
     let obra;
     if (/archiveofourown\.org\/works\/(\d+)/.test(actual)) {
       obra = ao3.parsearPaginaNormal(html, RegExp.$1);

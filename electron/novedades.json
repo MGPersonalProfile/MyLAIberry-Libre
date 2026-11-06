@@ -1,5 +1,103 @@
 [
   {
+    "version": "2026.11.6",
+    "fecha": "2026-11-06",
+    "resumen": "Avisos de capítulos en el móvil, la traducción y tus notas viajan con la obra guardada, y propuestas que ya no se atascan.",
+    "detalle": [
+      {
+        "que": "Guardar una obra en el móvil ahora lleva también la traducción que estás leyendo y tus subrayados y notas: sin conexión se abre la traducción guardada (solo las que ya existían en el PC; no se traduce nada nuevo), y tus anotaciones se leen y se pueden crear sin red, y llegan al PC una sola vez al volver la conexión. Borrar la copia del móvil borra sus traducciones pero nunca tus anotaciones.",
+        "porque": "La copia de viaje solo garantizaba el texto original: la traducción dependía de una caché que se vacía sola, y las notas no viajaban con la obra."
+      },
+      {
+        "que": "Puedes activar avisos de capítulos nuevos para este móvil desde Ajustes → Avisos y desactivarlos allí cuando quieras. Los avisos llegan aunque la app esté cerrada, siempre que el servidor de tu biblioteca siga encendido y este móvil permita las notificaciones.",
+        "porque": "La suscripción pertenece a este móvil; no hace falta configurar un canal compartido de avisos."
+      },
+      {
+        "que": "Si la app se cierra justo cuando una propuesta de «Por decidir» iba a entrar sola, ya no se queda atascada: a la media hora vuelve a intentarse. Descartar una que acaba de entrar sola vale durante la primera hora; las que llevan más tiempo en tu biblioteca ya no se descartan desde ahí.",
+        "porque": "Una revisión encontró que una propuesta podía quedarse sin entrar nunca y que el descarte de última hora no caducaba."
+      },
+      {
+        "que": "El filtro que impide que el asistente llegue a tu red de casa cubre también las conexiones en vivo (WebSocket) de las páginas que abre.",
+        "porque": "Antes solo miraba las peticiones normales."
+      },
+      {
+        "que": "Subrayados y notas: si editas tres veces una nota sin conexión y desde el PC se cambió la misma, ya no se pierden las tres ediciones: el conflicto las conserva y, si eliges la tuya, se reaplican todas. Y abrir el mismo libro en dos pestañas ya no hace que una borre las notas pendientes de la otra.",
+        "porque": "Una revisión encontró que el conflicto tiraba las ediciones posteriores y que dos pestañas se pisaban la cola."
+      },
+      {
+        "que": "Un subrayado ya no se coloca en otro capítulo que contenga la misma frase, ni en una de dos repeticiones idénticas elegida por cercanía: si no se puede saber cuál era, queda en la lista del capítulo sin posición en vez de pintarse donde no era.",
+        "porque": "Era posible subrayar «Te quiero» en la aparición equivocada tras cambiar el texto."
+      },
+      {
+        "que": "Mi lectura: la sesión se anota en el aparato antes de mandarla (si cierras la app a mitad no se pierde y se reenvía al abrir), y si saltas del 10 % al 80 % del capítulo solo cuenta lo que leíste en cada tramo, no el salto.",
+        "porque": "Una revisión encontró que cerrar a mitad perdía la sesión y que un salto inflaba las palabras leídas."
+      },
+      {
+        "que": "La búsqueda del asistente deja de esperar cuando se agota su tiempo, reconoce comprobaciones humanas aunque no tengan título y distingue los sitios caídos de las búsquedas sin resultados.",
+        "porque": "Puedes seguir con los resultados encontrados y ver qué sitios quedaron pendientes, tanto desde el PC como desde el móvil."
+      },
+      {
+        "que": "El asistente distingue una pareja principal F/M o una obra Gen de una mención secundaria; reconoce más formas de escribir parejas y aplica las excepciones solo a la pareja o al fandom indicado. También evita confundir obras homónimas y conserva las recomendaciones válidas cuando retira una vetada de la misma respuesta.",
+        "porque": "Así los vetos siguen protegiendo tus preferencias sin borrar obras o texto que sí encajan."
+      },
+      {
+        "que": "El asistente ya explora un sitio sólo con filtros: «lo más popular de humor en RoyalRoad» busca sin pedirte un título ni un fandom. Y si le pides importar una obra de una web no oficial, la importa igual que de cualquier otra.",
+        "porque": "Antes pedía siempre una consulta o un fandom aunque el sitio filtra por género y orden, y se negaba por su cuenta a importar de webs no oficiales."
+      },
+      {
+        "que": "En Ajustes → Asistente hay un «Modo desarrollador»: con él encendido, cuando le preguntes por un fallo te da el diagnóstico técnico en crudo (la herramienta, lo que le pasó y el error literal) sin explicarte la app. Va por instalación: en la Libre sigue apagado.",
+        "porque": "Pediste que te hablara como a quien programa la app, sin cambiar el trato a los demás usuarios."
+      }
+    ]
+  },
+  {
+    "version": "2026.11.5-2",
+    "fecha": "2026-11-05",
+    "resumen": "El asistente respeta tus disgustos aunque el sitio no marque la pareja, y no inventa sinopsis.",
+    "detalle": [
+      {
+        "que": "Ya hay dónde guardar subrayados y notas sobre el texto exacto de cada capítulo, con revisiones para que dos aparatos que editen lo mismo no se pisen (todavía sin pantalla: llega en las siguientes tandas).",
+        "porque": "Es la base de los subrayados, las notas sincronizadas con el móvil y las tarjetas de cita."
+      },
+      {
+        "que": "En el lector puedes seleccionar texto y subrayarlo en cinco colores o dejarle una nota; al pulsar un subrayado la editas o la borras. Reaparece sobre el mismo texto al reabrir el capítulo aunque cambies la letra o el ancho.",
+        "porque": "Era lo que faltaba para anotar mientras lees sin salir del capítulo."
+      },
+      {
+        "que": "Los subrayados y las notas se guardan en el aparato y se sincronizan con el otro: si escribes una nota sin conexión en el móvil, sigue ahí al cerrar y reabrir la app y llega al PC al volver la conexión, sin duplicarse. Si editas la misma nota en los dos aparatos, la app te enseña las dos versiones y eliges cuál conservar.",
+        "porque": "Para poder anotar en el metro sin que nada se pierda ni se pise."
+      },
+      {
+        "que": "Cada subrayado se puede sacar como tarjeta de cita: copias el texto o guardas una imagen (en el móvil, la compartes) con la cita, el título, el autor y el capítulo; tu nota solo va si la marcas. Funciona sin conexión y, si la cita es demasiado larga para la imagen, te lo dice en vez de cortarla.",
+        "porque": "Para compartir una frase sin recortes ni texto de más."
+      },
+      {
+        "que": "El asistente ya no te recomienda parejas que no lees aunque el sitio no las marque (una pareja sin su casilla, o escrita solo en el título), y si una obra no dice su categoría ni su pareja te avisa de que no pudo comprobarla. Una excepción que pongas libra sólo a esa pareja.",
+        "porque": "Podía recomendar una pareja que estaba entre tus disgustos."
+      },
+      {
+        "que": "«Por decidir» ya no te vuelve a proponer una obra que tienes en la biblioteca solo porque la encontró en otro sitio (la de FanFiction.net desde AO3), y si pulsas Descartar justo cuando una propuesta entra sola al acabar su plazo, se descarta en vez de dar un error. Si una no puede entrar, las demás vencidas siguen.",
+        "porque": "Una revisión encontró que se duplicaba al vencer y que el descarte de última hora fallaba."
+      },
+      {
+        "que": "Mi lectura, fase 1: cada vez que lees se anota una sesión real (cuánto tiempo activo, qué parte del capítulo y si lo terminaste), sin contar las pausas largas ni cuando la app está oculta; si se reenvía la misma sesión no se cuenta dos veces.",
+        "porque": "Para tener rachas y estadísticas de lectura que no se inflen, aparte del cálculo de cuánto te queda."
+      },
+      {
+        "que": "Mi lectura, fase 2: si lees en el móvil sin conexión, cada sesión se guarda en el móvil y se manda al PC cuando vuelve la conexión; solo se borra del móvil cuando el PC confirma que la tiene, así que un corte a medias no la pierde ni la cuenta dos veces. Actualizar la app no borra las obras que tenías guardadas para leer sin conexión.",
+        "porque": "Para que leer en el metro también cuente en tus rachas y estadísticas."
+      },
+      {
+        "que": "Ajustes > Lectura > Mi lectura: tu racha de días seguidos y la mejor, los minutos de hoy, de los últimos 7 días y en total, las sesiones, los capítulos terminados, las palabras distintas leídas (releer no suma), las obras que has retomado y un calendario mensual de los días que leíste. Puedes exportarlo todo en JSON o CSV; no sale de tu PC y tu móvil salvo que lo exportes.",
+        "porque": "Para ver tu constancia lectora sin que nada se infle ni se mande a ningún sitio."
+      },
+      {
+        "que": "Cuando el asistente navega por internet, cada petición de su ventana (también las redirecciones y las imágenes de la página) se comprueba antes de salir: si un nombre apunta a tu red de casa, no se abre.",
+        "porque": "Antes solo se miraba la dirección escrita; una página pública que redirigía a otra que apuntaba a tu red pasaba."
+      }
+    ]
+  },
+  {
     "version": "2026.11.5",
     "fecha": "2026-11-05",
     "resumen": "Vuelve el aspecto de siempre: fondo negro con el rojo de la baya y la letra de antes. En el móvil la app llega de borde a borde, el lector no pierde dónde ibas si bloqueas el teléfono y la app ya no se cae por un aviso interno.",

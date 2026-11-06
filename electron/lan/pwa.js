@@ -2,13 +2,14 @@ const fs = require('fs');
 const path = require('path');
 
 const SW = fs.readFileSync(path.join(__dirname, 'cliente', 'sw.js'), 'utf-8');
+const PUSH = fs.readFileSync(path.join(__dirname, 'cliente', 'push.js'), 'utf-8');
 const VIAJE = fs.readFileSync(path.join(__dirname, 'cliente', 'obras-offline.js'), 'utf-8');
 const APP = fs.readFileSync(path.join(__dirname, 'cliente', 'app.js'), 'utf-8');
 
 function swConVersion() {
   const { precargaDeLaApp } = require('./app-web.js');
   const huella = require('crypto').createHash('sha256').update(precargaDeLaApp().join('\n')).digest('hex').slice(0, 16);
-  return `${VIAJE}\n${SW}\n// app: ${huella}\n`;
+  return `${VIAJE}\n${SW}\n${PUSH}\n// app: ${huella}\n`;
 }
 
 const icono = (nombre) => fs.readFileSync(path.join(__dirname, 'cliente', nombre));

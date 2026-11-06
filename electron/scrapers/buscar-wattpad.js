@@ -9,7 +9,8 @@ function urlDeBusqueda({ consulta }) {
 function resultadosDeHtml(html) {
   const doc = new JSDOM(html).window.document;
   const tarjetas = [...doc.querySelectorAll('a.story-card[href^="/story/"]')];
-  if (!tarjetas.length) exigirQueNoSeaUnReto('Wattpad', { titulo: doc.title, texto: doc.body?.textContent, url: 'https://www.wattpad.com/' });
+  if (!tarjetas.length) exigirQueNoSeaUnReto('Wattpad', { titulo: doc.title, texto: doc.body?.textContent,
+    documento: doc, url: 'https://www.wattpad.com/' });
   return tarjetas.map(a => {
     const id = (a.getAttribute('href').match(/^\/story\/(\d+)/) || [])[1];
     if (!id) return null;

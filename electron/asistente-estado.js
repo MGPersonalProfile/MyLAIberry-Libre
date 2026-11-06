@@ -12,7 +12,8 @@ function inicial() {
     operations: [],
 
     pendientes: [],
-    settings: { proactive: true, dailyCalls: LLAMADAS_AL_DIA, backgroundCalls: 6, model: 'deepseek-flash', paused: false } };
+
+    settings: { proactive: true, dailyCalls: LLAMADAS_AL_DIA, backgroundCalls: 6, model: 'deepseek-flash', paused: false, desarrollador: false } };
 }
 function normalizar(s) {
   if (s && s.version !== 1) throw new Error('Versión de datos del asistente no compatible.');
@@ -84,7 +85,7 @@ function crearEstado({ read, update, getChapter, now = () => Date.now() }) {
     async settings(input) {
       const valid = {};
       for (const [key, value] of Object.entries(input || {})) {
-        if (['proactive', 'paused'].includes(key) && typeof value === 'boolean') valid[key] = value;
+        if (['proactive', 'paused', 'desarrollador'].includes(key) && typeof value === 'boolean') valid[key] = value;
         else if (['dailyCalls', 'backgroundCalls'].includes(key) && Number.isInteger(value) && value >= 0 && value <= 1000) valid[key] = value;
         else if (key === 'model' && MODELOS.includes(value)) valid[key] = value;
         else throw new Error('Ajuste del asistente inválido: ' + key);

@@ -6,7 +6,7 @@ const {
   getFanfics, getFanficById, updateProgress, getChapterContent, medirPalabras,
   saveScrollPosition, getScrollPosition, anotarLecturaMedida, getLecturas,
   getSettings, glosarioParaTraducir, getRecap, setRecap, getConfigIA,
-  getTitulosTraducidos, setTitulosTraducidos
+  getTitulosTraducidos, setTitulosTraducidos, listarSubrayados, operarSubrayado
 } = require('../db.js');
 const { resumirCapitulo, aTextoPlano } = require('../recap.js');
 const { palabrasPorMinuto, minutosRestantes, MEDIDAS_MINIMAS } = require('../ritmo.js');
@@ -103,6 +103,10 @@ function registrar() {
       return { status: 'error', message: 'Revisión de lectura no válida' };
     return await saveScrollPosition(id, chapterIndex, valida, meta);
   });
+
+  ipcMain.handle('listar-subrayados', async (event, id, desde, capitulo) =>
+    listarSubrayados(id, desde, Number.isInteger(capitulo) ? capitulo : undefined));
+  ipcMain.handle('operar-subrayado', async (event, id, operacion) => operarSubrayado(id, operacion));
 
   ipcMain.handle('get-scroll-position', async (event, id, chapterIndex) => {
     return await getScrollPosition(id, chapterIndex);

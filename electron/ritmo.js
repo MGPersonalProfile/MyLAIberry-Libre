@@ -53,5 +53,8 @@ module.exports = {
   anotarLectura,
   palabrasPorMinuto,
   minutosRestantes,
-  MEDIDAS_MINIMAS
+  MEDIDAS_MINIMAS,
+  MAXIMO_RAZONABLE_MS,
+  MINIMO_RAZONABLE_MS,
+  PPM_MAXIMO
 };

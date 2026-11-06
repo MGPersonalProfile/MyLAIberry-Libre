@@ -407,7 +407,8 @@ function resultadosDeHtml(html, sinCrossovers = false) {
 
   const indice = doc.querySelector('ol.work.index.group');
   const filas = indice ? [...indice.children] : [];
-  if (!filas.length) exigirQueNoSeaUnReto('AO3', { titulo: doc.title, texto: doc.body?.textContent, url: 'https://archiveofourown.org/' });
+  if (!filas.length) exigirQueNoSeaUnReto('AO3', { titulo: doc.title, texto: doc.body?.textContent,
+    documento: doc, url: 'https://archiveofourown.org/' });
 
   const obras = filas.map(f => obraDeFila(f, limpiar)).filter(Boolean);
 

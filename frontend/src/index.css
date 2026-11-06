@@ -270,6 +270,12 @@ body {
   text-decoration-color: #ef4444;
 }
 
+::highlight(sub-amarillo) { background-color: rgba(245, 213, 71, 0.38); }
+::highlight(sub-verde)    { background-color: rgba(111, 207, 127, 0.34); }
+::highlight(sub-azul)     { background-color: rgba(90, 169, 240, 0.34); }
+::highlight(sub-rosa)     { background-color: rgba(240, 143, 184, 0.36); }
+::highlight(sub-naranja)  { background-color: rgba(242, 160, 74, 0.38); }
+
 .reader-content .sonando {
   background-color: color-mix(in srgb, currentColor 8%, transparent);
   box-shadow: 0 0 0 6px color-mix(in srgb, currentColor 8%, transparent);

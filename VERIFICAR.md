@@ -2,14 +2,14 @@
 
 # Comprobar el instalador de MyLAIberry
 
-Usa el `.exe` y `SHA256SUMS.txt` de **la misma Release** del repositorio `MGPersonalProfile/MyLAIberry-Libre`.
+Usa el `.exe` y `SHA256SUMS.txt` de **la misma Release** del repositorio `OWNER/REPO`.
 
 ## Comprobar el archivo descargado
 
 Instala [GitHub CLI](https://cli.github.com/) e inicia sesión con `gh auth login` si te lo pide. En PowerShell, dentro de la carpeta donde descargaste los dos archivos:
 
 ```powershell
-gh attestation verify .\MyLAIberry-Setup-VERSION.exe --repo MGPersonalProfile/MyLAIberry-Libre
+gh attestation verify .\MyLAIberry-Setup-VERSION.exe --repo OWNER/REPO
 (Get-FileHash .\MyLAIberry-Setup-VERSION.exe -Algorithm SHA256).Hash.ToLower()
 Get-Content .\SHA256SUMS.txt
 ```
@@ -18,7 +18,7 @@ Cambia `VERSION` por el número del tag sin la `v`. La primera orden verifica la
 
 `SHA256SUMS.txt` y la atestación cubren sólo el instalador. `latest.yml` (la ficha del actualizador) y el `.blockmap` viajan en la misma Release sin atestar.
 
-La atestación permite comprobar que GitHub Actions declaró ese `.exe` como producto del workflow de compilación de `MGPersonalProfile/MyLAIberry-Libre`, asociado a un commit. El workflow se niega a compilar si el commit desde el que se lanza no es el del tag, así que el commit de la atestación es el del tag de la Release. Consulta el commit mostrado por `gh attestation verify` para comprobar qué código se compiló. El SHA-256 permite detectar si el archivo descargado cambió respecto al listado publicado. Como el listado de huellas se descarga de la propia Release, **por sí solo no es una firma independiente**.
+La atestación permite comprobar que GitHub Actions declaró ese `.exe` como producto del workflow de compilación de `OWNER/REPO`, asociado a un commit. El workflow se niega a compilar si el commit desde el que se lanza no es el del tag, así que el commit de la atestación es el del tag de la Release. Consulta el commit mostrado por `gh attestation verify` para comprobar qué código se compiló. El SHA-256 permite detectar si el archivo descargado cambió respecto al listado publicado. Como el listado de huellas se descarga de la propia Release, **por sí solo no es una firma independiente**.
 
 Estas comprobaciones **no demuestran que el código carezca de fallos o de comportamiento indeseado**. Tampoco prueban que otra persona obtenga un `.exe` idéntico al compilar: el instalador NSIS no se presenta aquí como reproducible bit a bit. La atestación afirma de dónde salió el archivo publicado; para juzgar qué hace la aplicación hay que leer el código y, si se desea, compilarlo.
 

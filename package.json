@@ -1,6 +1,6 @@
 {
   "name": "mylaiberry",
-  "version": "2026.11.5",
+  "version": "2026.11.6",
   "description": "Lector de fanfics y novelas web sin conexión, con traducción y asistente opcional",
   "main": "electron/main.js",
   "keywords": [
@@ -25,7 +25,8 @@
     "@mozilla/readability": "^0.6.0",
     "jsdom": "^29.1.0",
     "lowdb": "^3.0.0",
-    "pdfjs-dist": "^6.3.289"
+    "pdfjs-dist": "^6.3.289",
+    "web-push": "^3.6.7"
   },
   "scripts": {
     "dev": "node dev.js",
@@ -38,6 +39,5 @@
     "avisos": "node scripts/avisos-de-terceros.mjs",
     "dist": "npm run avisos && npm run build:frontend && cross-env NODE_OPTIONS=--no-deprecation electron-builder --win nsis --publish never",
     "test": "node --test scripts/verificar-actualizar-github.mjs"
-  },
-  "repositorio": "MGPersonalProfile/MyLAIberry-Libre"
+  }
 }

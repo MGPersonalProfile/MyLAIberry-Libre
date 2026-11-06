@@ -1,4 +1,5 @@
 const { leer, writeDB } = require('./nucleo');
+const { esDeLaBiblioteca } = require('../origen.js');
 const { fandomsDe, claveAutor, coincideFandom, normal, oculta } = require('../descubrimientos-preferencias');
 
 async function getPreferenciasDescubrimientos() {
@@ -78,7 +79,9 @@ async function decidirDescubrimientos({ accion, fandom, autor, aprender, minPala
 async function descartarObra(id) {
   const d = await leer();
   const o = d.fanfics.find(f => String(f.id) === String(id));
-  if (!o || o.origen !== 'descubierta') throw new Error('Sólo se descartan obras de Descubrimientos.');
+
+  const entroSola = esDeLaBiblioteca(o) && Date.now() - (o?.propuesta?.adoptadaAlVencer || 0) < 60 * 60 * 1000;
+  if (!o || (o.origen !== 'descubierta' && !entroSola)) throw new Error('Sólo se descartan obras de Descubrimientos.');
   o.origen = 'descartada';
   delete o.descarteMasivo;
   await writeDB();
@@ -96,9 +99,11 @@ async function marcarPropuesta(id, propuesta) {
   return o;
 }
 
+const ADOPCION_CORTADA_MS = 30 * 60 * 1000;
 async function propuestasVencidas(ahora = Date.now()) {
   const d = await leer();
-  return d.fanfics.filter(o => o.origen === 'descubierta' && o.propuesta?.vence && o.propuesta.vence <= ahora && !o.propuesta.adoptadaAlVencer)
+  const pendiente = p => !p.adoptadaAlVencer || ahora - p.adoptadaAlVencer > ADOPCION_CORTADA_MS;
+  return d.fanfics.filter(o => o.origen === 'descubierta' && o.propuesta?.vence && o.propuesta.vence <= ahora && pendiente(o.propuesta))
     .map(o => ({ id: String(o.id), title: o.title }));
 }
 

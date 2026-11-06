@@ -130,13 +130,13 @@ async function servirAudioObra(res, id, url, audioObra) {
   }
 }
 
-function leerCuerpo(req) {
+function leerCuerpo(req, maximo = MAXIMO) {
   return new Promise((ok, mal) => {
     const trozos = [];
     let largo = 0;
     req.on('data', (t) => {
       largo += t.length;
-      if (largo > MAXIMO) { mal(new Error('grande')); req.destroy(); return; }
+      if (largo > maximo) { mal(new Error('grande')); req.destroy(); return; }
       trozos.push(t);
     });
     req.on('end', () => ok(Buffer.concat(trozos).toString('utf-8')));
@@ -174,9 +174,33 @@ async function llamarApi(req, res, canal, llamar) {
   }
 }
 
+async function atenderPush(req, res, accion, ctx) {
+  const push = () => ctx.push || require('../aviso-push.js').actual();
+  const no = async (codigo, error) => { await drenar(req); return json(res, codigo, { error }); };
+  if (req.method === 'GET' && accion === 'publica') {
+    return json(res, 200, { publicKey: await push().clavePublica() });
+  }
+  if (req.method !== 'POST' || !['suscribir', 'cancelar', 'estado'].includes(accion)) return no(404, 'Ruta no encontrada.');
+  if (!ctx.codigoLan) return no(403, 'Esta ruta necesita el código de acceso del móvil.');
+  if (!mismoOrigen(req)) return no(403, 'Origen no permitido.');
+  if (!/^application\/json\b/i.test(String(req.headers['content-type'] || ''))) return no(415, 'Sólo JSON.');
+  if (Number(req.headers['content-length'] || 0) > 4096) return no(413, 'Cuerpo demasiado grande.');
+  let dato;
+  try { dato = JSON.parse(await leerCuerpo(req, 4096)); } catch { return json(res, 400, { error: 'Cuerpo no válido.' }); }
+  try {
+    if (accion === 'suscribir') return json(res, 200, await push().suscribir(dato));
+    if (accion === 'cancelar') return json(res, 200, await push().cancelar(dato.endpoint));
+    return json(res, 200, { activa: await push().estaSuscrito(dato.endpoint) });
+  } catch (e) { return json(res, 400, { error: e.message }); }
+}
+
 async function atenderApp(req, res, partes, url, ctx) {
   if (!ctx || typeof ctx.llamar !== 'function') return false;
   const [primero, ...resto] = partes;
+  if (primero === 'push' && resto.length === 1) {
+    await atenderPush(req, res, resto[0], ctx);
+    return true;
+  }
   if (req.method === 'POST') {
 
     if (primero === 'subir' && !resto.length) {

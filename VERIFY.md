@@ -2,14 +2,14 @@
 
 # Verifying the MyLAIberry installer
 
-Use the `.exe` and `SHA256SUMS.txt` from **the same Release** of the `MGPersonalProfile/MyLAIberry-Libre` repository.
+Use the `.exe` and `SHA256SUMS.txt` from **the same Release** of the `OWNER/REPO` repository.
 
 ## Check the downloaded file
 
 Install [GitHub CLI](https://cli.github.com/) and sign in with `gh auth login` if it asks you to. In PowerShell, inside the folder where you downloaded the two files:
 
 ```powershell
-gh attestation verify .\MyLAIberry-Setup-VERSION.exe --repo MGPersonalProfile/MyLAIberry-Libre
+gh attestation verify .\MyLAIberry-Setup-VERSION.exe --repo OWNER/REPO
 (Get-FileHash .\MyLAIberry-Setup-VERSION.exe -Algorithm SHA256).Hash.ToLower()
 Get-Content .\SHA256SUMS.txt
 ```
@@ -18,7 +18,7 @@ Replace `VERSION` with the tag number without the `v`. The first command verifie
 
 `SHA256SUMS.txt` and the attestation cover only the installer. `latest.yml` (the updater's metadata file) and the `.blockmap` travel in the same Release without attestation.
 
-The attestation lets you check that GitHub Actions declared that `.exe` as a product of the build workflow of `MGPersonalProfile/MyLAIberry-Libre`, tied to a commit. The workflow refuses to build if the commit it is launched from is not the tag's commit, so the attestation's commit is the commit of the Release's tag. Look at the commit shown by `gh attestation verify` to check which code was built. The SHA-256 lets you detect whether the downloaded file changed relative to the published listing. Since the fingerprint listing is downloaded from the Release itself, **on its own it is not an independent signature**.
+The attestation lets you check that GitHub Actions declared that `.exe` as a product of the build workflow of `OWNER/REPO`, tied to a commit. The workflow refuses to build if the commit it is launched from is not the tag's commit, so the attestation's commit is the commit of the Release's tag. Look at the commit shown by `gh attestation verify` to check which code was built. The SHA-256 lets you detect whether the downloaded file changed relative to the published listing. Since the fingerprint listing is downloaded from the Release itself, **on its own it is not an independent signature**.
 
 These checks **do not prove that the code is free of bugs or unwanted behavior**. Nor do they prove that someone else will get an identical `.exe` when building: the NSIS installer is not presented here as bit-for-bit reproducible. The attestation states where the published file came from; to judge what the application does, you have to read the code and, if you wish, build it.
 

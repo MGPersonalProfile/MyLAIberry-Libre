@@ -98,6 +98,9 @@ contextBridge.exposeInMainWorld('api', {
   getSuggestions: (fanficId) => ipcRenderer.invoke('get-suggestions', fanficId),
 
   logReading: (id, chapterIndex, ms) => ipcRenderer.invoke('log-reading', id, chapterIndex, ms),
+  registrarSesionLectura: (sesion) => ipcRenderer.invoke('registrar-sesion-lectura', sesion),
+  estadisticasLectura: (zona) => ipcRenderer.invoke('estadisticas-lectura', zona),
+  exportarLectura: (formato) => ipcRenderer.invoke('exportar-lectura', formato),
   getReadingPace: (id) => ipcRenderer.invoke('get-reading-pace', id),
 
   getRecap: (id, chapterIndex, opciones) => ipcRenderer.invoke('get-recap', id, chapterIndex, opciones),
@@ -164,6 +167,8 @@ contextBridge.exposeInMainWorld('api', {
   },
 
   saveScrollPosition: (id, chapterIndex, position, meta) => ipcRenderer.invoke('save-scroll-position', id, chapterIndex, position, meta),
+  listarSubrayados: (id, desde, capitulo) => ipcRenderer.invoke('listar-subrayados', id, desde, capitulo),
+  operarSubrayado: (id, operacion) => ipcRenderer.invoke('operar-subrayado', id, operacion),
   getScrollPosition: (id, chapterIndex) => ipcRenderer.invoke('get-scroll-position', id, chapterIndex),
 
   resumeDownload: (fanficId) => ipcRenderer.invoke('resume-download', fanficId),

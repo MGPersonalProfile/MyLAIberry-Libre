@@ -21,8 +21,10 @@ module.exports = {
   ...anotaciones,
   ...generos,
   ...seguimiento,
+  ...require('./db/subrayados.js'),
   ...require('./db/descubrimientos.js'),
   ...require('./db/fundir.js'),
+  ...require('./db/memoria-lectura.js'),
   ...trabajos,
 
   listarCopias: () => require('./db/copias.js').listarCopias(nucleo.raizActual()),

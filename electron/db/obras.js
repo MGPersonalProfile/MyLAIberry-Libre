@@ -302,7 +302,9 @@ async function updateChapterList(id, chapters, extraMeta = {}) {
   const before = viejo.length;
 
   const conocidos = new Set(viejo.map(ch => claveDeCapitulo(ch.url)));
-  const nuevos = chapters.filter(ch => !conocidos.has(claveDeCapitulo(ch.url))).length;
+  const identificadoresNuevos = chapters.filter(ch => !conocidos.has(claveDeCapitulo(ch.url)))
+    .map(ch => claveDeCapitulo(ch.url));
+  const nuevos = identificadoresNuevos.length;
 
   let realineado = null;
   const plan = before ? planDeRealineado(viejo, chapters) : null;
@@ -356,7 +358,7 @@ async function updateChapterList(id, chapters, extraMeta = {}) {
   }
 
   await writeDB();
-  return { before, after: chapters.length, nuevos, realineado, fanfic };
+  return { before, after: chapters.length, nuevos, identificadoresNuevos, realineado, fanfic };
 }
 
 async function getFanficById(id) {

@@ -40,3 +40,11 @@ export async function restaurarTrasLayout(caja, guardada, variante, vigente) {
   observador.observe(contenido);
   setTimeout(() => { observador.disconnect(); soltar(); }, 1500);
 }
+
+export async function restaurarCapitulo(caja, obra, indice, variante, vigente) {
+  if (!caja) return;
+  if (!window.api) { caja.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  const guardada = await window.api.getScrollPosition(obra, indice);
+  if (!vigente()) return;
+  await restaurarTrasLayout(caja, guardada, variante, vigente);
+}

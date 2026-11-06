@@ -1,6 +1,7 @@
 const { prometeConfirmacion, CORRECCION_TARJETA } = require('./asistente-app-ejecutar');
 const { enlacesInventados, CORRECCION_ENLACES } = require('./asistente-enlaces');
 const c = require('./asistente-comprobado');
+const { retiradasNombradas } = require('./asistente-vetos-salida');
 
 const PIE = ' Este aviso es del sistema: el usuario no lo ve. No le pidas perdón ni lo menciones; contesta a su mensaje. ' +
   'Si lo que afirmabas es de un turno anterior de esta conversación (está en el historial, con su llamada), dilo así, como algo ya hecho antes.';
@@ -20,6 +21,9 @@ const cambioAlgo = (nombre) => {
 };
 
 const REDES = [
+
+  ['vetada', (t, x) => retiradasNombradas(t, x.registroVetos).length,
+    (t, x) => `[Aviso del sistema, no del usuario] Tu respuesta nombra ${retiradasNombradas(t, x.registroVetos).map(r => `«${r.titulo}»`).join(', ')}, que choca con los disgustos del usuario y se retiró de los resultados. Rehaz la respuesta sin nombrarla, ni como candidata ni con aviso.`],
   ['guardadoReal', (t, x) => require('./asistente-evidencia').guardadoSinEvidencia(t, x),
     (t, x) => '[Aviso del sistema, no del usuario] Dices que has guardado una nota o pistas, pero no hay una llamada correcta a ' + require('./asistente-evidencia').guardadoSinEvidencia(t, x) + '. Guarda lo pedido con esa herramienta antes de afirmarlo; si falla, dilo.'],
 

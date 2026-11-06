@@ -44,8 +44,9 @@ async function comprobarCapitulos({ fanficId }) {
     avisar('chapters-updated', { fanficId: id, nuevos: res.nuevos });
 
     const ajustesAviso = await getSettings();
-    if (ajustesAviso?.avisarCapitulos !== false && fanfic.origen !== 'descubierta') {
-      avisos.hayCapitulosNuevos({ id, titulo: fanfic.title, nuevos: res.nuevos });
+    if (fanfic.origen !== 'descubierta') {
+      await avisos.hayCapitulosNuevos({ id, titulo: fanfic.title, nuevos: res.nuevos,
+        capitulos: res.identificadoresNuevos, local: ajustesAviso?.avisarCapitulos !== false });
     }
   }
 }

@@ -93,6 +93,8 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
     const usoTurno = { prompt_tokens: 0, completion_tokens: 0 };
     const maxRondas = background ? 6 : MAX_RONDAS;
     const responder = async (texto, resumido = false) => {
+
+      texto = require('./asistente-vetos-salida').sinNombrarRetiradas(texto, toolset.registroVetos);
       if (avance.limiteWeb && !resumido) texto = `${resumenLimite('investigación', { acciones: actions, vistas, pendientes, avance })}\n\n${texto}`;
       if (corregidas.has('guardadoReal') && require('./asistente-evidencia').guardadoSinEvidencia(texto, { actions })) {
         texto = 'No he podido guardar ese encargo o esas pistas; no han quedado registrados. Puedes volver a pedírmelo.';
@@ -141,7 +143,7 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
       const siguen = !calls.length && redes.tarjetasQueRetirar.length ? (await state.read()).pendientes || [] : [];
 
       const tarjetasQueRetirar = redes.tarjetasQueRetirar.filter(t => siguen.some(p => p.id === t.id) || retiradas.includes(t.id));
-      const aviso = !calls.length && avisoAntesDeResponder(contenido, { ...redes, tarjetasQueRetirar, messages, corregidas, pendientes, actions, point, retiradas });
+      const aviso = !calls.length && avisoAntesDeResponder(contenido, { ...redes, registroVetos: toolset.registroVetos, tarjetasQueRetirar, messages, corregidas, pendientes, actions, point, retiradas });
       if (aviso) {
         messages.push({ role: 'assistant', content: message.content }, { role: 'user', content: aviso });
         continue;
@@ -197,7 +199,7 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
 
       const suele = fuera && !point && services.obrasCompletas
         ? loQueSueleLeer((await services.obrasCompletas()).filter(esDeLaBiblioteca)) : null;
-      const prompt = instrucciones({ point, memory, annotations, context, fuera: fuera && !point, desdeElMovil, modelo: s.settings?.model, suele, fueraDeVista: previos.length - history.length })
+      const prompt = instrucciones({ point, memory, annotations, context, fuera: fuera && !point, desdeElMovil, modelo: s.settings?.model, suele, fueraDeVista: previos.length - history.length, desarrollador: s.settings?.desarrollador === true })
         + require('./idioma-del-mensaje.js').avisoDeIdioma(text);
       const messages = [{ role: 'system', content: prompt }, ...historialParaElModelo(history), { role: 'user', content: text }];
 

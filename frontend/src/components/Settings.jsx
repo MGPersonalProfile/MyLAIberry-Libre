@@ -19,6 +19,7 @@ import PlazoPorDecidir from './ajustes/PlazoPorDecidir';
 import { enElMovil } from '../vistaGuardada';
 import SeccionAlmacenamiento from './ajustes/SeccionAlmacenamiento';
 import SeccionMarcador from './ajustes/SeccionMarcador';
+import AvisosPush from './ajustes/AvisosPush';
 
 function SeccionesSuperiores({ t, lang, setLang, ajustes, guardar }) {
   return (
@@ -85,24 +86,24 @@ function SeccionAvisos({ t, ajustes, guardar, puedeAvisar, viaAviso, movil }) {
   return (
     <Seccion icono={BellRing} titulo={t('settings.alerts')} descripcion={t('settings.alerts_desc')}>
       <div className="space-y-3 max-w-2xl">
-        <Interruptor
-          activo={ajustes.avisarCapitulos !== false && puedeAvisar}
-          onChange={(v) => guardar({ avisarCapitulos: v })}
-          titulo={t('settings.alerts_chapters')}
-          descripcion={t('settings.alerts_chapters_desc')}
-        />
-        {!puedeAvisar && (
-          <Notice tone="warning">{t('settings.alerts_unsupported')}</Notice>
-        )}
-        {puedeAvisar && viaAviso === 'ntfy' && (
-          <p className="text-footnote text-text-secondary max-w-xl">{t('settings.alerts_via_ntfy')}</p>
-        )}
-        {puedeAvisar && movil && viaAviso === 'escritorio' && (
-          <p className="text-footnote text-text-secondary max-w-xl">{t('settings.alerts_on_pc')}</p>
-        )}
+        {!movil && <>
+          <Interruptor
+            activo={ajustes.avisarCapitulos !== false && puedeAvisar}
+            onChange={(v) => guardar({ avisarCapitulos: v })}
+            titulo={t('settings.alerts_chapters')}
+            descripcion={t('settings.alerts_chapters_desc')}
+          />
+          {!puedeAvisar && <Notice tone="warning">{t('settings.alerts_unsupported')}</Notice>}
+          {puedeAvisar && viaAviso === 'ntfy' && (
+            <p className="text-footnote text-text-secondary max-w-xl">{t('settings.alerts_via_ntfy')}</p>
+          )}
+        </>}
 
         {movil ? (
-          <p className="text-footnote text-text-tertiary max-w-xl">{t('settings.alerts_mobile_always')}</p>
+          <>
+            <p className="text-footnote text-text-tertiary max-w-xl">{t('settings.alerts_mobile_always')}</p>
+            <AvisosPush />
+          </>
         ) : (
           <>
             <Divider />

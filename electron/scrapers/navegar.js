@@ -1,6 +1,23 @@
 const REINTENTABLES = /ERR_FAILED|ERR_ABORTED|ERR_NETWORK_CHANGED|ERR_CONNECTION_RESET|ERR_TIMED_OUT/i;
+const { detectarReto, PATRON_RETO, SELECTORES_RETO, SELECTORES_RESULTADOS } = require('../asistente-reto');
+const oyentesRespuesta = new WeakMap();
+function escucharRespuestaPrincipal(win, recibir) {
+  const sesion = win.webContents.session;
+  if (!sesion?.webRequest?.onResponseStarted) return () => {};
+  let oyentes = oyentesRespuesta.get(sesion);
+  if (!oyentes) {
+    oyentes = new Map();
+    oyentesRespuesta.set(sesion, oyentes);
+    sesion.webRequest.onResponseStarted(datos => {
+      if (datos.resourceType === 'mainFrame') oyentes.get(datos.webContentsId)?.(datos);
+    });
+  }
+  oyentes.set(win.webContents.id, recibir);
+  return () => oyentes.delete(win.webContents.id);
+}
 
 const dormir = (ms) => new Promise(r => setTimeout(r, ms));
+const fechaLimite = hasta => typeof hasta === 'function' ? hasta() : hasta;
 
 const turnos = new Map();
 const ultimaPeticion = new Map();
@@ -21,16 +38,26 @@ async function conRitmo(url, tarea, minimo = 1200) {
   return turno;
 }
 
-async function cargarPagina(win, url, { intentos = 3, espera = 700 } = {}) {
+async function cargarPagina(win, url, { intentos = 3, espera = 700, esperaHttpMs = 2000, presupuestoHasta } = {}) {
   return conRitmo(url, async () => {
 
     let codigo = 0;
+    win.__mlRespuestaPrincipal = null;
     const alNavegar = (_e, _url, code) => { codigo = code || codigo; };
     win.webContents.on?.('did-navigate', alNavegar);
+    const onRespuesta = datos => {
+      const cabeceras = datos.responseHeaders || {};
+      const valor = clave => Object.entries(cabeceras).find(([nombre]) => nombre.toLowerCase() === clave)?.[1]?.[0] || '';
+      win.__mlRespuestaPrincipal = { cfMitigated: valor('cf-mitigated'), retryAfter: valor('retry-after') };
+      codigo = datos.statusCode || codigo;
+    };
+    const dejarDeEscuchar = escucharRespuestaPrincipal(win, onRespuesta);
     try {
-      return await cargarConReintentos(win, url, { intentos, espera }, () => codigo, () => { codigo = 0; });
+      return await cargarConReintentos(win, url, { intentos, espera, esperaHttpMs, presupuestoHasta },
+        () => codigo, () => { codigo = 0; win.__mlRespuestaPrincipal = null; });
     } finally {
       win.webContents.removeListener?.('did-navigate', alNavegar);
+      dejarDeEscuchar();
     }
   });
 }
@@ -72,20 +99,56 @@ const dominio = (url) => { try { return new URL(url).hostname.replace(/^www\./, 
 const noExiste = (codigo, url) => Object.assign(
   new Error(`Esa página no existe (${codigo}): ${String(url).slice(0, 120)}`), { noExiste: true });
 
-async function cargarConReintentos(win, url, { intentos, espera }, codigo, reiniciar = () => {}) {
+const errorHttp = (url, codigo) => Object.assign(new Error(`${dominio(url)} devolvió HTTP ${codigo}; no se pudo consultar.`),
+  { codigoHttp: codigo, noConsultado: true });
+const esperaDeRespuesta = (valor, minimo) => {
+  const segundos = Number(valor);
+  const indicado = Number.isFinite(segundos) && valor !== '' ? segundos * 1000 : Date.parse(valor) - Date.now();
+  return Math.max(minimo, Number.isFinite(indicado) ? indicado : 0);
+};
+async function errorDeEstado(win, url, estado) {
+  if (estado < 400) return null;
+  const muestra = await muestraDePagina(win);
+  if (detectarReto(muestra)) {
+    try { exigirQueNoSeaUnReto(dominio(url), muestra); }
+    catch (e) { return e; }
+  }
+  if ([404, 410].includes(estado)) return noExiste(estado, url);
+  if (LIMITADO.includes(estado)) return limitado(url, estado, await textoDe(win));
+  if ([401, 403].includes(estado) || estado >= 500 && estado <= 599) return errorHttp(url, estado);
+  return null;
+}
+
+async function cargarConReintentos(win, url, { intentos, espera, esperaHttpMs = 2000, presupuestoHasta }, codigo, reiniciar = () => {}) {
   let ultimo = null;
+  let reintentosHttp = 0;
 
   for (let intento = 1; intento <= intentos; intento++) {
     try {
 
       reiniciar();
+      if (presupuestoHasta && Date.now() >= fechaLimite(presupuestoHasta)) throw Object.assign(
+        new Error('Límite de tiempo de la investigación agotado.'), { tiempoAgotado: true, noConsultado: true });
       await win.loadURL(url);
-      if ([404, 410].includes(codigo())) throw noExiste(codigo(), url);
-      if (LIMITADO.includes(codigo())) throw limitado(url, codigo(), await textoDe(win));
+      const fallo = await errorDeEstado(win, url, codigo());
+      if (fallo) throw fallo;
       return;
     } catch (err) {
+      if (codigo() >= 400 && !LIMITADO.includes(codigo()) && !err.codigoHttp && !err.reto && !err.limitado && !err.noExiste) {
+        err = await errorDeEstado(win, url, codigo()) || err;
+      }
       ultimo = err;
-      if (win.isDestroyed() || err.limitado) throw err;
+      if (win.isDestroyed() || err.limitado || err.reto || err.tiempoAgotado) throw err;
+
+      if (err.codigoHttp) {
+        if (err.codigoHttp >= 500 && reintentosHttp++ === 0) {
+          const demora = esperaDeRespuesta(win.__mlRespuestaPrincipal?.retryAfter || '', esperaHttpMs);
+          if (!presupuestoHasta || Date.now() + demora < fechaLimite(presupuestoHasta)) {
+            await dormir(demora); intento--; continue;
+          }
+        }
+        throw err;
+      }
 
       if (!([404, 410].includes(codigo())) && await cargoIgualmente(win)) return;
 
@@ -110,13 +173,11 @@ async function cargoIgualmente(win) {
   }
 }
 
-const RETO = /just a moment|verify you are human|attention required|checking your browser|enable javascript and cookies|cf-chl|un momento|verificaci[oó]n de seguridad en curso|comprueba que eres humano/i;
-
 const DENEGADO = /request temporarily denied|retry later/i;
 
-function exigirQueNoSeaUnReto(sitio, { titulo = '', texto = '', url = '' } = {}) {
+function exigirQueNoSeaUnReto(sitio, { titulo = '', texto = '', url = '', ...senales } = {}) {
   const muestra = `${titulo} ${String(texto).slice(0, 2000)}`;
-  if (RETO.test(muestra)) throw new Error(`${sitio} devolvió el reto de Cloudflare en vez de resultados.`);
+  if (detectarReto({ titulo, ...senales })) throw Object.assign(new Error(`${sitio} devolvió el reto de Cloudflare en vez de resultados.`), { reto: true, noConsultado: true });
   if (url && DENEGADO.test(muestra)) throw limitado(url, 418, muestra);
 
   if (url && MANTENIMIENTO.test(muestra)) throw limitado(url, 503, muestra);
@@ -131,7 +192,12 @@ function exigirQueNoSeaUnReto(sitio, { titulo = '', texto = '', url = '' } = {})
 
 async function muestraDePagina(win) {
   try {
-    return await win.webContents.executeJavaScript('({ titulo: document.title, texto: document.body ? document.body.innerText : "", url: location.href })');
+    const muestra = await win.webContents.executeJavaScript(`({ titulo: document.title,
+      texto: document.body ? document.body.innerText : '', url: location.href,
+      selectores: ${JSON.stringify(SELECTORES_RETO)}.filter(s => !!document.querySelector(s)),
+      iframeReto: !!document.querySelector('iframe[src*="challenges.cloudflare.com"]'),
+      hayResultados: !!document.querySelector(${JSON.stringify(SELECTORES_RESULTADOS)}) })`);
+    return { ...muestra, cfMitigated: win.__mlRespuestaPrincipal?.cfMitigated || '' };
   } catch {
     return {};
   }
@@ -143,9 +209,12 @@ const FRASES_DE_RETO = ['just a moment', 'verify you are human', 'attention requ
 const PACIENCIA = `
   function mlSigueCargando() {
     if (document.readyState !== 'complete') return true;
-    if (document.querySelector('#challenge-running, #challenge-form, #cf-challenge-running, .cf-turnstile, #turnstile-wrapper')) return true;
+    var hayResultados = !!document.querySelector(${JSON.stringify(SELECTORES_RESULTADOS)});
+    if (document.querySelector('#challenge-running, #challenge-form, #cf-challenge-running')) return true;
+    if (!hayResultados && document.querySelector('.cf-turnstile, #turnstile-wrapper, iframe[src*="challenges.cloudflare.com"]')) return true;
+    if (new RegExp(${JSON.stringify(PATRON_RETO.source)}, 'i').test(document.title || '')) return true;
     var texto = document.body ? document.body.innerText : '';
-    var muestra = ((document.title || '') + ' ' + (texto.length < 2000 ? texto : '')).toLowerCase();
+    var muestra = (!hayResultados && texto.length < 2000 ? texto : '').toLowerCase();
     var frases = ${JSON.stringify(FRASES_DE_RETO)};
     for (var i = 0; i < frases.length; i++) if (muestra.indexOf(frases[i]) >= 0) return true;
     return false;

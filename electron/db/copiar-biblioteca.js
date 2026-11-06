@@ -2,7 +2,7 @@ const fs = require('fs/promises');
 const fsSync = require('fs');
 const path = require('path');
 
-const ACTIVOS = ['mylaiberry-db.json', 'fanfics', 'fondos', 'capturas', 'fundidas', 'copias'];
+const ACTIVOS = ['mylaiberry-db.json', 'fanfics', 'fondos', 'capturas', 'fundidas', 'copias', 'push-capitulos.json'];
 const PREFIJO = '.mylaiberry-mudanza-';
 
 const MARCA = 'promoviendo.json';

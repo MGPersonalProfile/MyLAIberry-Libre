@@ -51,6 +51,7 @@ const tareas = {
 const manejadoresIPC = [
   require('./ipc/biblioteca.js'),
   require('./ipc/lectura.js'),
+  require('./ipc/memoria-lectura.js'),
   require('./ipc/traduccion.js'),
   require('./ipc/descargas.js'),
   require('./ipc/descubrimientos.js'),
@@ -115,6 +116,8 @@ app.whenReady().then(async () => {
 
   console.log(`[Migración] ${migrateUserData().reason}`);
   await initDB();
+
+  require('./aviso-push.js').actual();
 
   registrarTrabajos();
 

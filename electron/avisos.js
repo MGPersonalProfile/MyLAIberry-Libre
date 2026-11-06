@@ -1,6 +1,7 @@
 const path = require('path');
 const { Notification, Tray, Menu, nativeImage } = require('electron');
 const ntfy = require('./aviso-ntfy.js');
+const push = require('./aviso-push.js');
 
 const AGRUPAR_MS = 90 * 1000;
 
@@ -54,15 +55,17 @@ function textoDelAviso(obras) {
   };
 }
 
-function soltarAviso() {
+async function soltarAviso() {
   temporizador = null;
   const obras = [...acumulados.values()];
   acumulados = new Map();
-  if (obras.length === 0 || !disponible()) return;
+  if (obras.length === 0) return;
 
   const { title, body } = textoDelAviso(obras);
   if (!deEscritorio()) {
-    ntfy.avisarPorNtfy({ title, body }, { enlace: enlace() });
+
+    const suscripciones = (await push.actual().estado()).suscripciones;
+    if (suscripciones === 0) ntfy.avisarPorNtfy({ title, body }, { enlace: enlace() });
     return;
   }
   const img = icono();
@@ -74,8 +77,13 @@ function soltarAviso() {
   aviso.show();
 }
 
-function hayCapitulosNuevos({ id, titulo, nuevos }) {
+async function hayCapitulosNuevos({ id, titulo, nuevos, capitulos, local = true }) {
   if (!nuevos || nuevos < 1) return;
+
+  if (Array.isArray(capitulos) && capitulos.length) {
+    await push.actual().novedad({ id, titulo, capitulos });
+  }
+  if (!local) return;
 
   const previo = acumulados.get(String(id));
   acumulados.set(String(id), {
@@ -85,13 +93,15 @@ function hayCapitulosNuevos({ id, titulo, nuevos }) {
   });
 
   if (temporizador) clearTimeout(temporizador);
-  temporizador = setTimeout(soltarAviso, AGRUPAR_MS);
+  temporizador = setTimeout(() => { soltarAviso().catch(e => console.warn('[Avisos] No se pudo emitir:', e.message)); }, AGRUPAR_MS);
+
+  temporizador.unref?.();
 }
 
 function soltarLoPendiente() {
   if (!temporizador) return;
   clearTimeout(temporizador);
-  soltarAviso();
+  soltarAviso().catch(e => console.warn('[Avisos] No se pudo emitir:', e.message));
 }
 
 function ponerEnBandeja({ alAbrir, alSalir }) {

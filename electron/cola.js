@@ -59,7 +59,7 @@ async function encolar(tipo, carga, { prioritario = false } = {}) {
   const agregada = await cambiarLista(actual => {
 
     const sobra = t => tipo === 'descargar-capitulos' && carga?.fanficId !== undefined && !carga.hasta && t.tipo === tipo &&
-      t.carga?.hasta && t.carga.fanficId === carga.fanficId && t.id !== tareaActual;
+      t.carga?.hasta && String(t.carga.fanficId) === String(carga.fanficId) && t.id !== tareaActual;
     const lista = actual.filter(t => !sobra(t));
     const ya = lista.find(t => clave(t.tipo, t.carga) === k);
     if (ya && lista.length !== actual.length) return prioritario ? [ya, ...lista.filter(t => t !== ya)] : lista;

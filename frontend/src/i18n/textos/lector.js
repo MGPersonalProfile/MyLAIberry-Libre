@@ -190,6 +190,14 @@ export const LECTOR = {
     es: 'La app nunca se abre sola al encender el ordenador. Esto sólo la mantiene despierta si ya estaba abierta.',
     en: 'The app never starts itself when you turn on your computer. This only keeps it awake if it was already open.'
   },
+  'settings.push_desc': { es: 'Recibe en este móvil avisos de capítulos nuevos, incluso con la app cerrada.', en: 'Receive new chapter alerts on this phone, even when the app is closed.' },
+  'settings.push_https': { es: 'Para activar avisos abre MyLAIberry desde su dirección HTTPS de Tailscale en un navegador compatible.', en: 'To enable alerts, open MyLAIberry through its Tailscale HTTPS address in a compatible browser.' },
+  'settings.push_denied': { es: 'Chrome tiene los avisos bloqueados. Actívalos en los permisos del sitio de Android y vuelve aquí.', en: 'Chrome has blocked notifications. Enable them in Android site permissions and return here.' },
+  'settings.push_timeout': { es: 'El navegador no pudo activar los avisos. Recarga la app y vuelve a intentarlo.', en: 'The browser could not enable alerts. Reload the app and try again.' },
+  'settings.push_unavailable': { es: 'La clave de avisos no está disponible. Recarga la app y vuelve a intentarlo.', en: 'The alert key is unavailable. Reload the app and try again.' },
+  'settings.push_active': { es: 'Avisos activados en este móvil.', en: 'Alerts enabled on this phone.' },
+  'settings.push_enable': { es: 'Activar avisos en este móvil', en: 'Enable alerts on this phone' },
+  'settings.push_disable': { es: 'Desactivar avisos', en: 'Disable alerts' },
 
   'settings.bookmarklet':      { es: 'Importar desde el navegador', en: 'Import from your browser' },
   'settings.bookmarklet_desc': {

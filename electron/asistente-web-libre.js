@@ -52,6 +52,23 @@ async function comprobarDestino(direccion, resolver = (h) => dns.lookup(h, { all
   return u;
 }
 
+const vigiladas = new Map();
+const filtrosInstalados = new WeakSet();
+function vigilarRed(win, resolver) {
+  const wc = win.webContents;
+  const ses = wc?.session;
+  if (!ses?.webRequest || wc.id === undefined) return;
+  vigiladas.set(wc.id, resolver);
+  win.on?.('closed', () => vigiladas.delete(wc.id));
+  if (filtrosInstalados.has(ses)) return;
+  filtrosInstalados.add(ses);
+  ses.webRequest.onBeforeRequest({ urls: ['http://*/*', 'https://*/*', 'ws://*/*', 'wss://*/*'] }, (d, responder) => {
+    if (!vigiladas.has(d.webContentsId)) return responder({});
+    const r = vigiladas.get(d.webContentsId);
+    (r ? comprobarDestino(d.url, r) : comprobarDestino(d.url)).then(() => responder({}), () => responder({ cancel: true }));
+  });
+}
+
 const { paginaSiguiente, indiceDeCapitulos } = require('./asistente-web-enlaces.js');
 
 const LECTOR = `(() => {
@@ -92,6 +109,7 @@ function crearWebLibre({ signal, progreso = () => {}, maxPaginas = MAX_PAGINAS, 
     win.webContents.on('will-navigate', vigilar);
     win.webContents.on('will-redirect', vigilar);
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    vigilarRed(win, resolver);
     return win;
   }
 

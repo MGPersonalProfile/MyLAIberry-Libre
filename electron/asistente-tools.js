@@ -113,11 +113,13 @@ const CAMPOS_DE_BUSQUEDA = Object.keys(ESQUEMA_BUSQUEDA).filter(c => c !== 'quer
 function herramientasDeBiblioteca(add, { state, services, background, explicitText, desdeElMovil, hilo }) {
   add('biblioteca', 'Lista obras disponibles y su estado (título, autor, totalChapters, capituloActual —el que tiene abierto—, capitulosLeidos —los leídos enteros: para «¿cuántos he leído?», éste—, capitulosPorLeer, capitulosSinDescargar —los que aún no están en disco— y lectura), sin texto de capítulos. Con filtro (un fandom, etiqueta, autor, sitio, parte del título, o cómo va: «a medias», «sin empezar», «al día», «terminada»), sólo las que lo llevan y cuántas son: para «¿cuántas tengo de X?», usa el filtro y da ese número; no las cuentes tú. Dos cosas a la vez van juntas en el filtro: «naruto a medias».',
     { filtro: { type: 'string', minLength: 1, maxLength: 200 } }, async args => filtrarBiblioteca(await services.library(), args.filtro, args.filtro ? await services.obrasCompletas?.() : null), []);
-  add('buscar_obras', 'Busca obras en AO3, FanFiction.net, RoyalRoad, Wattpad, Project Gutenberg (clásicos), WeTriedTLs y Webnovel (novelas web traducidas; en Webnovel buena parte es de pago) CON LOS FILTROS DE CADA SITIO: fandom (en FanFiction.net, su sección: Naruto → /anime/Naruto/), orden (popularidad por defecto, recientes = última actualización, publicadas, palabras, relevancia), minPalabras/maxPalabras (más de 40k → minPalabras 40000), minCapitulos, generos y sinGeneros (humor, romance, aventura, drama, angustia, parodia, misterio, terror, fantasia, ciencia_ficcion, sobrenatural, tragedia, familia, amistad, hurt_comfort, accion…), rating (general, adolescente, maduro, explicito), idioma (código de dos letras: en, es), estado (completa / en_curso; completa: true vale igual), pareja (nombres separados por /: Harry Potter/Hermione Granger; AO3 la busca en su campo de relaciones, FanFiction.net con los personajes de la sección, y sólo salen obras cuya pareja publicada coincide), personajes y sinCrossovers. query es opcional si hay fandom. fuente: sólo ese sitio. pagina: la siguiente tanda. Devuelve por fuente hasta 8 obras con url, premisa (synopsis), capítulos, palabras, popularidad, si ya está en la biblioteca y sinComprobar (los filtros que esa obra no permitió ver), y por fuente `filtros`: enLaWeb (lo que aplicó el sitio), comprobadoPorLaApp y noVerificable. Al presentar, di qué aplicó el sitio y qué no se pudo verificar: nunca des por aplicado lo que no lo fue.',
+  add('buscar_obras', 'Busca obras en AO3, FanFiction.net, RoyalRoad, Wattpad, Project Gutenberg (clásicos), WeTriedTLs y Webnovel (novelas web traducidas; en Webnovel buena parte es de pago) CON LOS FILTROS DE CADA SITIO: fandom (en FanFiction.net, su sección: Naruto → /anime/Naruto/), orden (popularidad por defecto, recientes = última actualización, publicadas, palabras, relevancia), minPalabras/maxPalabras (más de 40k → minPalabras 40000), minCapitulos, generos y sinGeneros (humor, romance, aventura, drama, angustia, parodia, misterio, terror, fantasia, ciencia_ficcion, sobrenatural, tragedia, familia, amistad, hurt_comfort, accion…), rating (general, adolescente, maduro, explicito), idioma (código de dos letras: en, es), estado (completa / en_curso; completa: true vale igual), pareja (nombres separados por /: Harry Potter/Hermione Granger; AO3 la busca en su campo de relaciones, FanFiction.net con los personajes de la sección, y sólo salen obras cuya pareja publicada coincide), personajes y sinCrossovers. query es opcional si hay fandom, fuente o algún filtro (lo más popular de humor en RoyalRoad: fuente RoyalRoad, generos humor, sin query). fuente: sólo ese sitio. pagina: la siguiente tanda. Devuelve por fuente hasta 8 obras con url, premisa (synopsis), capítulos, palabras, popularidad, si ya está en la biblioteca y sinComprobar (los filtros que esa obra no permitió ver), y por fuente `filtros`: enLaWeb (lo que aplicó el sitio), comprobadoPorLaApp y noVerificable. Al presentar, di qué aplicó el sitio y qué no se pudo verificar: nunca des por aplicado lo que no lo fue.',
     ESQUEMA_BUSQUEDA,
     args => {
-      if (!String(args.query || '').trim() && !args.fandom) throw new Error('Hace falta query o fandom.');
-      const filtros = Object.fromEntries(CAMPOS_DE_BUSQUEDA.filter(c => args[c] !== undefined).map(c => [c, args[c]]));
+      const filtros = Object.fromEntries(CAMPOS_DE_BUSQUEDA.filter(c => args[c] !== undefined && c !== 'pagina').map(c => [c, args[c]]));
+
+      if (!String(args.query || '').trim() && !Object.keys(filtros).length) throw new Error('Hace falta query, fandom, fuente o algún filtro.');
+      if (args.pagina !== undefined) filtros.pagina = args.pagina;
       return conLoQueYaTiene(args.query || '', services, args.orden, filtros);
     }, []);
 
@@ -299,6 +301,7 @@ function retirarLoApuntado(buzon, args) {
 
 function crearTools({ state, services, point, context, background = false, explicitText = '', desdeElMovil = false, hilo = null }) {
   const registry = new Map();
+  const registroVetos = require('./asistente-vetos').crearRegistro();
   function add(name, description, properties, run, required = Object.keys(properties)) {
     registry.set(name, { spec: { type: 'function', function: { name, description,
       parameters: { type: 'object', properties, required, additionalProperties: false } } }, run });
@@ -312,12 +315,15 @@ function crearTools({ state, services, point, context, background = false, expli
 
   return {
     specs: [...registry.values()].map(t => t.spec),
+    registroVetos,
     async run(name, args) {
       const tool = registry.get(name);
       if (!tool) throw new Error('Acción no disponible en este contexto.');
       validar(textoDondeToca(args, tool.spec.function.parameters), tool.spec.function.parameters);
 
-      return require('./asistente-vetos').aplicarVetos(name, await tool.run(args), state);
+      const vetos = require('./asistente-vetos');
+      const resultado = await vetos.aplicarVetos(name, await tool.run(args), state, registroVetos);
+      return vetos.DE_FUERA.test(name) ? require('./asistente-sinopsis').marcarSinSinopsis(resultado) : resultado;
     },
   };
 }

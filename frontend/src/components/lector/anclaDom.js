@@ -10,7 +10,7 @@ function textoPintado(n, raiz) {
   return true;
 }
 
-function hojas(caja) {
+export function hojas(caja) {
   const contenido = caja?.querySelector('.reader-content');
   if (!contenido) return [];
   return [...contenido.querySelectorAll(SELECTOR)]
