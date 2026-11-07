@@ -8,21 +8,28 @@ function porFuente(fuente, obras = [], enBiblioteca = new Set(), filtros) {
 
     ...(filtros ? { filtros } : {}),
 
-    obras: obras.slice(0, 8).map(o => ({
-      title: o.title,
-      author: o.author,
-      url: o.url,
+    obras: obras.slice(0, 8).map(o => {
+      const tags = (o.tags || []).map(t => t.name || t);
+      const avisos = [...(o.avisos || [])];
+      if (!tags.length) avisos.push('La obra no publica etiquetas: la ausencia de etiquetas no confirma ausencia de relaciones ni contenido.');
+      return {
+        title: o.title,
+        author: o.author,
+        url: o.url,
 
-      synopsis: String(o.synopsis || '').slice(0, 600),
-      totalChapters: o.totalChapters,
-      palabras: o.wordCount || undefined,
-      popularidad: o.kudos ? `${o.kudos} ${MEDIDA[fuente] || 'kudos'}` : undefined,
-      completa: o.completa,
-      enBiblioteca: enBiblioteca.has(claveDeObra(o.url)) || undefined,
-      tags: (o.tags || []).map(t => t.name || t).slice(0, 10),
-      ...(o.prioridadPareja ? { prioridadPareja: o.prioridadPareja, parejaPrincipal: o.parejaPrincipal } : {}),
-      ...(o.sinComprobar ? { sinComprobar: o.sinComprobar } : {})
-    }))
+        synopsis: String(o.synopsis || '').slice(0, 600),
+        totalChapters: o.totalChapters,
+        palabras: o.wordCount || undefined,
+        popularidad: o.kudos ? `${o.kudos} ${MEDIDA[fuente] || 'kudos'}` : undefined,
+        completa: o.completa,
+        enBiblioteca: enBiblioteca.has(claveDeObra(o.url)) || undefined,
+        tags: tags.slice(0, 10),
+        estadoVerificacion: o.estadoVerificacion || 'no_comprobada',
+        ...(avisos.length ? { avisos } : {}),
+        ...(o.prioridadPareja ? { prioridadPareja: o.prioridadPareja, parejaPrincipal: o.parejaPrincipal } : {}),
+        ...(o.sinComprobar ? { sinComprobar: o.sinComprobar } : {})
+      };
+    })
   };
 }
 

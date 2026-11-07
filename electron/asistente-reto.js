@@ -74,7 +74,20 @@ async function explicarAbandono(win, causa, { muestraDePagina, exigirQueNoSeaUnR
   return marcar(Object.assign(causa, { reto: causa.reto || false }));
 }
 
-async function conPlazo({ promesa, ventana, plan, presupuestoHasta = Infinity, sitio, progreso, mientrasAvance, cerrar, ...lectores }) {
+async function alAbandonar(e, { ventana, lectores, cerrar, progreso, sitio, alAbandonarReto }) {
+  const win = ventana();
+  const direccion = win && !win.isDestroyed() ? win.webContents.getURL() : '';
+  const error = await explicarAbandono(win, e, lectores);
+  cerrar();
+  if (error.reto) {
+
+    alAbandonarReto?.({ sitio, url: direccion });
+    progreso({ estado: 'comprobacion', mensaje: avisoAlAbandonar(sitio) });
+  }
+  return error;
+}
+
+async function conPlazo({ promesa, ventana, plan, presupuestoHasta = Infinity, sitio, progreso, mientrasAvance, cerrar, alAbandonarReto, ...lectores }) {
   const planAhora = typeof plan === 'function' ? plan : () => plan;
   const fechaLimite = () => typeof presupuestoHasta === 'function' ? presupuestoHasta() : presupuestoHasta;
   const inicial = planAhora();
@@ -115,11 +128,7 @@ async function conPlazo({ promesa, ventana, plan, presupuestoHasta = Infinity, s
     return await mientrasAvance(ventana(), pedir, 'La investigación',
       { quietoMs: inicial.quietoMs, cada: inicial.cadaVigia, retoMs: Infinity, retoMaxMs: Math.max(inicial.totalMs, PLAZOS.totalPersonaMs), recargasMs: [] });
   } catch (e) {
-    const win = ventana();
-    const error = await explicarAbandono(win, e, lectores);
-    cerrar();
-    if (error.reto) progreso({ estado: 'comprobacion', mensaje: avisoAlAbandonar(sitio) });
-    throw error;
+    throw await alAbandonar(e, { ventana, lectores, cerrar, progreso, sitio, alAbandonarReto });
   } finally {
     clearTimeout(techo); clearInterval(mirar);
     const win = ventana();

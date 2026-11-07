@@ -241,6 +241,7 @@ export const ASISTENTE = {
   'assistant.action.donde_esta_el_libro': { es: 'Buscar dónde leer el libro', en: 'Find where to read the book' },
   'assistant.action.buscar_obras':       { es: 'Buscar con los filtros de cada sitio', en: 'Search with the filters of each site' },
   'assistant.action.proponer_obras':     { es: 'Dejar obras en «Por decidir»', en: 'Leave works in «To decide»' },
+  'assistant.action.investigar_propuesta': { es: 'Investigar una propuesta', en: 'Investigate a proposal' },
   'assistant.action.que_hay_de_nuevo':   { es: 'Contar qué trae la actualización', en: 'Tell what the update brings' },
   'assistant.action.leer_primer_capitulo': { es: 'Leer el primer capítulo', en: 'Read the first chapter' },
   'assistant.action.buscar_en_internet': { es: 'Buscar en internet', en: 'Search the web' },
@@ -331,6 +332,15 @@ export const ASISTENTE = {
   'assistant.confirm_cancelled': { es: 'No se ha hecho', en: 'Not done' },
   'assistant.confirm_error':     { es: 'No se pudo hacer', en: 'It could not be done' },
   'assistant.action.failed':             { es: 'no salió', en: 'failed' },
+  'assistant.reto.needs':   { es: '{site} necesita una comprobación humana para continuar.', en: '{site} needs a human check to continue.' },
+  'assistant.reto.open':    { es: 'Abrir el sitio', en: 'Open the site' },
+  'assistant.reto.retry':   { es: 'Comprobar de nuevo', en: 'Check again' },
+  'assistant.reto.cancel':  { es: 'Cancelar', en: 'Cancel' },
+  'assistant.reto.state.reanudado': { es: '{site}: ya responde. Vuelve a pedirle la búsqueda al asistente.', en: '{site} responds again. Ask the assistant to search again.' },
+  'assistant.reto.state.cancelado': { es: '{site}: comprobación cancelada.', en: '{site}: check cancelled.' },
+  'assistant.reto.state.no-resuelto': { es: '{site}: no se pudo comprobar.', en: '{site}: could not be checked.' },
+  'assistant.reto.state.caducado': { es: '{site}: la comprobación caducó.', en: '{site}: the check expired.' },
+  'assistant.reto.state.error': { es: 'No se pudo completar la comprobación.', en: 'The check could not be completed.' },
   'initiative.paused_all': {
     es: 'En pausa: no responderá ni hará nada por su cuenta.',
     en: "Paused: it won't answer or do anything on its own."

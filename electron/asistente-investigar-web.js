@@ -62,6 +62,26 @@ function breve(o) {
     ...(o.prioridadPareja ? { prioridadPareja: o.prioridadPareja, parejaPrincipal: o.prioridadPareja === 'alta' } : {}) };
 }
 
+function fichaVerificada(o) {
+  const medida = { AO3: 'kudos', 'FanFiction.net': 'favoritos', RoyalRoad: 'seguidores', Wattpad: 'votos' }[o.source] || 'popularidad';
+  const tags = (o.tags || []).map(t => typeof t === 'object' && t ? { name: String(t.name || ''), category: String(t.category || '') } : { name: String(t), category: '' });
+  const avisos = [...(o.avisos || [])];
+  if (!tags.length) {
+    avisos.push('La obra no publica etiquetas: la ausencia de etiquetas no confirma ausencia de contenido o relaciones.');
+  }
+  return {
+    title: o.title, author: o.author, url: o.url, source: o.source,
+    synopsis: String(o.synopsis || ''),
+    tags,
+    wordCount: o.wordCount, ...(o.source === 'RoyalRoad' && o.wordCount ? { palabrasEstimadas: true } : {}),
+    totalChapters: o.totalChapters || o.chapters?.length || undefined,
+    kudos: o.kudos, medidaPopularidad: medida, completa: o.completa, autorUrl: o.autorUrl,
+    avisos,
+    estadoVerificacion: tags.length ? 'ficha_consultada' : 'no_comprobada',
+    ...(o.prioridadPareja ? { prioridadPareja: o.prioridadPareja, parejaPrincipal: o.prioridadPareja === 'alta' } : {})
+  };
+}
+
 function ordenar(obras, orden, f = {}) {
   const clave = orden === 'palabras' ? 'wordCount' : 'kudos';
   const peso = p => (p === 'alta' ? 3 : p === 'indeterminada' ? 2 : p === 'baja' ? 1 : 0);
@@ -137,8 +157,32 @@ function resumenDeSitios(noConsultados, completada) {
   return `${completada ? 'Búsqueda parcial' : 'La búsqueda no pudo completarse'}: ${detalle || 'ningún sitio se pudo consultar'}.`;
 }
 
-function crearInvestigador({ signal, progreso = () => {}, origen, presupuestoMs, presupuestos = {},
-  navegador = crearNavegador({ signal, progreso, origen }) } = {}) {
+function mapearCandidata(o, filtros, q) {
+  const ev = require('./asistente-sinopsis').evaluarEvidencia(o, q);
+  return {
+    ...breve(o),
+    estadoVerificacion: 'no_comprobada',
+    sinVerificar: [...new Set([...sinVerificar(o, filtros), ...(o.sinComprobar || [])])],
+    ...(ev ? { evidenciaPremisa: ev } : {})
+  };
+}
+
+function evaluarNoConsultados(fallidos, consultados, sitios, agotadoTiempo) {
+  if (agotadoTiempo) for (const sitio of sitios) {
+    if (!consultados.has(sitio) && !fallidos.has(sitio)) fallidos.set(sitio,
+      Object.assign(new Error('Pendiente por límite de tiempo.'), { tiempoAgotado: true }));
+  }
+  return [...fallidos].map(([sitio, e]) => ({
+    sitio,
+    motivo: e.reto ? 'comprobacion-humana' : e.tiempoAgotado ? 'tiempo-agotado'
+      : e.codigoHttp ? 'error-http' : 'error',
+    mensaje: e.message,
+    ...(e.codigoHttp ? { codigoHttp: e.codigoHttp } : {})
+  }));
+}
+
+function crearInvestigador({ signal, progreso = () => {}, origen, presupuestoMs, presupuestos = {}, pendientes = null,
+  navegador = crearNavegador({ signal, progreso, origen, pendientes }) } = {}) {
   let pasos = 0;
   const paso = () => { if (++pasos > MAX_PASOS) throw new Error(`La investigación tiene un máximo de ${MAX_PASOS} pasos.`); };
 
@@ -185,20 +229,13 @@ function crearInvestigador({ signal, progreso = () => {}, origen, presupuestoMs,
         if (!lista.length) break;
 
         if (sitio === 'Wattpad') lista = lista.filter(o => pertinencia(o, q) >= 2 / 3);
-        obras.push(...lista.filter(o => coincide(o, filtros))
-          .map(o => ({ ...breve(o), sinVerificar: [...new Set([...sinVerificar(o, filtros), ...(o.sinComprobar || [])])] })));
+        obras.push(...lista.filter(o => coincide(o, filtros)).map(o => mapearCandidata(o, filtros, q)));
       } catch (e) { errores.push(`${sitio}, página ${pagina}: ${e.message}`); fallidos.set(sitio, e);
         if (e.tiempoAgotado) agotadoTiempo = true;
         break; }
     }
-    if (agotadoTiempo) for (const sitio of sitios) {
-      if (!consultados.has(sitio) && !fallidos.has(sitio)) fallidos.set(sitio,
-        Object.assign(new Error('Pendiente por límite de tiempo.'), { tiempoAgotado: true }));
-    }
 
-    const noConsultados = [...fallidos]
-      .map(([sitio, e]) => ({ sitio, motivo: e.reto ? 'comprobacion-humana' : e.tiempoAgotado ? 'tiempo-agotado'
-        : e.codigoHttp ? 'error-http' : 'error', mensaje: e.message, ...(e.codigoHttp ? { codigoHttp: e.codigoHttp } : {}) }));
+    const noConsultados = evaluarNoConsultados(fallidos, consultados, sitios, agotadoTiempo);
     const completada = consultados.size > 0 || !fallidos.size;
     if (noConsultados.length || !completada) progreso({ paginas: navegador.paginas, maxPaginas: navegador.maxPaginas, estado: 'comprobacion', mensaje: resumenDeSitios(noConsultados, completada) });
     const unicas = ordenar(sinDuplicados(obras), orden, comun);
@@ -245,7 +282,7 @@ function crearInvestigador({ signal, progreso = () => {}, origen, presupuestoMs,
         url: `${obra.autorUrl.replace(/\/pseuds\/.*$/, '')}/bookmarks` });
     }
     const unicos = [...new Map(enlaces.map(e => [e.url, e])).values()].slice(0, 20);
-    return { ...breve(obra), enlaces: unicos, paginasVisitadas: navegador.paginas };
+    return { ...fichaVerificada(obra), enlaces: unicos, paginasVisitadas: navegador.paginas };
   }
 
   async function pistas({ url, tipo = 'autor' }) {
@@ -315,4 +352,4 @@ function crearInvestigador({ signal, progreso = () => {}, origen, presupuestoMs,
     cerrar: () => { navegador.cerrar(); libre?.cerrar(); }, get paginas() { return navegador.paginas + (libre?.paginas || 0); } };
 }
 
-module.exports = { crearInvestigador, consultaDe, casaPareja, coincide, sinDuplicados, breve, MAX_PASOS, RESERVA_FICHAS };
+module.exports = { crearInvestigador, consultaDe, casaPareja, coincide, sinDuplicados, breve, fichaVerificada, MAX_PASOS, RESERVA_FICHAS };

@@ -26,6 +26,12 @@ const REDES = [
     (t, x) => `[Aviso del sistema, no del usuario] Tu respuesta nombra ${retiradasNombradas(t, x.registroVetos).map(r => `«${r.titulo}»`).join(', ')}, que choca con los disgustos del usuario y se retiró de los resultados. Rehaz la respuesta sin nombrarla, ni como candidata ni con aviso.`],
   ['guardadoReal', (t, x) => require('./asistente-evidencia').guardadoSinEvidencia(t, x),
     (t, x) => '[Aviso del sistema, no del usuario] Dices que has guardado una nota o pistas, pero no hay una llamada correcta a ' + require('./asistente-evidencia').guardadoSinEvidencia(t, x) + '. Guarda lo pedido con esa herramienta antes de afirmarlo; si falla, dilo.'],
+  ['premisaSinEvidencia', (t, x) => require('./asistente-sinopsis').afirmacionesSinEvidencia(t, x).length > 0,
+    (t, x) => {
+      const fallidas = require('./asistente-sinopsis').afirmacionesSinEvidencia(t, x);
+      const nombres = fallidas.map(f => `«${f.titulo}»`).join(', ');
+      return `[Aviso del sistema, no del usuario] Tu respuesta presenta como verificada o comprobada la premisa de ${nombres}, pero no hay evidencia suficiente en la sinopsis ni en la ficha (solo está inferida de etiquetas o título, o no comprobada). Puedes mencionarla como hipótesis o inferencia, pero no afirmarla como hecho comprobado o verificado. Rehaz la respuesta.`;
+    }],
 
   ['tarjetaViva', (t, x) => x.tarjetasQueRetirar.length
     && !(PIDE_TODAS.test(String(x.textoDelUsuario || '')) ? x.tarjetasQueRetirar.every(p => x.retiradas.includes(p.id)) : x.tarjetasQueRetirar.some(p => x.retiradas.includes(p.id))),

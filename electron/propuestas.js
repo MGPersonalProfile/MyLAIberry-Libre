@@ -14,8 +14,10 @@ const CADA = 10 * 60 * 1000;
 const avisar = () => { try { require('./ventana').avisar('discoveries-updated', {}); } catch {  } };
 
 async function plazoEnHoras() {
-  const h = Number((await db.getSettings())?.plazoPropuestasHoras);
-  return Number.isInteger(h) && h >= 1 && h <= 168 ? h : PLAZO_HORAS;
+  try {
+    const h = Number((await db.getSettings())?.plazoPropuestasHoras);
+    return Number.isInteger(h) && h >= 1 && h <= 168 ? h : PLAZO_HORAS;
+  } catch { return PLAZO_HORAS; }
 }
 
 async function proponerUna(url, { motivo, desde, vence, horas, guardar, obras }) {
@@ -30,17 +32,19 @@ async function proponerUna(url, { motivo, desde, vence, horas, guardar, obras })
   if (existente?.origen === 'descubierta' && existente.propuesta?.vence && !existente.propuesta.adoptadaAlVencer) {
     return { url, title: existente.title, id: String(existente.id), vence: new Date(existente.propuesta.vence).toISOString() };
   }
-  const propuesta = { desde, vence, horas, motivo: motivo || '', fuente: vista.fuente, filtros: vista.filtros };
+  const coste = vista.coste || { peticionesWeb: vista.peticionesWeb ?? 1, llamadasModelo: vista.llamadasModelo ?? 0 };
+  const propuesta = { desde, vence, horas, motivo: motivo || '', fuente: vista.fuente, filtros: vista.filtros, coste };
   const guardada = existente || await guardar({ ...vista.obra, propuesta });
   if (!existente && guardada) obras.push(guardada);
   if (!guardada || guardada.origen !== 'descubierta') return { url, error: 'No se pudo dejar en Descubrimientos.' };
-  await db.marcarPropuesta(guardada.id, propuesta);
+  try { await db.marcarPropuesta(guardada.id, propuesta); } catch {  }
   return { url, title: guardada.title, id: String(guardada.id), vence: new Date(vence).toISOString() };
 }
 
-async function proponer({ urls = [], motivo, horas } = {}, { guardar = require('./tareas/descubrir.js').guardarDescubrimiento, ahora = Date.now() } = {}) {
+async function proponer({ urls = [], motivo, horas } = {}, { guardar = require('./tareas/descubrir.js').guardarDescubrimiento, ahora = Date.now(), obras: obrasLista } = {}) {
   const plazo = Number.isInteger(horas) && horas >= 1 && horas <= 168 ? horas : await plazoEnHoras();
-  const comun = { motivo, desde: ahora, vence: ahora + plazo * HORA, horas: plazo, guardar, obras: await db.getFanfics() };
+  const obrasDB = obrasLista || await db.getFanfics().catch(() => []);
+  const comun = { motivo, desde: ahora, vence: ahora + plazo * HORA, horas: plazo, guardar, obras: obrasDB };
   const obras = [];
   for (const url of [...new Set(urls)].slice(0, 30)) obras.push(await proponerUna(url, comun));
   avisar();

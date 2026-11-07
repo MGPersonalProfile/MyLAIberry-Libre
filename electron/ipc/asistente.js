@@ -31,9 +31,9 @@ async function buscarEnTodos(consulta, orden = 'popularidad', filtros = {}) {
 
   return Promise.all(fuentes.map(async (nombre) => {
     try {
-      const { plan, obras, aviso } = await buscarEnSitio(nombre, { ...pedido, pagina: undefined }, { pagina: filtros.pagina || 1 });
+      const { plan, obras, aviso, peticionesWeb = 1 } = await buscarEnSitio(nombre, { ...pedido, pagina: undefined }, { pagina: filtros.pagina || 1 });
 
-      require('../filtros/recientes.js').recordar(nombre, obras.slice(0, 8), resumen(plan));
+      require('../filtros/recientes.js').recordar(nombre, obras.slice(0, 8), resumen(plan), { coste: { peticionesWeb, llamadasModelo: 0 } });
       return { ...porFuente(nombre, obras, enBiblioteca, resumen(plan)), ...(aviso ? { aviso } : {}) };
     } catch (e) {
       return fallo(nombre, e);
@@ -178,10 +178,13 @@ function obtener() {
 
     proponer: (args) => require('../propuestas.js').proponer(args),
     primerCapitulo: (args) => require('../propuestas.js').primerCapitulo(args),
+    investigarPropuesta: (args) => require('../investigar-propuesta.js').investigarPropuesta(args),
 
     novedades: async (args) => { const r = require('../novedades.js').queHayDeNuevo(args, { vista: (await db.getSettings())?.ultimaNovedadVista,
       version: require('electron').app?.getVersion?.() }); if (r.marcar) await db.updateSettings({ ultimaNovedadVista: r.marcar }); return r; },
-    crearInvestigador: opciones => require('../asistente-investigar-web').crearInvestigador(opciones),
+
+    crearInvestigador: ({ requestId, ...opciones } = {}) => require('../asistente-investigar-web').crearInvestigador(
+      { ...opciones, pendientes: requestId ? { gestor: require('./retos.js').gestor(), requestId } : null }),
 
     recommendations: (consulta, subreddit) => require('../scrapers/reddit.js').recomendaciones({ consulta, subreddit }),
     leerAutor: (url) => require('../scrapers').leerAutor(url),

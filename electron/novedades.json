@@ -1,5 +1,43 @@
 [
   {
+    "version": "2026.11.7-4",
+    "fecha": "2026-11-07",
+    "resumen": "Descubrimientos investigados con coste real medido, investigación ampliada bajo demanda e integración en «Por decidir». Fichas con todas las etiquetas y verificación de premisas con pruebas en el asistente. Importación y lectura de cómics de Webtoon con viñetas en imagen.",
+    "detalle": [
+      {
+        "que": "Cada propuesta de Descubrimientos y «Por decidir» muestra su coste medido a partir de las peticiones web y llamadas al modelo realizadas. El asistente dispone de la herramienta investigar_propuesta para ampliar evidencias respetando el ritmo por sitio y la caché de fichas, sin descargar capítulos enteros. En «Por decidir», las tarjetas incorporan los motivos, datos conocidos, desconocidos, advertencias y el botón «Ver investigación» para consultar el desglose completo.",
+        "porque": "A42 fases 8, 9 y 10: conocer el coste real de investigar candidatos, disponer de investigación ampliada bajo demanda sin saturar los sitios ni descargar obras prematuramente, y contar con la misma transparencia y evidencias detalladas tanto en Descubrimientos como en Por decidir."
+      },
+      {
+        "que": "Al abrir la ficha de una obra en la web, el asistente conserva todas las etiquetas publicadas (sin recortar a dieciséis) y sus categorías, para que ninguna relación o tema quede fuera de la comprobación. Además, la ausencia de etiquetas ya no se confunde con que la obra esté comprobada.",
+        "porque": "El recorte previo a dieciséis etiquetas podía ocultar relaciones o advertencias publicadas más abajo, permitiendo recomendar por error obras contrarias a tus gustos."
+      },
+      {
+        "que": "El asistente solo da por comprobada una premisa si la sinopsis o la ficha la explican de verdad. Si una etiqueta solo sugiere el tema (como una etiqueta de viaje en el tiempo sin detalles de cómo ocurre), lo comunica como inferencia o deducción y no como un hecho verificado.",
+        "porque": "Una etiqueta temática no demuestra los detalles de la trama, y afirmar que una premisa está verificada cuando solo era una suposición inducía a error."
+      },
+      {
+        "que": "Puedes importar webcómics de Webtoon pegando su enlace. La app descarga los episodios respetando el orden y el ritmo del sitio, guarda las viñetas en tu ordenador y las muestra en el lector vertical continuo sin saltos ni cortes.",
+        "porque": "Webtoon protege sus imágenes exigiendo cabeceras de origen y carga las viñetas de forma perezosa. El nuevo importador y lector dedicado permite disfrutar de cómics visuales con la misma comodidad que los fanfics de texto."
+      }
+    ]
+  },
+  {
+    "version": "2026.11.7-3",
+    "fecha": "2026-11-07",
+    "resumen": "Si una web te pide una comprobación humana y no hay nadie delante, el asistente ya no se pierde: te lo avisa y puedes volver a probar desde el móvil.",
+    "detalle": [
+      {
+        "que": "Cuando el asistente se topa con la comprobación «Un momento…» de Cloudflare en el PC o en el servidor y nadie puede pasarla, ahora la apunta como pendiente. En el asistente aparece «ese sitio necesita una comprobación humana» con tres botones: abrir el sitio, comprobar de nuevo o cancelar. Sólo quien tiene el código de acceso del móvil puede tocarla.",
+        "porque": "Antes la petición se perdía sin decir nada más que «nadie la pasó». «Comprobar de nuevo» no da el reto por pasado porque pulses el botón: abre la web otra vez en el asistente y sólo si de verdad responde sigue adelante. Pasarlo en el navegador del móvil puede no valer para el del servidor; en ese caso se queda pendiente."
+      },
+      {
+        "que": "El navegador libre del asistente (navegar_web) reconoce ahora los retos igual que la investigación, también los que no ponen «Un momento…» en el título.",
+        "porque": "Tenía su propia detección, sólo por el título, y dejaba pasar un Turnstile incrustado."
+      }
+    ]
+  },
+  {
     "version": "2026.11.7-2",
     "fecha": "2026-11-07",
     "resumen": "Interfaz de seguimiento sin spoilers (A40): «Ibas por el capítulo N» y botón «Recordar la historia» en Inicio y en la ficha de la obra.",

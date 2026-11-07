@@ -95,6 +95,7 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
     const responder = async (texto, resumido = false) => {
 
       texto = require('./asistente-vetos-salida').sinNombrarRetiradas(texto, toolset.registroVetos);
+      texto = require('./asistente-sinopsis').rechazarVerificacionSinEvidencia(texto, { vistas, messages, textoDelUsuario: redes.textoDelUsuario });
       if (avance.limiteWeb && !resumido) texto = `${resumenLimite('investigación', { acciones: actions, vistas, pendientes, avance })}\n\n${texto}`;
       if (corregidas.has('guardadoReal') && require('./asistente-evidencia').guardadoSinEvidencia(texto, { actions })) {
         texto = 'No he podido guardar ese encargo o esas pistas; no han quedado registrados. Puedes volver a pedírmelo.';
@@ -143,7 +144,7 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
       const siguen = !calls.length && redes.tarjetasQueRetirar.length ? (await state.read()).pendientes || [] : [];
 
       const tarjetasQueRetirar = redes.tarjetasQueRetirar.filter(t => siguen.some(p => p.id === t.id) || retiradas.includes(t.id));
-      const aviso = !calls.length && avisoAntesDeResponder(contenido, { ...redes, registroVetos: toolset.registroVetos, tarjetasQueRetirar, messages, corregidas, pendientes, actions, point, retiradas });
+      const aviso = !calls.length && avisoAntesDeResponder(contenido, { ...redes, registroVetos: toolset.registroVetos, tarjetasQueRetirar, messages, corregidas, pendientes, actions, point, retiradas, vistas });
       if (aviso) {
         messages.push({ role: 'assistant', content: message.content }, { role: 'user', content: aviso });
         continue;
@@ -193,7 +194,7 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
       const memory = await conSuObra(point ? [] : gustosUnaVez(s.preferences).filter(p => p.status === 'confirmed' && p.kind !== 'mood'), services);
       const annotations = point ? await state.visible(point) : null;
       if (!point && !background && services.crearInvestigador) {
-        web = services.crearInvestigador({ signal: controller.signal, progreso: onProgress, origen: desdeElMovil ? 'movil' : 'local' });
+        web = services.crearInvestigador({ signal: controller.signal, progreso: onProgress, origen: desdeElMovil ? 'movil' : 'local', requestId: peticion });
       }
       const toolset = crearTools({ state, services: { ...services, web }, point, context, background, explicitText: text, desdeElMovil, hilo: thread.id });
 

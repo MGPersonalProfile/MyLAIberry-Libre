@@ -26,6 +26,7 @@ module.exports = {
   ...require('./db/fundir.js'),
   ...require('./db/memoria-lectura.js'),
   ...require('./db/recordatorios.js'),
+  ...require('./db/comics.js'),
   ...trabajos,
 
   listarCopias: () => require('./db/copias.js').listarCopias(nucleo.raizActual()),
@@ -42,13 +43,17 @@ const fueraDelCerrojo = new Set([
 
   'listarCopias',
 
+  'carpetaComicCapitulo', 'leerManifiesto', 'esCapituloCompleto', 'generarHtmlCapituloComic', 'guardarCapituloComic',
+
   'apuntarABibliotecaExistente'
 ]);
 
 let enCurso = Promise.resolve();
 
 const { conDisco } = require('./barrera-disco.js');
+const comics = require('./db/comics.js');
 module.exports.saveCoverLocally = (...args) => conDisco(() => obras.saveCoverLocally(...args));
+module.exports.guardarCapituloComic = (...args) => conDisco(() => comics.guardarCapituloComic(...args));
 
 for (const [nombre, operacion] of Object.entries(module.exports)) {
   if (fueraDelCerrojo.has(nombre)) continue;

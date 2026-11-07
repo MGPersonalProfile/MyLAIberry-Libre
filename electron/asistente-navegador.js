@@ -1,6 +1,6 @@
 const { BrowserWindow, powerMonitor: monitorElectron } = require('electron');
 const { cargarPagina, mientrasAvance, ejecutarAunqueNavegue, muestraDePagina, exigirQueNoSeaUnReto } = require('./scrapers/navegar');
-const { conPlazo: conPlazoDeReto, planDeReto, nombreDeSitio } = require('./asistente-reto');
+const { conPlazo: conPlazoDeReto, planDeReto, nombreDeSitio, detectarReto } = require('./asistente-reto');
 
 const SITIOS = new Set(['archiveofourown.org', 'www.fanfiction.net', 'www.royalroad.com', 'www.wattpad.com']);
 const MAX_PAGINAS = 64;
@@ -52,9 +52,10 @@ function robotsPermite(texto, ruta) {
   return !coinciden.length || coinciden[0].tipo === 'allow';
 }
 
-function crearNavegador({ signal, progreso = () => {}, sitios = SITIOS, maxPaginas = MAX_PAGINAS,
+function crearNavegador(opciones = {}) {
+  const { signal, progreso = () => {}, sitios = SITIOS, maxPaginas = MAX_PAGINAS,
   fetchRobots = fetch, pausa = PAUSA, origen, entorno = process.env, plataforma = process.platform, plazos = {},
-  powerMonitor = monitorElectron, cargar = cargarPagina, crearVentana = opciones => new BrowserWindow(opciones) } = {}) {
+  powerMonitor = monitorElectron, pendientes = null, cargar = cargarPagina, crearVentana = opciones => new BrowserWindow(opciones) } = opciones;
 
   const robots = new Map();
   let win = null, paginas = 0, anterior = 0, bloqueada = false, monitorActivo = false, presupuestoHasta = Infinity;
@@ -93,7 +94,21 @@ function crearNavegador({ signal, progreso = () => {}, sitios = SITIOS, maxPagin
     const avisar = datos => progreso({ paginas, maxPaginas, url: win && !win.isDestroyed() ? win.webContents.getURL() : direccion, ...datos });
     return conPlazoDeReto({ promesa, ventana: () => win, plan: planActual, presupuestoHasta: hasta,
       sitio, progreso: avisar, mientrasAvance,
-      cerrar: cerrarVentana, muestraDePagina, exigirQueNoSeaUnReto });
+      cerrar: cerrarVentana, muestraDePagina, exigirQueNoSeaUnReto,
+      alAbandonarReto: info => pendientes?.gestor.registrar({ requestId: pendientes.requestId, origen, ...info,
+        reanudar: () => comprobarAcceso(info.url) }) });
+  }
+
+  async function comprobarAcceso(direccion) {
+    const otro = crearNavegador({ ...opciones, signal: undefined, pendientes: null });
+    try {
+      const w = await otro.abrir(direccion);
+      const lectura = await muestraDePagina(w);
+      if (detectarReto({ ...lectura, titulo: `${w.webContents.getTitle()} ${lectura.titulo || ''}` })) return { ok: false, motivo: 'comprobacion-humana' };
+      return { ok: true, titulo: w.webContents.getTitle(), paginas: otro.paginas };
+    }
+    catch (e) { if (e.reto) return { ok: false, motivo: 'comprobacion-humana' }; throw e; }
+    finally { otro.cerrar(); }
   }
 
   async function abrir(direccion) {

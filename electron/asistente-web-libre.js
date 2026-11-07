@@ -1,6 +1,7 @@
 const dns = require('node:dns').promises;
 const net = require('node:net');
-const { cargarPagina } = require('./scrapers/navegar');
+const { cargarPagina, muestraDePagina } = require('./scrapers/navegar');
+const { detectarReto } = require('./asistente-reto');
 
 const MAX_PAGINAS = 64;
 const ESPERA_PAGINA = 30000;
@@ -91,8 +92,12 @@ const LECTOR = `(() => {
     siguiente: (${paginaSiguiente.toString()})(todos), capitulos: (${indiceDeCapitulos.toString()})(todos) };
 })()`;
 
-const RETO = /just a moment|verify you are human|attention required|cf-chl|checking your browser|un momento/i;
 const dormir = ms => new Promise(r => setTimeout(r, ms));
+
+async function lecturaDeReto(w) {
+  const muestra = await muestraDePagina(w);
+  return { ...muestra, titulo: `${w.webContents.getTitle()} ${muestra.titulo || ''}` };
+}
 
 function crearWebLibre({ signal, progreso = () => {}, maxPaginas = MAX_PAGINAS, crearVentana = ventanaReal, resolver,
   esperaReto = ESPERA_RETO, esperaRetoVisible = ESPERA_RETO_VISIBLE, paso = 1000,
@@ -131,19 +136,20 @@ function crearWebLibre({ signal, progreso = () => {}, maxPaginas = MAX_PAGINAS, 
   }
 
   async function pasarReto(w) {
-    const enReto = () => RETO.test(w.webContents.getTitle());
-    for (let t = 0; t < esperaReto && enReto(); t += paso) await dormir(paso);
-    if (!enReto()) return;
+
+    const hayReto = async () => detectarReto(await lecturaDeReto(w));
+    for (let t = 0; t < esperaReto && await hayReto(); t += paso) await dormir(paso);
+    if (!await hayReto()) return;
     const estaba = w.isVisible?.();
     if (!estaba) { w.setTitle?.('MyLAIberry — comprobación del sitio'); w.showInactive?.(); }
     progreso({ paginas, maxPaginas, url: w.webContents.getURL(), estado: 'comprobacion' });
     try {
-      for (let t = 0; t < esperaRetoVisible && enReto(); t += paso) {
+      for (let t = 0; t < esperaRetoVisible && await hayReto(); t += paso) {
         if (signal?.aborted) throw new Error('Petición cancelada.');
         await dormir(paso);
       }
     } finally { if (!estaba && !w.isDestroyed() && w.isVisible?.()) w.hide?.(); }
-    if (enReto()) throw new Error('La web pide una comprobación humana: la ventana estuvo abierta en el PC y nadie la pasó.');
+    if (await hayReto()) throw Object.assign(new Error('La web pide una comprobación humana: la ventana estuvo abierta en el PC y nadie la pasó.'), { reto: true });
   }
 
   async function leer(direccion, { desde = 0, captura = false } = {}) {

@@ -12,6 +12,8 @@ const SOLO_EN_EL_PC = new Set([
   'lan-apagar', 'lan-nuevo-codigo', 'instalar-actualizacion'
 ]);
 
+const CON_CODIGO_OBLIGATORIO = new Set(['asistente-retos-pendientes', 'asistente-reto-reanudar', 'asistente-reto-cancelar']);
+
 function leerPuente(fuente = fs.readFileSync(path.join(__dirname, '..', 'preload.js'), 'utf-8')) {
   const metodos = {};
   for (const m of fuente.matchAll(/^\s{2}(\w+):\s*\([^)]*\)\s*=>\s*ipcRenderer\.invoke\(\s*'([^']+)'/gm)) {
@@ -33,4 +35,4 @@ function puenteParaElMovil() {
   return { metodos: permitidos, avisos };
 }
 
-module.exports = { leerPuente, puenteParaElMovil, SOLO_EN_EL_PC };
+module.exports = { leerPuente, puenteParaElMovil, SOLO_EN_EL_PC, CON_CODIGO_OBLIGATORIO };

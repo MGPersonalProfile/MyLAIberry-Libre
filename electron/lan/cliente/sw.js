@@ -7,7 +7,8 @@ const ESENCIAL = ['/app/', '/manifest.webmanifest', '/icono-192.png', '/icono-51
 const esNuestra = u => u.origin === self.location.origin && u.pathname.startsWith(BASE + '/');
 
 const LECTURAS = new Set(['asistente-ver', 'repeated-works', 'check-repeated-chapters', 'search-in-work', 'detect-site', 'estadisticas-lectura', 'recordar-lectura']);
-const EN_VIVO = new Set(['queue-status', 'lan-estado', 'estado-voces', 'avisos-disponibles', 'avisos-via', 'exportar-lectura']);
+
+const EN_VIVO = new Set(['asistente-retos-pendientes', 'queue-status', 'lan-estado', 'estado-voces', 'avisos-disponibles', 'avisos-via', 'exportar-lectura']);
 const DEL_AUDIO = new Set(['audio-capitulo', 'audio-obra']);
 const pideAlgo = args => Array.isArray(args) && args.some(a => a && typeof a === 'object' && a.pedir === true);
 const DE_LEER = { has: (c, args) => /^(get|has|listar)-/.test(c) || ['translate-chapter', 'translate-synopsis'].includes(c)
@@ -36,7 +37,7 @@ const PAGINAS = ['/app/', '/puente.json'];
 
 const INSTALADO = () => `${BASE}/__instalado__`;
 const RECIBOS = new Set(['log-reading', 'asistente-leido']);
-const LARGAS = new Set(['asistente-chat', 'asistente-accion', 'translate-chapter', 'translate-synopsis', 'redo-translations', 'redo-translations-many', 'repair-work', 'merge-works',
+const LARGAS = new Set(['asistente-reto-reanudar', 'asistente-chat', 'asistente-accion', 'translate-chapter', 'translate-synopsis', 'redo-translations', 'redo-translations-many', 'repair-work', 'merge-works',
   'scrape-story', 'refresh-chapters', 'resume-download', 'buscar-en-otros-sitios', 'import-bookmarks', 'adopt-work', 'get-recap']);
 const json = (datos, status = 200) => new Response(JSON.stringify(datos), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
 const claveDe = (canal, args) => `${self.location.origin}${BASE}/__api__/${canal}?a=${encodeURIComponent(JSON.stringify(args))}`;

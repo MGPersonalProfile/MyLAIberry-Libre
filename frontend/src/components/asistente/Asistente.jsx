@@ -8,6 +8,7 @@ import CajaMensaje from './CajaMensaje';
 import { useI18n } from '../../i18n/I18nContext';
 import ResultadosWeb from './ResultadosWeb';
 import CapturasWeb from './CapturasWeb';
+import RetoPendiente from './RetoPendiente';
 import { useAlPedirAlAsistente, tomarPregunta } from '../../preguntaAlAsistente';
 
 function accionesLegibles(acciones, t) {
@@ -137,6 +138,8 @@ function Conversacion({ punto = null, alCerrar }) {
 
         <div ref={finRef} />
       </div>
+
+      {!punto && <RetoPendiente />}
 
       <CajaMensaje {...{ texto, setTexto, pensando, punto, fuera, setFuera, enviar }} />
 

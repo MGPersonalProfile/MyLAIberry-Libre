@@ -14,7 +14,7 @@ function herramientasWeb(add, web) {
   if (!web) return;
   add('buscar_fanfics_a_fondo', `Busca con Chromium en varias páginas de AO3, FanFiction.net y RoyalRoad; Wattpad aporta su primera tanda pública. Filtros de fandom, pareja, personajes, etiquetas, idioma, palabras, completo, valoración y orden. Hay hasta ${MAX_PAGINAS} páginas y ${MAX_PASOS} pasos en toda la investigación. Informa de errores y de filtros que el sitio no confirme.`,
     { consulta: cadena, ...pistas }, args => web.buscar(args), ['consulta']);
-  add('abrir_ficha_web', 'Abre una ficha con el navegador de la app (con las sesiones del usuario) y devuelve metadatos, enlaces de autor, series y bookmarks; no importa la obra.',
+  add('abrir_ficha_web', 'Abre una ficha con el navegador de la app (con las sesiones del usuario) y devuelve la ficha de verificación con todas las etiquetas publicadas y sus categorías, avisos, estado de verificación y enlaces de autor, series y bookmarks; no importa la obra.',
     { url: cadena }, args => web.ficha(args.url), ['url']);
   add('seguir_pistas_web', 'Lee las obras de una serie, perfil de autor o bookmarks públicos desde su URL. No pide login ni consulta bookmarks privados.',
     { url: cadena, tipo: { type: 'string', enum: ['autor', 'serie', 'bookmarks', 'recomendaciones'] } }, args => web.pistas(args), ['url']);

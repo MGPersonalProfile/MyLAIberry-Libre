@@ -15,14 +15,14 @@ function carpetaDeObra(id) {
   if (!ID_DE_OBRA.test(limpio)) {
     throw new Error(`Identificador de obra no valido: ${JSON.stringify(limpio).slice(0, 60)}`);
   }
-  if (!userDataPath) userDataPath = app.getPath('userData');
+  if (!userDataPath) userDataPath = getDataRoot();
   return path.join(userDataPath, 'fanfics', limpio);
 }
 
 let punteroRoto = null;
 
 function getDataRoot() {
-  const defecto = app.getPath('userData');
+  const defecto = (app && typeof app.getPath === 'function') ? app.getPath('userData') : '';
   punteroRoto = null;
 
   const pedida = process.env.MYLAIBERRY_DATOS;
@@ -42,7 +42,7 @@ function getDataRoot() {
 }
 
 function getDataLocation() {
-  const defecto = app.getPath('userData');
+  const defecto = (app && typeof app.getPath === 'function') ? app.getPath('userData') : '';
 
   const pedida = getDataRoot();
   const actual = raizActual();
@@ -64,7 +64,7 @@ async function setDataLocation(nuevaRuta) {
   const copia = await copiarBiblioteca(origen, destino);
   if (!copia.ok) return copia;
 
-  const defecto = app.getPath('userData');
+  const defecto = (app && typeof app.getPath === 'function') ? app.getPath('userData') : '';
   try {
     await fs.mkdir(defecto, { recursive: true });
     await escribirEntero(path.join(defecto, 'location.json'), JSON.stringify({ dataPath: destino, movedAt: Date.now() }, null, 2));
@@ -100,7 +100,7 @@ async function apuntarABibliotecaExistente(ruta) {
 
   const apuntada = path.resolve(getDataRoot());
   if (apuntada === destino && !punteroRoto) return { ok: true, sinCambios: true, ruta: destino, obras: datos.fanfics.length };
-  const defecto = app.getPath('userData');
+  const defecto = (app && typeof app.getPath === 'function') ? app.getPath('userData') : '';
   await fs.mkdir(defecto, { recursive: true });
   await escribirEntero(path.join(defecto, 'location.json'), JSON.stringify({ dataPath: destino, movedAt: Date.now() }, null, 2));
   return { ok: true, ruta: destino, obras: datos.fanfics.length, reiniciar: path.resolve(raizActual()) !== destino };

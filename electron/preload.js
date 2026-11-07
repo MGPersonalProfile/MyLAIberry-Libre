@@ -226,6 +226,15 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('asistente-estado-peticion', oyente);
     return () => ipcRenderer.removeListener('asistente-estado-peticion', oyente);
   },
+
+  asistenteRetosPendientes: () => ipcRenderer.invoke('asistente-retos-pendientes'),
+  asistenteRetoReanudar: (id, token) => ipcRenderer.invoke('asistente-reto-reanudar', id, token),
+  asistenteRetoCancelar: (id, token) => ipcRenderer.invoke('asistente-reto-cancelar', id, token),
+  onAsistenteRetoPendiente: (callback) => {
+    const oyente = (_event, data) => callback(data);
+    ipcRenderer.on('asistente-reto-pendiente', oyente);
+    return () => ipcRenderer.removeListener('asistente-reto-pendiente', oyente);
+  },
   asistenteVer: (punto, opciones) => ipcRenderer.invoke('asistente-ver', punto, opciones),
 
   asistenteAccion: (peticion) => ipcRenderer.invoke('asistente-accion', peticion),

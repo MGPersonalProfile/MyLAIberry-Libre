@@ -26,6 +26,7 @@ import avisoNoDescargado from './lector/avisoNoDescargado';
 import AvisosDeCarga from './lector/AvisosDeCarga';
 import PanelAsistente from './lector/PanelAsistente';
 import MenuSubrayado from './lector/MenuSubrayado';
+import CapituloComic from './lector/CapituloComic';
 
 export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
   const { t, lang } = useI18n();
@@ -417,12 +418,11 @@ export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
               alAbrirAjustes={onAbrirAjustes}
             />
           )}
-
-          <div
-            className="prose prose-lg max-w-none reader-content"
-            style={{ fontSize: `${ajustes.cuerpo}px` }}
+          <CapituloComic
+            content={chapterContent}
+            esComic={story?.tipo === 'comic' || story?.esComic}
+            cuerpo={ajustes.cuerpo}
             lang={idiomaDelTexto}
-            dangerouslySetInnerHTML={{ __html: chapterContent }}
           />
           </>
         )}

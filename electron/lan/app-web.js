@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { mismoOrigen, drenar } = require('./progreso.js');
 const { rutaSegura, esIdValido } = require('./rutas-seguras.js');
-const { puenteParaElMovil } = require('./puente.js');
+const { puenteParaElMovil, CON_CODIGO_OBLIGATORIO } = require('./puente.js');
 const eventos = require('./eventos.js');
 
 const CARPETA_APP = path.join(__dirname, '..', '..', 'frontend', 'dist');
@@ -171,12 +171,13 @@ async function servirCapitulo(res, [id, n], llamar) {
   }
 }
 
-async function llamarApi(req, res, canal, llamar) {
+async function llamarApi(req, res, canal, llamar, { codigoLan = false } = {}) {
   const permitidos = new Set(Object.values(puenteParaElMovil().metodos));
 
   const no = async (codigo, error) => { await drenar(req); return json(res, codigo, { error }); };
   if (!permitidos.has(canal)) return no(404, 'Eso no se puede pedir desde el móvil.');
   if (!mismoOrigen(req)) return no(403, 'Origen no permitido.');
+  if (CON_CODIGO_OBLIGATORIO.has(canal) && !codigoLan) return no(403, 'Este canal necesita el código de acceso del móvil.');
   if (!/^application\/json\b/i.test(String(req.headers['content-type'] || ''))) return no(415, 'Sólo JSON.');
   if (Number(req.headers['content-length'] || 0) > MAXIMO) return no(413, 'Es demasiado grande para mandarlo desde el móvil.');
   let args;
@@ -223,7 +224,7 @@ async function atenderApp(req, res, partes, url, ctx) {
       return true;
     }
     if (primero !== 'api' || resto.length !== 1) return false;
-    await llamarApi(req, res, resto[0], ctx.llamar);
+    await llamarApi(req, res, resto[0], ctx.llamar, ctx);
     return true;
   }
 

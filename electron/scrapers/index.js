@@ -6,6 +6,7 @@ const sequential = require('./sequential');
 const webnovel = require('./webnovel');
 const universal = require('./universal');
 const gutenberg = require('./gutenberg');
+const webtoon = require('./webtoon');
 
 const SITE_MATCHERS = [
 
@@ -17,6 +18,8 @@ const SITE_MATCHERS = [
   { pattern: /webnovel\.com/i,            scraper: webnovel,    name: 'Webnovel',               tier: 1 },
 
   { pattern: /gutenberg\.org/i,           scraper: gutenberg,   name: 'Project Gutenberg',      tier: 1 },
+
+  { pattern: /webtoons?\.com/i,          scraper: webtoon,     name: 'Webtoon',                tier: 1 },
 
   { pattern: /spacebattles\.com/i,       scraper: fichub,      name: 'SpaceBattles (FicHub)',   tier: 2 },
   { pattern: /sufficientvelocity\.com/i, scraper: fichub,      name: 'SufficientVelocity (FicHub)', tier: 2 },

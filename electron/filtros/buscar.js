@@ -5,22 +5,24 @@ const nombresDePareja = (pareja) => String(pareja || '').split(/\s*[/&]\s*|\s+x\
 async function buscarFFN(plan, f, { pagina }) {
   const ffn = require('../scrapers/buscar-ffn.js');
   const quiere = !!(plan.seccion && (f.personajes || f.pareja));
+  let peticionesWeb = 1;
   let { crudos, opciones } = await ffn.leerListado(plan.url, { personajes: quiere });
   if (quiere) {
     const ids = idsDePersonajes(opciones, [...nombresDePareja(f.pareja), ...(f.personajes || [])]);
     const nuevo = traducir('FanFiction.net', f, { idsPersonajes: ids, pagina });
     if (nuevo.url !== plan.url) {
       Object.assign(plan, nuevo);
+      peticionesWeb++;
       ({ crudos } = await ffn.leerListado(plan.url));
     }
   }
 
-  return ffn.parsearCrudos(crudos, undefined, f.consulta);
+  return { obras: ffn.parsearCrudos(crudos, undefined, f.consulta), peticionesWeb };
 }
 
 async function buscarAO3(plan, f) {
   const { pedirHTMLConNavegador } = require('../scrapers/ao3-pedir.js');
-  return require('../scrapers/ao3.js').resultadosDeHtml(await pedirHTMLConNavegador(plan.url), f.sinCrossovers === true);
+  return { obras: require('../scrapers/ao3.js').resultadosDeHtml(await pedirHTMLConNavegador(plan.url), f.sinCrossovers === true), peticionesWeb: 1 };
 }
 
 const BUSCADORES = {
@@ -37,9 +39,11 @@ const BUSCADORES = {
 async function buscarEnSitio(fuente, pedido, { pagina = 1, buscadores = BUSCADORES } = {}) {
   const f = normalizar(pedido);
   const plan = traducir(fuente, f, { pagina });
-  if (!plan.url) return { plan, obras: [], aviso: `${fuente} necesita una consulta o un fandom para buscar.` };
-  const crudas = await buscadores[fuente](plan, f, { pagina });
-  return { plan, obras: aplicarEnMemoria(crudas, f, plan.memoria) };
+  if (!plan.url) return { plan, obras: [], peticionesWeb: 0, aviso: `${fuente} necesita una consulta o un fandom para buscar.` };
+  const res = await buscadores[fuente](plan, f, { pagina });
+  const crudas = Array.isArray(res) ? res : (res?.obras || []);
+  const peticionesWeb = res?.peticionesWeb ?? (Array.isArray(res) ? 1 : (res ? 1 : 0));
+  return { plan, obras: aplicarEnMemoria(crudas, f, plan.memoria), peticionesWeb };
 }
 
 module.exports = { buscarEnSitio, BUSCADORES, nombresDePareja };

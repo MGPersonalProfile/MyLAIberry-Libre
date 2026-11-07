@@ -68,7 +68,16 @@ function explicarDescubrimiento(obra, { preferencias = {}, perfil = null } = {})
   for (const campo of sinVerificar(obra, obra.propuesta?.filtros)) {
     if (!advertencias.some(a => a.campo === campo)) advertencias.push({ tipo: 'sin-verificar', campo });
   }
-  return { motivos, conocido, desconocido, advertencias, coste: { peticionesWeb: 0, llamadasModelo: 0 } };
+  const costeReal = obra.investigacion?.coste || obra.propuesta?.coste || obra.coste;
+  const coste = costeReal
+    ? {
+        peticionesWeb: Number(costeReal.peticionesWeb) || 0,
+        llamadasModelo: Number(costeReal.llamadasModelo) || 0,
+        ...(costeReal.inputTokens || costeReal.outputTokens ? { inputTokens: costeReal.inputTokens || 0, outputTokens: costeReal.outputTokens || 0 } : {}),
+        ...(costeReal.usd !== undefined ? { usd: costeReal.usd } : {})
+      }
+    : { peticionesWeb: 0, llamadasModelo: 0 };
+  return { motivos, conocido, desconocido, advertencias, coste };
 }
 
 module.exports = { explicarDescubrimiento, sinVerificar };
