@@ -23,8 +23,10 @@ export default function useSesionDeLectura({ storyId, capitulo, avance }) {
     let cron = crearCronometro({ obraId: storyId, capitulo, deviceId: aparato() });
     const mandar = (reabrir) => {
       const sesion = cron.cerrar();
-      if (reabrir) cron = crearCronometro({ obraId: storyId, capitulo, deviceId: aparato() });
-      if (sesion) entregarSesion(window.api, sesion).catch(() => {});
+      if (sesion) {
+        if (reabrir) cron = crearCronometro({ obraId: storyId, capitulo, deviceId: aparato() });
+        entregarSesion(window.api, sesion).catch(() => {});
+      }
     };
     const latir = () => { cron.latir(avanceRef.current); if (cron.largo()) mandar(true); };
     const alVisibilidad = () => { cron.ocultar(document.hidden); if (document.hidden) mandar(true); };

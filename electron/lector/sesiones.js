@@ -19,7 +19,7 @@ function zonaValida(z) {
 function sesionValida(s, ahora = Date.now()) {
   if (!s || typeof s !== 'object' || !ID.test(String(s.sessionId)) || !ID_APARATO.test(String(s.deviceId))) return null;
   if (!ID_OBRA.test(String(s.obraId)) || !entero(s.chapterId) || s.chapterId > 100000) return null;
-  if (!entero(s.inicio) || !entero(s.fin) || s.fin <= s.inicio || s.fin > ahora + 60_000 || s.inicio < 1_600_000_000_000) return null;
+  if (!entero(s.inicio) || !entero(s.fin) || s.fin <= s.inicio || s.fin > ahora + 15 * 60_000 || s.inicio < 1_600_000_000_000) return null;
   if (!entero(s.msActivos) || s.msActivos < MINIMO_RAZONABLE_MS || s.msActivos > MAXIMO_RAZONABLE_MS
     || s.msActivos > s.fin - s.inicio + 1000) return null;
   if (!zonaValida(s.zonaHoraria)) return null;
@@ -74,10 +74,11 @@ function registrarSesion(almacen, sesion, capitulo, ahora = Date.now()) {
     const info = await capitulo(v.obraId, v.chapterId);
     const claveCap = `${v.obraId}:${v.chapterId}`;
     const capituloNuevo = v.terminado && !mem.terminados[claveCap];
-    if (v.terminado) mem.terminados[claveCap] = 1;
+
+    if (v.terminado) mem.terminados[claveCap] = info?.huella || mem.terminados[claveCap] || 1;
     const registro = { sessionId: v.sessionId, deviceId: v.deviceId, obraId: v.obraId, chapterId: v.chapterId,
       inicio: v.inicio, fin: v.fin, msActivos: v.msActivos, zonaHoraria: v.zonaHoraria,
-      dia: diaCivil(v.inicio, v.zonaHoraria), palabrasNuevas: palabrasNuevas(mem, v, info), capituloNuevo,
+      dia: diaCivil(v.fin, v.zonaHoraria), palabrasNuevas: palabrasNuevas(mem, v, info), capituloNuevo,
       recibidaEn: new Date(ahora).toISOString() };
     mem.sesiones.push(registro);
     await almacen.guardar();

@@ -64,9 +64,10 @@ export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
 
   const {
     lectorVozRef, vozActiva, ajustesVoz, alternarVoz, cambiarVoz,
-    vocesDelIdioma, hayVozParaEsteIdioma
+    vocesDelIdioma, hayVozParaEsteIdioma, audioActivo, estadoAudio, pedirAudio, saltarFrase
   } = useVoz({ scrollRef, idioma: idiomaDelTexto, capitulo: currentChapterIndex,
-    total: Math.max(story.chapterList?.length || 0, story.totalChapters || 0, 1), irA: setCurrentChapterIndex, listo: !isLoading && !traduciendo, obraId: story.id });
+    total: Math.max(story.chapterList?.length || 0, story.totalChapters || 0, 1), irA: setCurrentChapterIndex, listo: !isLoading && !traduciendo, obraId: story.id,
+    variante: contenidoTraducido ? (lang || 'es') : 'original', titulo: story.title, tituloCapitulo: t('reader.chapter_n', { n: currentChapterIndex + 1 }) });
 
   const ritmo = useRitmo({ storyId: story.id, capitulo: currentChapterIndex, indiceVivoRef });
 
@@ -338,6 +339,8 @@ export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
         vozActiva={vozActiva}
         hayVoz={hayVozParaEsteIdioma}
         alAlternarVoz={alternarVoz}
+        barraDeVoz={{ audioActivo, estadoAudio, pedirAudio, saltarFrase, velocidad: ajustesVoz.velocidadVoz,
+          alCambiarVelocidad: (v) => cambiarVoz({ velocidadVoz: v }) }}
         autoActivo={autoScroll.activo}
         alAlternarAuto={autoScroll.alternar}
         indiceAbierto={showTOC}

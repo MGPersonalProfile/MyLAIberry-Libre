@@ -25,6 +25,7 @@ module.exports = {
   ...require('./db/descubrimientos.js'),
   ...require('./db/fundir.js'),
   ...require('./db/memoria-lectura.js'),
+  ...require('./db/recordatorios.js'),
   ...trabajos,
 
   listarCopias: () => require('./db/copias.js').listarCopias(nucleo.raizActual()),

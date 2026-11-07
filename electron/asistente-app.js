@@ -116,7 +116,7 @@ function sinLasDeLaMisma(lista, c) {
   return (Array.isArray(lista) ? lista : []).filter(o => !(autor && n(o.author) === autor) && !(titulo && n(o.title).includes(titulo)));
 }
 
-const SOLO_DEL_ASISTENTE = ['abrir-obra-en-pantalla', 'importar-texto'];
+const SOLO_DEL_ASISTENTE = ['abrir-obra-en-pantalla', 'importar-texto', 'recordar-lectura'];
 
 function sugerenciasEnCorto(lista, filtro) {
   const n = (t) => String(t || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
@@ -143,6 +143,11 @@ const CATALOGO = [
     args: conObra(id => [id]), descripcion: 'Los títulos de los capítulos de una obra, con su índice.' },
   { nombre: 'resumen_de_capitulo', nivel: 'lectura', hastaElPunto: true, canal: 'get-recap', parametros: { obra, capitulo },
     args: conObra((id, a) => [id, indice(a.capitulo), {}]), descripcion: 'Resumen de un capítulo descargado de una obra de la biblioteca.' },
+
+  { nombre: 'recordar_lectura', nivel: 'lectura', canal: 'recordar-lectura',
+    parametros: { obra, modo: { type: 'string', enum: ['progreso', 'breve'], description: 'progreso: dónde se quedó (sin leer capítulos); breve: recordatorio de lo ya leído' } },
+    requeridos: ['obra'], args: conObra((id, a) => [id, a.modo === 'progreso' ? 'progreso' : 'breve']),
+    descripcion: 'Recuerda al usuario por dónde iba en una obra, sin spoilers: sólo usa capítulos que ya terminó de leer (el abierto y los siguientes quedan fuera). Sólo usa capítulos de los que CONSTA que terminó (con el texto actual), uno a uno: no deduce lecturas de en qué capítulo está. Devuelve los capítulos usados, `sinEvidencia` y el coste (siempre 0 modelo, 0 web). No modifica el progreso. Si el texto viene vacío o `sinEvidencia` es true, di que no consta qué ha leído y que no puedes resumir sin riesgo de destripar; no lo rellenes con tu conocimiento de la obra ni adivines por el capítulo abierto.' },
 
   { nombre: 'capitulos_repetidos', nivel: 'lectura', canal: 'get-chapter-content',
     parametros: { obra, capitulos: { type: 'array', maxItems: 5000, items: capitulo, description: 'Sólo estos (opcional; por defecto, todos)' } },

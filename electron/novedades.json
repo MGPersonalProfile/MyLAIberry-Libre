@@ -1,5 +1,51 @@
 [
   {
+    "version": "2026.11.6-3",
+    "fecha": "2026-11-06",
+    "resumen": "Voz en el móvil con la frase resaltada, búsqueda por pareja en AO3 más fiable, un recordatorio sin spoilers más seguro y avisos del móvil más seguros.",
+    "detalle": [
+      {
+        "que": "Al buscar por pareja en AO3, la app resuelve la etiqueta canónica oficial (como «Hermione Granger/Harry Potter» al pedir «Harry Potter/Hermione Granger», «Harry/Hermione» o «Harmony»), prioriza las obras donde la pareja es la protagonista y evita que historias con relaciones secundarias o resultados sin parejas de otros sitios como Wattpad se antepongan por tener más votos o popularidad.",
+        "porque": "AO3 organiza sus sinónimos bajo una etiqueta canónica fija; sin resolverla y sin distinguir si la relación es principal o incidental, la búsqueda devolvía historias centradas en otras parejas o ruido de otras fuentes."
+      },
+      {
+        "que": "Los avisos de capítulos del móvil sólo se mandan a los servicios de avisos de los navegadores (Google, Mozilla, Apple, Microsoft) y se recuerdan como mucho 20 móviles.",
+        "porque": "Una revisión encontró que una suscripción manipulada podía hacer que tu servidor llamara a direcciones de tu red, y que la lista de móviles crecía sin límite."
+      },
+      {
+        "que": "Mi lectura y asistente: el tiempo de lectura tolera desfases de reloj entre el móvil y el PC, conserva sesiones cortas al cambiar de aplicación y registra correctamente los días leídos cuando lees pasada la medianoche. El asistente evita falsos avisos de comprobación humana en búsquedas normales y aplica con mayor precisión los vetos y preferencias de contenido.",
+        "porque": "Una revisión adversaria detectó que lecturas cortas podían descartarse tras una pausa, que leer de madrugada rompía la racha del día anterior y que páginas con títulos como «Un momento...» se confundían con retos de seguridad."
+      },
+      {
+        "que": "En el móvil, cuando el capítulo tiene su audio (el MP3 que prepara el ordenador), al escucharlo se resalta solo la frase que suena, no el párrafo entero. Hay botones de frase anterior y siguiente, velocidades de 0,75× a 1,5× sin reiniciar el capítulo, y los controles aparecen también en la notificación multimedia del teléfono. Si el capítulo no tiene audio, aparece «Preparar audio» para encargarlo al ordenador. Las últimas cinco partes que escuches se quedan guardadas en el móvil y suenan sin conexión. Que siga sonando con la pantalla bloqueada depende de Android y aún no está comprobado en un teléfono real.",
+        "porque": "La voz del teléfono se corta al bloquear la pantalla; el audio preparado es el que puede seguir, y resaltar la frase permite seguir el texto con la vista."
+      },
+      {
+        "que": "El recordatorio de la historia ahora es más estricto: sólo cuenta capítulos de los que consta que los terminaste, uno por uno y con el texto que tienen hoy. Si no consta lo que has leído (obras antiguas, capítulos que se han reordenado o cambiado), el asistente te lo dice en vez de resumir.",
+        "porque": "Antes un salto al capítulo 15 o un prólogo nuevo podían hacer que se resumieran capítulos que nunca leíste."
+      },
+      {
+        "que": "En Descubrimientos, «Sin verificar» ya no se da por resuelto sólo porque la obra tenga alguna pareja, personaje o fandom etiquetado: tiene que ser el que pediste. Las cifras de palabras calculadas por la app (no publicadas por el sitio) y los capítulos que sólo conoce tu biblioteca se marcan como estimados o locales, y cada motivo «porque te gusta» dice de qué obra tuya sale.",
+        "porque": "Antes una pareja distinta de la pedida, o una cifra calculada, podían presentarse como comprobadas."
+      }
+    ]
+  },
+  {
+    "version": "2026.11.6-2",
+    "fecha": "2026-11-06",
+    "resumen": "El asistente te recuerda la historia sin destriparte nada y cada descubrimiento dice por qué te lo propone.",
+    "detalle": [
+      {
+        "que": "En Descubrimientos, cada propuesta dice ahora qué datos no trae la ficha («La fuente no publica: palabras, estado») y, si se pidió algo que no se puede comprobar con lo que publica el sitio, lo marca como «Sin verificar». Lo que sale de tu biblioteca (por qué se parece a lo que lees) y lo que publica el sitio se mantienen separados, y no se inventa ninguna sinopsis ni cifra.",
+        "porque": "Antes una ficha sin cifras parecía igual de segura que una completa; ahora ves qué está comprobado y qué no."
+      },
+      {
+        "que": "Puedes pedirle al asistente que te recuerde por dónde ibas en una obra («recuérdame la historia de…»). El recordatorio sólo usa capítulos que ya terminaste de leer: el que tienes abierto y los siguientes no se leen ni se cuentan. En obras anteriores a este registro se usa un límite prudente (hasta el capítulo anterior al abierto) y se te avisa de que es estimado. Funciona en tu equipo, sin internet y sin gastar nada de IA.",
+        "porque": "Volver a una historia tras semanas es difícil, pero un resumen no puede destriparte lo que aún no has leído."
+      }
+    ]
+  },
+  {
     "version": "2026.11.6",
     "fecha": "2026-11-06",
     "resumen": "Avisos de capítulos en el móvil, la traducción y tus notas viajan con la obra guardada, y propuestas que ya no se atascan.",

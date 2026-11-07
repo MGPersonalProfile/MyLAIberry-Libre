@@ -1,4 +1,5 @@
 const { GENEROS, normalizar, plan, cerrar } = require('./modelo.js');
+const { resolverParejaAO3 } = require('./parejas-ao3.js');
 
 const ORDEN = { popularidad: 'kudos_count', recientes: 'revised_at', publicadas: 'created_at', palabras: 'word_count', relevancia: '_score' };
 const RATING = { general: 10, adolescente: 11, maduro: 12, explicito: 13 };
@@ -30,7 +31,12 @@ function traducirAO3(pedido, { pagina = 1 } = {}) {
   q.set('work_search[query]', f.consulta || '');
   if (f.consulta) p.enWeb('consulta', 'query');
   if (f.fandom) { q.set('work_search[fandom_names]', f.fandom); p.enWeb('fandom', `fandom_names=${f.fandom}`); }
-  if (f.pareja) { q.set('work_search[relationship_names]', f.pareja); p.enWeb('pareja', `relationship_names=${f.pareja}`); p.enMemoria('pareja'); }
+  if (f.pareja) {
+    const { canonica } = resolverParejaAO3(f.pareja);
+    q.set('work_search[relationship_names]', canonica);
+    p.enWeb('pareja', `relationship_names=${canonica}`);
+    p.enMemoria('pareja');
+  }
   if (f.personajes) { q.set('work_search[character_names]', f.personajes.join(',')); p.enWeb('personajes', `character_names=${f.personajes.join(',')}`); }
   generos(f, p, q);
   if (f.rating) { q.set('work_search[rating_ids]', String(RATING[f.rating])); p.enWeb('rating', `rating_ids=${RATING[f.rating]}`); }

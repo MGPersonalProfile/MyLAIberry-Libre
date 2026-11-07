@@ -12,8 +12,9 @@ function escucharRespuestaPrincipal(win, recibir) {
       if (datos.resourceType === 'mainFrame') oyentes.get(datos.webContentsId)?.(datos);
     });
   }
-  oyentes.set(win.webContents.id, recibir);
-  return () => oyentes.delete(win.webContents.id);
+  const id = win.webContents.id;
+  oyentes.set(id, recibir);
+  return () => oyentes.delete(id);
 }
 
 const dormir = (ms) => new Promise(r => setTimeout(r, ms));
@@ -56,8 +57,8 @@ async function cargarPagina(win, url, { intentos = 3, espera = 700, esperaHttpMs
       return await cargarConReintentos(win, url, { intentos, espera, esperaHttpMs, presupuestoHasta },
         () => codigo, () => { codigo = 0; win.__mlRespuestaPrincipal = null; });
     } finally {
-      win.webContents.removeListener?.('did-navigate', alNavegar);
-      dejarDeEscuchar();
+      try { if (!win.isDestroyed?.()) win.webContents?.removeListener?.('did-navigate', alNavegar); } catch {}
+      try { dejarDeEscuchar(); } catch {}
     }
   });
 }

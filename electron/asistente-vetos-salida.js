@@ -11,11 +11,12 @@ function nombra(texto, r, soloUrl = false) {
   const t = plano(texto);
   const titulo = plano(r.titulo);
   const nombre = String(r.titulo || '').trim();
-  if (!nombre || !(titulo.trim().length >= 8 || titulo.trim().includes(' ') || /^(?:drarry|destiel|johnlock|tomco)$/i.test(nombre))) return false;
+  if (!nombre) return false;
   if (!t.includes(titulo)) return false;
   const citado = new RegExp(`[«"“*]\\s*${escapar(nombre)}\\s*[»"”*]`, 'i').test(String(texto));
-  const enumerado = new RegExp(`^\\s*(?:[-*]|\\d+[.)])\\s*(?:\\*\\*)?${escapar(nombre)}(?:\\s|[:—-]|$)`, 'i').test(String(texto));
-  const recomendado = /\b(?:recomiendo|recomienda|prueba|lee|descarto|descarta|obra|fic|fanfics?)\s*(?:a|el|la|[«"“*])*\s*$/i.test(String(texto).split(new RegExp(escapar(nombre), 'i'))[0]);
+  const enumerado = new RegExp(`^\\s*(?:[-*]|\\d+[.)])\\s*(?:\\*\\*)?${escapar(nombre)}(?:\\s|[:—-]|$)`, 'im').test(String(texto));
+  const corte = String(texto).split(new RegExp(`(?<![\\p{L}\\p{N}])${escapar(nombre)}(?![\\p{L}\\p{N}])`, 'iu'))[0];
+  const recomendado = /\b(?:recomiendo|recomienda|prueba|lee|descarto|descarta|obra|fic|fanfics?)\s*(?:a|el|la|[«"“*])*\s*$/i.test(corte);
   return citado || enumerado || recomendado;
 }
 

@@ -20,6 +20,7 @@ function porFuente(fuente, obras = [], enBiblioteca = new Set(), filtros) {
       completa: o.completa,
       enBiblioteca: enBiblioteca.has(claveDeObra(o.url)) || undefined,
       tags: (o.tags || []).map(t => t.name || t).slice(0, 10),
+      ...(o.prioridadPareja ? { prioridadPareja: o.prioridadPareja, parejaPrincipal: o.parejaPrincipal } : {}),
       ...(o.sinComprobar ? { sinComprobar: o.sinComprobar } : {})
     }))
   };
@@ -52,9 +53,11 @@ function filtrarObras(obras, { completa, minPalabras, minCapitulos, sinCrossover
 
 function filtrarPareja(obras, pareja) {
   if (!pareja) return obras || [];
-  const { casaPareja } = require('./asistente-investigar-web');
-  return (obras || []).filter(o => (o.tags || []).some(t =>
-    t.category === 'relationship' && casaPareja(t.name, pareja)));
+  const { clasificarPrioridad } = require('./filtros/parejas-ao3');
+  return (obras || []).map(o => {
+    const p = clasificarPrioridad(o, pareja);
+    return p ? { ...o, prioridadPareja: p, parejaPrincipal: p === 'alta' } : null;
+  }).filter(Boolean);
 }
 
 function esCrossover(o) {

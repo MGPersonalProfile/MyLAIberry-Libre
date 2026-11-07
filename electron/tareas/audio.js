@@ -23,7 +23,9 @@ async function estadoDelAudio(fanficId, indice, idioma, obraLeida = null) {
   if (fs.existsSync(ruta)) {
     return { estado: 'listo', ruta, bytes: fs.statSync(ruta).size, traducido: Boolean(lectura.traducido),
 
-      marcas: vozMp3.leerMarcas(ruta) };
+      marcas: vozMp3.leerMarcas(ruta),
+
+      frases: vozMp3.leerFrases(ruta) };
   }
   if (fs.existsSync(sinTextoDe(ruta))) return { estado: 'sin-texto', motivo: 'Este capítulo no tiene texto que leer.' };
   const m = vozMp3.motor(lectura.idiomaDelTexto || 'es');

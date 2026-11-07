@@ -5,6 +5,16 @@ const crypto = require('crypto');
 const AGRUPAR_MS = 90000;
 const MAX_REINTENTO = 60 * 60 * 1000;
 const idDe = endpoint => crypto.createHash('sha256').update(endpoint).digest('hex');
+
+const SERVICIOS_PUSH = ['fcm.googleapis.com', 'push.services.mozilla.com', 'notify.windows.com', 'push.apple.com'];
+const MAX_SUSCRIPCIONES = 20;
+function esServicioPush(endpoint) {
+  try {
+    const u = new URL(endpoint);
+    if (u.protocol !== 'https:' || u.username || u.password || u.port) return false;
+    return SERVICIOS_PUSH.some(h => u.hostname === h || u.hostname.endsWith('.' + h));
+  } catch { return false; }
+}
 const vacio = () => ({ vapid: null, suscripciones: {}, lote: null, entregas: [], vistos: {} });
 
 function crearEmisor({ dir, transporte, cifrado, reloj = Date.now, programar = setTimeout, agruparMs = AGRUPAR_MS } = {}) {
@@ -54,12 +64,15 @@ function crearEmisor({ dir, transporte, cifrado, reloj = Date.now, programar = s
   });
   const suscribir = sub => serial(() => {
     const s = cargar();
-    if (!/^https:\/\//.test(sub?.endpoint || '') || !sub?.keys?.p256dh || !sub?.keys?.auth || sub.endpoint.length > 2048) {
+    if (!esServicioPush(sub?.endpoint || '') || !sub?.keys?.p256dh || !sub?.keys?.auth || sub.endpoint.length > 2048) {
       throw new Error('Suscripción push no válida');
     }
     const id = idDe(sub.endpoint);
     s.suscripciones[id] = { endpoint: sub.endpoint, keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
-      alta: s.suscripciones[id]?.alta ?? reloj() };
+      alta: s.suscripciones[id]?.alta ?? reloj(), orden: (s.altas = (s.altas || 0) + 1) };
+
+    const sobran = Object.entries(s.suscripciones).sort(([, a], [, b]) => (b.orden || 0) - (a.orden || 0)).slice(MAX_SUSCRIPCIONES);
+    for (const [viejo] of sobran) delete s.suscripciones[viejo];
     guardar();
     return { id };
   });

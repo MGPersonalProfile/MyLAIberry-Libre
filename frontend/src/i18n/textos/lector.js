@@ -12,6 +12,12 @@ export const LECTOR = {
   'reader.voice_play': { es: 'Leer en voz alta', en: 'Read aloud' },
   'reader.voice_stop': { es: 'Parar la lectura', en: 'Stop reading' },
   'reader.voice':      { es: 'Voz', en: 'Voice' },
+
+  'reader.voice_prev_sentence': { es: 'Frase anterior', en: 'Previous sentence' },
+  'reader.voice_next_sentence': { es: 'Frase siguiente', en: 'Next sentence' },
+  'reader.voice_audio_prepare':       { es: 'Preparar audio', en: 'Prepare audio' },
+  'reader.voice_audio_preparing': { es: 'Preparando audio…', en: 'Preparing audio…' },
+  'reader.voice_audio_prepare_hint':  { es: 'Con el audio preparado sigue sonando con la pantalla bloqueada; la voz del teléfono, no.', en: 'Once prepared it keeps playing with the screen locked; the phone voice does not.' },
   'reader.voice_narration': { es: 'Narración', en: 'Narration' },
   'reader.voice_dialogue': { es: 'Diálogo', en: 'Dialogue' },
   'reader.voice_automatic': { es: 'Automática', en: 'Automatic' },

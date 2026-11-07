@@ -88,6 +88,21 @@ export const BIBLIOTECA = {
   'discover.chapters_short': { es: '{n} cap.', en: '{n} ch.' },
   'discover.kudos_short':    { es: '{n} kudos', en: '{n} kudos' },
 
+  'discover.unverified':    { es: 'Sin verificar: {que}', en: 'Not verified: {que}' },
+  'discover.not_published': { es: 'La fuente no publica: {que}', en: 'Not published by the source: {que}' },
+  'discover.field.palabras': { es: 'palabras', en: 'word count' },
+  'discover.field.capitulos': { es: 'capítulos', en: 'chapters' },
+  'discover.field.estado': { es: 'estado', en: 'status' },
+  'discover.field.sinopsis': { es: 'sinopsis', en: 'synopsis' },
+  'discover.field.fandom': { es: 'fandom', en: 'fandom' },
+  'discover.field.pareja': { es: 'pareja', en: 'pairing' },
+  'discover.field.personajes': { es: 'personajes', en: 'characters' },
+  'discover.field.etiquetas': { es: 'etiquetas', en: 'tags' },
+  'discover.field.idioma': { es: 'idioma', en: 'language' },
+  'discover.field.valoracion': { es: 'clasificación', en: 'rating' },
+  'discover.field.completa': { es: 'si está completa', en: 'whether it is complete' },
+  'discover.field.orden': { es: 'orden', en: 'sort order' },
+
   'discover.filters':    { es: 'Filtros', en: 'Filters' },
   'discover.clear':      { es: 'Quitar filtros', en: 'Clear filters' },
   'discover.search_placeholder': {

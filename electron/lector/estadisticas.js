@@ -1,3 +1,4 @@
+const { diaCivil } = require('./sesiones.js');
 const MIN = 60_000;
 const DIA_MS = 24 * 60 * MIN;
 const ordinal = dia => Date.UTC(+dia.slice(0, 4), +dia.slice(5, 7) - 1, +dia.slice(8, 10)) / DIA_MS;
@@ -14,7 +15,7 @@ function rachas(dias, hoy) {
 
 function estadisticas(mem, hoy) {
   const lista = sesionesDe(mem);
-  const calendario = {}, diasPorObra = {};
+  const calendario = {}, diasPorObra = {}, dias = [];
   let minutosHoy = 0, minutos7 = 0, msTotal = 0, palabrasUnicas = 0, capitulosTerminados = 0;
   const h = ordinal(hoy);
   for (const s of lista) {
@@ -26,9 +27,14 @@ function estadisticas(mem, hoy) {
     if (o <= h && o > h - 7) minutos7 += min;
     palabrasUnicas += s.palabrasNuevas || 0;
     if (s.capituloNuevo) capitulosTerminados++;
+    dias.push(s.dia);
+    if (s.inicio && s.zonaHoraria) {
+      const dIni = diaCivil(s.inicio, s.zonaHoraria);
+      if (dIni !== s.dia) dias.push(dIni);
+    }
   }
   const redondo = n => Math.round(n * 100) / 100;
-  return { ...rachas(lista.map(s => s.dia), hoy), minutosHoy: redondo(minutosHoy), minutos7: redondo(minutos7),
+  return { ...rachas(dias, hoy), minutosHoy: redondo(minutosHoy), minutos7: redondo(minutos7),
     minutosTotal: redondo(msTotal / MIN), sesiones: lista.length, capitulosTerminados, palabrasUnicas,
     obrasRetomadas: Object.values(diasPorObra).filter(d => d.size >= 2).length, calendario };
 }

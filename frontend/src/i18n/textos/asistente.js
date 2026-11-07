@@ -286,6 +286,7 @@ export const ASISTENTE = {
   'assistant.action.ritmo_de_lectura':   { es: 'Mirar tu ritmo', en: 'Check your pace' },
   'assistant.action.capitulos_de':       { es: 'Mirar los capítulos', en: 'Check the chapters' },
   'assistant.action.resumen_de_capitulo': { es: 'Resumir un capítulo', en: 'Summarise a chapter' },
+  'assistant.action.recordar_lectura': { es: 'Recordar por dónde ibas', en: 'Remind you where you left off' },
   'assistant.action.buscar_en_la_obra': { es: 'Buscar en el texto de la obra', en: 'Search the text of a work' },
   'assistant.action.descargas_en_curso': { es: 'Ver las descargas', en: 'Check downloads' },
   'assistant.action.capitulos_repetidos': { es: 'Buscar capítulos repetidos', en: 'Look for repeated chapters' },

@@ -83,9 +83,17 @@ async function enviarSesionesAhora(forzar) {
     if (ack.aceptada === true || ack.motivo === 'no-valida') await quitarSesion(sesion.sessionId);
   }
 }
+let forzarPendiente = false;
 
 function enviarSesiones(forzar = false) {
-  enviandoSesiones ||= enviarSesionesAhora(forzar).finally(() => { enviandoSesiones = null; });
+  if (forzar && enviandoSesiones) forzarPendiente = true;
+  enviandoSesiones ||= (async () => {
+    try { await enviarSesionesAhora(forzar); }
+    finally {
+      enviandoSesiones = null;
+      if (forzarPendiente) { forzarPendiente = false; await enviarSesiones(true); }
+    }
+  })();
   return enviandoSesiones;
 }
 

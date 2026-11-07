@@ -61,15 +61,31 @@ async function cargarModulosDeVoz() {
   if (!modulosDeVoz) {
     const src = path.join(__dirname, '..', 'frontend', 'src');
     const cargar = f => import(pathToFileURL(path.join(src, f)).href);
-    const [voz, dialogos, personajes, conversacion, audio] = await Promise.all(
-      ['voz.js', 'voz-dialogos.js', 'voz-personajes.js', 'voz-conversacion.js', 'voz-audio.js'].map(cargar)
+    const [voz, dialogos, personajes, conversacion, audio, frases] = await Promise.all(
+      ['voz.js', 'voz-dialogos.js', 'voz-personajes.js', 'voz-conversacion.js', 'voz-audio.js', 'voz-frases.js'].map(cargar)
     );
-    modulosDeVoz = { ...voz, ...dialogos, ...personajes, ...conversacion, huella: audio.huella };
+    modulosDeVoz = { ...voz, ...dialogos, ...personajes, ...conversacion, huella: audio.huella, frasesDe: frases.frasesDe };
   }
   return modulosDeVoz;
 }
 
+const huellaDe = texto => String(texto || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '').slice(0, 40);
 const CON_VOZ = /[\p{L}\p{N}]/u;
+
+function enFrases(trozos, textos, frasesDe) {
+  const cursor = new Map();
+  const frases = [];
+  for (const t of trozos) {
+    for (const f of frasesDe(t.texto)) {
+      const texto = t.texto.slice(f.desde, f.hasta);
+      const donde = textos[t.parrafo].indexOf(texto, cursor.get(t.parrafo) || 0);
+      if (donde >= 0) cursor.set(t.parrafo, donde + texto.length);
+      frases.push({ ...t, texto, desde: donde });
+    }
+  }
+  const perdidos = new Set(frases.filter(f => f.desde < 0).map(f => f.parrafo));
+  return frases.map(f => (perdidos.has(f.parrafo) ? { ...f, desde: -1 } : f));
+}
 
 async function planDelCapitulo(html, { JSDOM = require('jsdom').JSDOM } = {}) {
   const m = await cargarModulosDeVoz();
@@ -87,7 +103,7 @@ async function planDelCapitulo(html, { JSDOM = require('jsdom').JSDOM } = {}) {
       plan.push(ultimo);
     }
   });
-  return plan.map(t => ({ ...t, texto: t.texto.trim() })).filter(t => CON_VOZ.test(t.texto));
+  return enFrases(plan.map(t => ({ ...t, texto: t.texto.trim() })), textos, m.frasesDe).filter(t => CON_VOZ.test(t.texto));
 }
 
 const TECHO_MS = 20 * 60 * 1000;
@@ -124,14 +140,20 @@ function duracionWav(buf) {
 
 function marcasDe(trozos) {
   const marcas = [];
+  const frases = [];
   let t = 0;
   for (const trozo of trozos) {
     if (marcas.at(-1)?.parrafo !== trozo.parrafo) {
       marcas.push({ parrafo: trozo.parrafo, huella: trozo.huella, inicio: Math.round(t * 100) / 100 });
     }
+    const inicio = t;
     t += duracionWav(fs.readFileSync(trozo.fichero));
+    if (trozo.desde >= 0) {
+      frases.push({ parrafo: trozo.parrafo, desde: trozo.desde, hasta: trozo.desde + trozo.texto.length,
+        inicio: Math.round(inicio * 100) / 100, fin: Math.round(t * 100) / 100, huella: huellaDe(trozo.texto) });
+    }
   }
-  return marcas;
+  return { marcas, frases };
 }
 
 async function sintetizar(plan, { motor: m, salida, titulo = '', ejecutar = spawn, ffmpeg, techoMs = TECHO_MS }) {
@@ -170,7 +192,7 @@ async function sintetizar(plan, { motor: m, salida, titulo = '', ejecutar = spaw
       '-ac', '1', '-codec:a', 'libmp3lame', '-b:a', '64k', '-metadata', `title=${titulo}`, '-f', 'mp3', parcial],
     { stdio: ['ignore', 'ignore', 'pipe'] }), 'ffmpeg', techoMs);
 
-    await fsp.writeFile(rutaDeMarcas(salida), JSON.stringify({ marcas: marcasDe(trozos) }));
+    await fsp.writeFile(rutaDeMarcas(salida), JSON.stringify(marcasDe(trozos)));
 
     await fsp.rename(parcial, salida);
     parcial = null;
@@ -193,4 +215,8 @@ function leerMarcas(rutaMp3) {
   try { return JSON.parse(fs.readFileSync(rutaDeMarcas(rutaMp3), 'utf-8')).marcas || null; } catch { return null; }
 }
 
-module.exports = { PAPELES, carpetaDePiper, motor, ffmpegPara, planDelCapitulo, sintetizar, rutaDelAudio, rutaDeMarcas, leerMarcas, duracionWav };
+function leerFrases(rutaMp3) {
+  try { return JSON.parse(fs.readFileSync(rutaDeMarcas(rutaMp3), 'utf-8')).frases || null; } catch { return null; }
+}
+
+module.exports = { PAPELES, carpetaDePiper, motor, ffmpegPara, planDelCapitulo, sintetizar, rutaDelAudio, rutaDeMarcas, leerMarcas, leerFrases, duracionWav };

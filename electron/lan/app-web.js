@@ -76,7 +76,7 @@ function precargaDeLaApp(carpeta = CARPETA_APP) {
   return lista;
 }
 
-function servirFichero(res, pedida, raizDatos) {
+function servirFichero(res, pedida, raizDatos, cabeceraRango = '') {
   if (!pedida || !raizDatos) return json(res, 404, { error: 'No hay nada aquí.' });
   const raiz = fs.realpathSync(raizDatos);
   let real = null;
@@ -91,7 +91,22 @@ function servirFichero(res, pedida, raizDatos) {
   if (!real) return json(res, 404, { error: 'No hay nada aquí.' });
   const dentro = rutaSegura(raiz, path.relative(raiz, real));
   if (!dentro || !DE_LA_BIBLIOTECA.has(path.extname(real).toLowerCase())) return json(res, 404, { error: 'No hay nada aquí.' });
-  return enviar(res, 200, TIPOS[path.extname(real).toLowerCase()], fs.readFileSync(real), { 'Cache-Control': 'private, max-age=86400' });
+  const cuerpo = fs.readFileSync(real);
+  const tipo = TIPOS[path.extname(real).toLowerCase()];
+  const comunes = { 'Cache-Control': 'private, max-age=86400', 'Accept-Ranges': 'bytes' };
+
+  const r = rangoPedido(cabeceraRango, cuerpo.length);
+  if (r === 'fuera') return enviar(res, 416, tipo, '', { ...comunes, 'Content-Range': `bytes */${cuerpo.length}` });
+  if (!r) return enviar(res, 200, tipo, cuerpo, comunes);
+  return enviar(res, 206, tipo, cuerpo.subarray(r.ini, r.fin + 1), { ...comunes, 'Content-Range': `bytes ${r.ini}-${r.fin}/${cuerpo.length}` });
+}
+
+function rangoPedido(cabecera, total) {
+  const m = /^bytes=(\d*)-(\d*)$/.exec(String(cabecera || '').trim());
+  if (!m || (m[1] === '' && m[2] === '')) return null;
+  const ini = m[1] === '' ? Math.max(0, total - Number(m[2])) : Number(m[1]);
+  const fin = m[1] === '' || m[2] === '' ? total - 1 : Math.min(Number(m[2]), total - 1);
+  return ini > fin || ini >= total ? 'fuera' : { ini, fin };
 }
 
 async function servirEpub(res, id, url, epub) {
@@ -225,7 +240,7 @@ async function atenderApp(req, res, partes, url, ctx) {
   if (primero === 'capitulo' && resto.length === 2) { await servirCapitulo(res, resto, ctx.llamar); return true; }
   if (primero === 'audio-obra' && resto.length === 1) { await servirAudioObra(res, resto[0], url, ctx.audioObra); return true; }
   if (primero === 'fichero' && !resto.length) {
-    servirFichero(res, url.searchParams.get('ruta'), typeof ctx.raizDatos === 'function' ? ctx.raizDatos() : ctx.raizDatos);
+    servirFichero(res, url.searchParams.get('ruta'), typeof ctx.raizDatos === 'function' ? ctx.raizDatos() : ctx.raizDatos, req.headers?.range);
     return true;
   }
   return false;

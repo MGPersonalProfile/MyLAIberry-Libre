@@ -30,8 +30,10 @@ function registrar() {
     const todos = await getFanfics();
     const perfil = perfilDeGustos(todos.filter(esDeLaBiblioteca));
     const { preferencias } = await require('../db').getPreferenciasDescubrimientos();
+    const { explicarDescubrimiento } = require('../descubrimientos-explicacion.js');
     return require('../descubrimientos-preferencias').ajustarDescubrimientos(
-      ordenarPorAfinidad(todos.filter(f => f.origen === 'descubierta'), perfil), todos, preferencias);
+      ordenarPorAfinidad(todos.filter(f => f.origen === 'descubierta'), perfil), todos, preferencias)
+      .map(o => ({ ...o, explicacion: explicarDescubrimiento(o, { preferencias, perfil }) }));
   });
 
   ipcMain.handle('get-discovery-preferences', () => require('../db').getPreferenciasDescubrimientos());

@@ -1,4 +1,4 @@
-const PATRON_RETO = /just a moment|verify you are human|attention required|cf-chl|checking your browser|enable javascript and cookies|un momento|verificaci[oó]n de seguridad en curso/i;
+const PATRON_RETO = /^\s*(?:(?:just a moment|un momento)[\.…\s]*)+$|verify you are human|attention required|cf-chl|checking your browser|enable javascript and cookies|verificaci[oó]n de seguridad en curso/i;
 const SELECTORES_RETO = ['#challenge-form', '#challenge-running', '#cf-challenge-running', '.cf-turnstile', '#turnstile-wrapper'];
 const SELECTORES_RESULTADOS = 'li.work.blurb, li.bookmark.blurb, .z-list .z-list-item, .fiction-list-item, .story-card, .story-card-container, .search-result';
 
@@ -8,7 +8,7 @@ function detectarReto({ titulo = '', selectores = [], iframeReto = false, cfMiti
     iframeReto = !!documento.querySelector('iframe[src*="challenges.cloudflare.com"]');
     hayResultados ||= !!documento.querySelector(SELECTORES_RESULTADOS);
   }
-  if (/challenge/i.test(String(cfMitigated)) || PATRON_RETO.test(String(titulo))) return true;
+  if (/challenge/i.test(String(cfMitigated)) || (!hayResultados && PATRON_RETO.test(String(titulo)))) return true;
   const presentes = new Set(selectores);
   if (['#challenge-form', '#challenge-running', '#cf-challenge-running'].some(s => presentes.has(s))) return true;
   return !hayResultados && (iframeReto || presentes.has('.cf-turnstile') || presentes.has('#turnstile-wrapper'));
@@ -85,15 +85,16 @@ async function conPlazo({ promesa, ventana, plan, presupuestoHasta = Infinity, s
     : new Error(`La investigación: ${sitio} no terminó en ${Math.round(planAhora().totalMs / 1000)} s.`)),
   maximo);
   const mirar = setInterval(async () => {
-    const win = ventana();
-    if (!win || win.isDestroyed() || sondeando) return;
+    if (sondeando) return;
     sondeando = true;
     try {
-    const actual = planAhora();
-    if (Date.now() >= fechaLimite()) { abandonar(tiempoAgotado()); return; }
-    if (Date.now() - empezo >= actual.totalMs) {
-      abandonar(new Error(`La investigación: ${sitio} no terminó en ${Math.round(actual.totalMs / 1000)} s.`)); return;
-    }
+      const actual = planAhora();
+      if (Date.now() >= fechaLimite()) { abandonar(tiempoAgotado()); return; }
+      if (Date.now() - empezo >= actual.totalMs) {
+        abandonar(new Error(`La investigación: ${sitio} no terminó en ${Math.round(actual.totalMs / 1000)} s.`)); return;
+      }
+      const win = ventana();
+      if (!win || win.isDestroyed()) return;
     if (presenciaAnterior !== actual.puedeResolverReto) {
       presenciaAnterior = actual.puedeResolverReto;
       if (!actual.puedeResolverReto && win.__mlEnsenadaPorReto) { win.hide(); win.__mlEnsenadaPorReto = false; }

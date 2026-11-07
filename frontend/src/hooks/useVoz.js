@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Lector, parrafosDelDom, textoDe, elegirVoces, vocesDePersonajes } from '../voz';
 import { elegirVocesPorGenero } from '../voz-genero';
-import { LectorDeAudio, alinearMarcas } from '../voz-audio';
-import { useAudioDelCapitulo } from './useAudioDelCapitulo';
+import { LectorDeAudio } from '../voz-audio';
+import { useVozAudio } from './useVozAudio';
 
 function useMotorVoz(idioma) {
   const lectorVozRef = useRef(null);
@@ -10,6 +10,8 @@ function useMotorVoz(idioma) {
   const audioRef = useRef(null);
   const [vozActiva, setVozActiva] = useState(false);
   const [parrafoHablado, setParrafoHablado] = useState(-1);
+  const [fraseHablada, setFraseHablada] = useState(-1);
+  const [enAudio, setEnAudio] = useState(false);
   const [voces, setVoces] = useState([]);
   const [ajustesVoz, setAjustesVoz] = useState({
     vozNarracion: '', vozDialogo: '', vozMujer: '', vozHombre: '', vocesPorPersonaje: {}, velocidadVoz: 1
@@ -23,6 +25,8 @@ function useMotorVoz(idioma) {
       if (!activo) return;
       setVozActiva(activo.leyendo);
       setParrafoHablado(activo.leyendo ? activo.indice : -1);
+      setFraseHablada(activo.leyendo && activo.frases ? activo.frase : -1);
+      setEnAudio(activo === audio);
     };
     lector.alCambiar = avisar;
     audio.alCambiar = avisar;
@@ -62,17 +66,14 @@ function useMotorVoz(idioma) {
     });
     audioRef.current?.configurar({ velocidad: ajustesVoz.velocidadVoz });
   }, [voces, idioma, ajustesVoz]);
-  return { lectorVozRef, sistemaRef, audioRef, vozActiva, parrafoHablado, voces, ajustesVoz, setAjustesVoz };
+  return { lectorVozRef, sistemaRef, audioRef, vozActiva, parrafoHablado, fraseHablada, enAudio, voces, ajustesVoz, setAjustesVoz };
 }
 
-export function useVoz({ scrollRef, idioma, capitulo, total = 0, irA = null, listo = true, obraId = null }) {
-  const motor = useMotorVoz(idioma);
+export function useVoz({ scrollRef, idioma, capitulo, total = 0, irA = null, listo = true, obraId = null, variante = 'original', titulo = '', tituloCapitulo = '' }) {
   const {
-    lectorVozRef, sistemaRef, audioRef, vozActiva, parrafoHablado,
+    lectorVozRef, sistemaRef, audioRef, vozActiva, parrafoHablado, fraseHablada, enAudio,
     voces, ajustesVoz, setAjustesVoz
-  } = motor;
-
-  const audioDelCapitulo = useAudioDelCapitulo({ obraId, capitulo, idioma, listo });
+  } = useMotorVoz(idioma);
 
   useEffect(() => {
     sistemaRef.current?.parar();
@@ -106,6 +107,9 @@ export function useVoz({ scrollRef, idioma, capitulo, total = 0, irA = null, lis
     return () => actual.classList.remove('sonando');
   }, [parrafoHablado, scrollRef]);
 
+  const { arrancar: arrancarAudio, guardarPosicionDeAudio, hayAudio, estadoAudio, pedirAudio } = useVozAudio({
+    audioRef, scrollRef, obraId, capitulo, idioma, listo, variante, titulo, tituloCapitulo, parrafoHablado, fraseHablada });
+
   const parrafoVisible = () => {
     const caja = scrollRef.current;
     const nodos = parrafosDelDom(caja?.querySelector('.reader-content'));
@@ -117,23 +121,19 @@ export function useVoz({ scrollRef, idioma, capitulo, total = 0, irA = null, lis
   };
 
   const alternarVoz = () => {
-    if (lectorVozRef.current?.leyendo) { lectorVozRef.current.parar(); return; }
+    if (lectorVozRef.current?.leyendo) {
+      lectorVozRef.current.parar();
+      if (lectorVozRef.current === audioRef.current) guardarPosicionDeAudio();
+      return;
+    }
 
     const nodos = parrafosDelDom(scrollRef.current?.querySelector('.reader-content'));
     const parrafos = nodos.map(textoDe);
     if (!parrafos.length) return;
 
-    if (audioDelCapitulo && audioRef.current) {
-      const audio = audioRef.current;
-      lectorVozRef.current = audio;
-      const nuevo = audio.src !== audioDelCapitulo.uri || audio.parrafos.length !== parrafos.length || audio.parrafos[0] !== parrafos[0];
-      if (nuevo) {
-        audio.usar({ src: audioDelCapitulo.uri, marcas: alinearMarcas(audioDelCapitulo.marcas, parrafos) });
-        audio.configurar({ velocidad: ajustesVoz.velocidadVoz });
-        audio.cargar(parrafos, seguirDesdeArriba.current ? 0 : parrafoVisible());
-      }
-      seguirDesdeArriba.current = false;
-      audio.hablar();
+    if (hayAudio && audioRef.current) {
+      lectorVozRef.current = audioRef.current;
+      arrancarAudio({ audio: audioRef.current, parrafos, desdeArriba: seguirDesdeArriba, visible: parrafoVisible, velocidad: ajustesVoz.velocidadVoz });
       return;
     }
 
@@ -163,7 +163,7 @@ export function useVoz({ scrollRef, idioma, capitulo, total = 0, irA = null, lis
 
   const vocesDelIdioma = voces.filter(v => v.lang.toLowerCase().startsWith(idioma));
 
-  const hayVozParaEsteIdioma = vocesDelIdioma.length > 0 || Boolean(audioDelCapitulo);
+  const hayVozParaEsteIdioma = vocesDelIdioma.length > 0 || hayAudio;
 
   const cambiarVoz = (cambios) => {
     const ajustes = { ...ajustesVoz, ...cambios };
@@ -185,6 +185,10 @@ export function useVoz({ scrollRef, idioma, capitulo, total = 0, irA = null, lis
     ajustesVoz,
     alternarVoz,
     cambiarVoz,
+    estadoAudio,
+    pedirAudio,
+    audioActivo: enAudio,
+    saltarFrase: (cuantas) => audioRef.current?.saltarFrase(cuantas),
     vocesDelIdioma,
     hayVozParaEsteIdioma,
     parrafoVisible

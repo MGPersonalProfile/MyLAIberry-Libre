@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 
 import AjustesDelLector from './AjustesDelLector';
+import BarraDeVoz from './BarraDeVoz';
 import { useI18n } from '../../i18n/I18nContext';
 
 const ENTRA = { type: 'spring', damping: 30, stiffness: 380 };
@@ -75,6 +76,7 @@ function BarraDeAbajo(p) {
       className="fixed bottom-0 inset-x-0 z-[205] font-sans bg-[#141414]/80 backdrop-blur-xl text-white border-t border-white/10"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
+      {p.barraDeVoz && <BarraDeVoz {...p.barraDeVoz} />}
       <div className="px-4 pt-3 flex items-center gap-3 text-[11px] text-white/60 tabular-nums">
         <span className="shrink-0">{t('reader.chapter_of', { n: capitulo + 1, total })}</span>
         <div className="flex-1 h-1 rounded-full bg-white/15 overflow-hidden">

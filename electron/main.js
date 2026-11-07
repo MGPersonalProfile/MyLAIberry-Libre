@@ -52,6 +52,7 @@ const manejadoresIPC = [
   require('./ipc/biblioteca.js'),
   require('./ipc/lectura.js'),
   require('./ipc/memoria-lectura.js'),
+  require('./ipc/recordar-lectura.js'),
   require('./ipc/traduccion.js'),
   require('./ipc/descargas.js'),
   require('./ipc/descubrimientos.js'),

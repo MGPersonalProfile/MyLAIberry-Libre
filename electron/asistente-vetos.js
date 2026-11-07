@@ -35,13 +35,14 @@ function crearRegistro() {
     const titulo = sinAcentos(o.title ?? o.titulo ?? '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
     const autorDato = o.author ?? o.autor;
     const autor = sinAcentos(typeof autorDato === 'object' ? autorDato?.name : autorDato).trim();
+    const id = o.id ?? o.idOrigen;
     return [o.url ? `u:${claveDeObra(o.url)}` : null,
-      o.id ? `id:${sinAcentos(o.source ?? o.fuente ?? '')}:${o.id}` : null,
+      id ? `id:${sinAcentos(o.source ?? o.fuente ?? '')}:${id}` : null,
       titulo && autor ? `ta:${titulo}:${autor}` : null].filter(Boolean);
   };
   return {
     retiradas, sinComprobar,
-    anota(o, categoria) { retiradas.push({ titulo: String(o.title ?? o.titulo ?? ''), url: o.url, id: o.id,
+    anota(o, categoria) { const id = o.id ?? o.idOrigen; retiradas.push({ titulo: String(o.title ?? o.titulo ?? ''), url: o.url, id,
       source: o.source ?? o.fuente, autor: o.author ?? o.autor, categoria }); },
     recuerda(o, { conCasilla = false } = {}) {
       const k = claves(o).filter(c => !conCasilla || !c.startsWith('ta:'));

@@ -1,5 +1,6 @@
 const { GENEROS, normalizar, sinTildes } = require('./modelo.js');
 const { esCrossover } = require('../asistente-busqueda.js');
+const { clasificarPrioridad } = require('./parejas-ao3.js');
 
 const trozos = (s) => sinTildes(s).replace(/\./g, ' ').split(/[^\p{L}\p{N}]+/u).filter(Boolean);
 const etiquetas = (o, ...cats) => (o.tags || []).filter(t => !cats.length || cats.includes(t.category || '')).map(t => String(t.name || t));
@@ -52,7 +53,7 @@ const COMPROBAR = {
   rating: (o, f) => { const n = etiquetas(o, 'rating').map(nivel).filter(Boolean)[0]; return n ? n === f.rating || (f.rating === 'explicito' && n === 'maduro' && o.source === 'FanFiction.net') : null; },
   idioma: (o, f) => { const ls = [...etiquetas(o, 'language'), o.language].filter(Boolean).map(sinTildes); return ls.length ? ls.some(l => nombresDeIdioma(f.idioma).includes(l)) : null; },
   estado: (o, f) => (typeof o.completa === 'boolean' ? o.completa === (f.estado === 'completa') : null),
-  pareja: (o, f) => etiquetas(o, 'relationship').some(t => parejaCasa(t, f.pareja)),
+  pareja: (o, f) => clasificarPrioridad(o, f.pareja) !== null,
   personajes: (o, f) => { const ps = etiquetas(o, 'character', 'relationship').flatMap(partes); return ps.length ? f.personajes.every(q => ps.some(h => mismoNombre(h, q))) : null; },
   sinCrossovers: (o) => !esCrossover(o)
 };
@@ -63,7 +64,15 @@ function ordenar(obras, f) {
     palabras: (a, b) => (b.wordCount || 0) - (a.wordCount || 0),
     relevancia: (a, b) => Number(COMPROBAR.consulta(b, f)) - Number(COMPROBAR.consulta(a, f))
   }[f.orden];
-  return criterio && (f.orden !== 'relevancia' || f.consulta) ? [...obras].sort(criterio) : obras;
+  const peso = p => (p === 'alta' ? 3 : p === 'indeterminada' ? 2 : p === 'baja' ? 1 : 0);
+  return [...obras].sort((a, b) => {
+    if (f.pareja) {
+      const dif = peso(b.prioridadPareja) - peso(a.prioridadPareja);
+      if (dif !== 0) return dif;
+    }
+    if (!criterio || (f.orden === 'relevancia' && !f.consulta)) return 0;
+    return criterio(a, b);
+  });
 }
 
 function aplicarEnMemoria(obras, pedido, campos = []) {
@@ -74,9 +83,11 @@ function aplicarEnMemoria(obras, pedido, campos = []) {
     const veredictos = comprobar.map(c => [c, COMPROBAR[c](o, f)]);
     if (veredictos.some(([, v]) => v === false)) continue;
     const dudas = veredictos.filter(([, v]) => v === null).map(([c]) => c);
-    salen.push(dudas.length ? { ...o, sinComprobar: dudas } : o);
+    const p = f.pareja ? clasificarPrioridad(o, f.pareja) : null;
+    const conPrioridad = p ? { ...o, prioridadPareja: p, parejaPrincipal: p === 'alta' } : o;
+    salen.push(dudas.length ? { ...conPrioridad, sinComprobar: dudas } : conPrioridad);
   }
-  return campos.includes('orden') ? ordenar(salen, f) : salen;
+  return (campos.includes('orden') || f.pareja) ? ordenar(salen, f) : salen;
 }
 
 module.exports = { aplicarEnMemoria, mismoNombre, parejaCasa, COMPROBAR };

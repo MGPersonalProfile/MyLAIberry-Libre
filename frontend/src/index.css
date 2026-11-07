@@ -276,6 +276,10 @@ body {
 ::highlight(sub-rosa)     { background-color: rgba(240, 143, 184, 0.36); }
 ::highlight(sub-naranja)  { background-color: rgba(242, 160, 74, 0.38); }
 
+::highlight(frase-sonando) {
+  background-color: rgb(250 204 21 / 0.38);
+}
+
 .reader-content .sonando {
   background-color: color-mix(in srgb, currentColor 8%, transparent);
   box-shadow: 0 0 0 6px color-mix(in srgb, currentColor 8%, transparent);

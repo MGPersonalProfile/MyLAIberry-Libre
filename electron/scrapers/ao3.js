@@ -10,6 +10,7 @@ const { numero } = require('./numeros.js');
 
 const { pedirHTML, pedirHTMLConNavegador } = require('./ao3-pedir.js');
 const { deLaCopiaDeFicHub } = require('./ao3-copia.js');
+const { resolverParejaAO3 } = require('../filtros/parejas-ao3.js');
 
 function extraerWorkId(url) {
   const m = String(url).match(/works\/(\d+)/);
@@ -386,7 +387,7 @@ function obraDeFila(fila, limpiar) {
 function urlDeBusqueda({ consulta, pareja, orden = 'kudos_count', pagina = 1, completa, minPalabras, sinCrossovers }) {
   const p = new URLSearchParams();
   p.set('work_search[query]', consulta);
-  if (pareja) p.set('work_search[relationship_names]', pareja);
+  if (pareja) p.set('work_search[relationship_names]', resolverParejaAO3(pareja).canonica);
   p.set('work_search[sort_column]', orden);
   if (completa === true) p.set('work_search[complete]', 'T');
   if (minPalabras) p.set('work_search[word_count]', `>${minPalabras}`);

@@ -56,7 +56,8 @@ function lecturaDe({ titulo = '', etiquetas = [], sinopsis = '', fandom = '' }) 
     if (propios.some(x => patron.test(x))) categorias.add(cat);
     if (etiquetas.some(e => EXACTAS[cat].test(sinAcentos(e).trim()))) categorias.add(cat);
   }
-  if (propios.some(x => /^(?:slash|slash au|slash fic|slash fiction)$/.test(x.trim()) || /\b(?:romantic|romance|romantico)\s+slash\b/.test(x))) categorias.add('M/M');
+  if (propios.some(x => /^(?:slash|slash au|slash fic|slash fiction)$/.test(x.trim()) ||
+    /\b(?:romantic[oa]?|romance|pre|mild|explicit)\s*[-/]?\s*slash\b|\bslash\s*[-/]?\s*(?:romance|romantic[oa]?|pairing|relationship)\b/.test(x))) categorias.add('M/M');
   const casilla = etiquetas.some(e => /^(?:f\/m|m\/f|gen)$/i.test(sinAcentos(e).trim()));
   const romanceEnSinopsis = /\b(?:fall in love|son novios|se enamoran|romance entre|romantic|romantico|se besan|kiss|are lovers|son pareja)\b|[♥❤]/iu.test(sinAcentos(sinopsis));
   const parejas = parejasDe([titulo, ...etiquetas, ...(!casilla || romanceEnSinopsis ? [sinopsis] : [])].join(' \n '), fandom);

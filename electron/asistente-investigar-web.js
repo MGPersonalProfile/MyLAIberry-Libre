@@ -7,6 +7,7 @@ const wattpad = require('./scrapers/buscar-wattpad');
 const { pertinencia } = require('./relevancia.js');
 const { JSDOM } = require('jsdom');
 const { CATEGORIA } = require('./etiquetas.js');
+const { sinVerificar } = require('./descubrimientos-explicacion.js');
 
 const MAX_PASOS = 64;
 
@@ -30,27 +31,23 @@ function casaPareja(etiqueta, pedida) {
 }
 
 function coincide(obra, f) {
+  if (f.pareja) {
+    const { clasificarPrioridad } = require('./filtros/parejas-ao3');
+    const p = clasificarPrioridad(obra, f.pareja);
+    if (!p) return false;
+    obra.prioridadPareja = p;
+    obra.parejaPrincipal = p === 'alta';
+  }
   const tags = (obra.tags || []).map(t => ({ nombre: String(t.name || t).toLowerCase(), categoria: t.category || '' }));
   const filtros = [
-    [f.fandom, 'fandom'], [f.pareja, 'relationship'], [f.personajes, 'character'],
+    [f.fandom, 'fandom'], [f.personajes, 'character'],
     [f.etiquetas, 'freeform'], [f.idioma, 'language'], [f.valoracion, 'rating']
   ];
   return filtros.every(([valores, categoria]) => {
     const presentes = tags.filter(t => t.categoria === categoria);
     return !presentes.length || [valores].flat().filter(Boolean)
-      .every(valor => presentes.some(t => (categoria === 'relationship' ? casaPareja(t.nombre, valor) : t.nombre.includes(String(valor).toLowerCase()))));
+      .every(valor => presentes.some(t => t.nombre.includes(String(valor).toLowerCase())));
   });
-}
-
-function sinVerificar(obra, f) {
-  const categorias = new Set((obra.tags || []).map(t => t.category));
-  const pendientes = [['fandom', 'fandom'], ['pareja', 'relationship'], ['personajes', 'character'], ['etiquetas', 'freeform'],
-    ['idioma', 'language'], ['valoracion', 'rating']]
-    .filter(([campo, categoria]) => f[campo] && !categorias.has(categoria)).map(([campo]) => campo);
-  if (f.minPalabras && !obra.wordCount) pendientes.push('palabras');
-  if (f.completa && obra.completa === undefined) pendientes.push('completa');
-  if (f.orden && (obra.source === 'Wattpad' || (obra.source === 'FanFiction.net' && f.orden === 'recientes'))) pendientes.push('orden');
-  return pendientes;
 }
 
 function breve(o) {
@@ -61,12 +58,21 @@ function breve(o) {
     tags: [...(o.tags || [])].sort((a, b) => (b?.category === CATEGORIA) - (a?.category === CATEGORIA)).slice(0, 16),
     wordCount: o.wordCount, ...(o.source === 'RoyalRoad' && o.wordCount ? { palabrasEstimadas: true } : {}),
     totalChapters: o.totalChapters || o.chapters?.length || undefined,
-    kudos: o.kudos, medidaPopularidad: medida, completa: o.completa, autorUrl: o.autorUrl };
+    kudos: o.kudos, medidaPopularidad: medida, completa: o.completa, autorUrl: o.autorUrl,
+    ...(o.prioridadPareja ? { prioridadPareja: o.prioridadPareja, parejaPrincipal: o.prioridadPareja === 'alta' } : {}) };
 }
 
-function ordenar(obras, orden) {
+function ordenar(obras, orden, f = {}) {
   const clave = orden === 'palabras' ? 'wordCount' : 'kudos';
-  return orden === 'relevancia' || orden === 'recientes' ? obras : obras.sort((a, b) => (b[clave] || 0) - (a[clave] || 0));
+  const peso = p => (p === 'alta' ? 3 : p === 'indeterminada' ? 2 : p === 'baja' ? 1 : 0);
+  return [...obras].sort((a, b) => {
+    if (f.pareja) {
+      const dif = peso(b.prioridadPareja) - peso(a.prioridadPareja);
+      if (dif !== 0) return dif;
+    }
+    if (orden === 'relevancia' || orden === 'recientes') return 0;
+    return (b[clave] || 0) - (a[clave] || 0);
+  });
 }
 
 function sinDuplicados(obras) {
@@ -195,7 +201,7 @@ function crearInvestigador({ signal, progreso = () => {}, origen, presupuestoMs,
         : e.codigoHttp ? 'error-http' : 'error', mensaje: e.message, ...(e.codigoHttp ? { codigoHttp: e.codigoHttp } : {}) }));
     const completada = consultados.size > 0 || !fallidos.size;
     if (noConsultados.length || !completada) progreso({ paginas: navegador.paginas, maxPaginas: navegador.maxPaginas, estado: 'comprobacion', mensaje: resumenDeSitios(noConsultados, completada) });
-    const unicas = ordenar(sinDuplicados(obras), orden);
+    const unicas = ordenar(sinDuplicados(obras), orden, comun);
     navegador.fijarPresupuesto?.(null);
     return { obras: unicas.slice(0, 30), encontradas: unicas.length, paginasVisitadas: navegador.paginas,
       agotado: navegador.paginas >= tope || agotadoTiempo, noConsultados, completada,

@@ -135,6 +135,16 @@ export default function Descubrimientos({ items = [], onAbrir, onDetalle, onDesc
                 {(item.kudos || 0) > 0 && <span>{t('discover.kudos_short', { n: item.kudos.toLocaleString() })}</span>}
               </p>
 
+              {item.explicacion?.advertencias?.length > 0 && (
+                <p className="text-[11px] text-amber-500/80 mt-1 line-clamp-1 leading-snug">
+                  {t('discover.unverified', { que: item.explicacion.advertencias.map(a => t('discover.field.' + a.campo)).join(', ') })}
+                </p>
+              )}
+              {!item.explicacion?.advertencias?.length && item.explicacion?.desconocido?.length > 0 && (
+                <p className="text-[11px] text-gray-600 mt-1 line-clamp-1 leading-snug">
+                  {t('discover.not_published', { que: item.explicacion.desconocido.map(c => t('discover.field.' + c)).join(', ') })}
+                </p>
+              )}
               {item.porque?.length > 0 && (
                 <p className="text-[11px] text-gray-500 mt-1 line-clamp-2 leading-snug">
                   {t('suggest.because', { tags: item.porque.join(', ') })}
