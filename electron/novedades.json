@@ -1,5 +1,16 @@
 [
   {
+    "version": "2026.11.7-2",
+    "fecha": "2026-11-07",
+    "resumen": "Interfaz de seguimiento sin spoilers (A40): «Ibas por el capítulo N» y botón «Recordar la historia» en Inicio y en la ficha de la obra.",
+    "detalle": [
+      {
+        "que": "En Inicio y en la ficha de cada obra empezada aparece «Ibas por el capítulo N» con un botón «Recordar la historia» que enseña el recordatorio en un panel sin necesidad de pedírselo al asistente. Si no consta qué se ha leído, la interfaz lo dice expresamente («No sé por dónde vas») y no enseña nada.",
+        "porque": "Permite recuperar el contexto de lectura de forma directa, visual y segura tanto en el escritorio como en el móvil."
+      }
+    ]
+  },
+  {
     "version": "2026.11.7",
     "fecha": "2026-11-07",
     "resumen": "Avisos del móvil más fiables.",

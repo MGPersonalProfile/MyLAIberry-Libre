@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Play, Plus, Check } from 'lucide-react';
 
 import Cover from '../Cover';
+import RecordarLectura from '../RecordarLectura';
 import { urlDePortada } from '../../portada';
 import { useI18n } from '../../i18n/I18nContext';
 
@@ -52,6 +53,9 @@ export default function PortadaMovil({ hero, alLeer, alVerFicha, alAlternarMiLis
           </div>
         </div>
       </motion.div>
+      <div className="relative mx-auto max-w-[340px] mt-4 z-10">
+        <RecordarLectura obra={hero} movil />
+      </div>
     </main>
   );
 }

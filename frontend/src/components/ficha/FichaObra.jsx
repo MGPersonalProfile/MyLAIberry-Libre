@@ -14,6 +14,7 @@ import OrganizarLaObra from './OrganizarLaObra';
 import RevisarCapitulos from './RevisarCapitulos';
 import CopiasDeLaObra from './CopiasDeLaObra';
 import EstadoDeLectura from './EstadoDeLectura';
+import RecordarLectura from '../RecordarLectura';
 import OtrosSitios from './OtrosSitios';
 import SeleccionCapitulos from './SeleccionCapitulos';
 import GuardarSinConexion from './GuardarSinConexion';
@@ -106,6 +107,7 @@ export default function FichaObra(props) {
       {movil && gestion}
       {!movil && <div className="mb-6 space-y-3">{principales}{gestion}</div>}
       <div className="mb-6">
+        {esBiblioteca && <RecordarLectura obra={obra} movil={movil} className="mb-4" />}
         <BloqueSinopsis obra={obra} sinopsis={sinopsis} t={t} />
         <GenerosDeLaObra
           generos={generos}

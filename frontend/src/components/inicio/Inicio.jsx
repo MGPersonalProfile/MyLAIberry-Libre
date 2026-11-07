@@ -4,6 +4,7 @@ import { Library, Info, Plus } from 'lucide-react';
 import Carousel from '../Carousel';
 import Baya from '../Baya';
 import PortadaMovil from './PortadaMovil';
+import RecordarLectura from '../RecordarLectura';
 import useEsMovil from '../../hooks/useEsMovil';
 import heroPorDefecto from '../../assets/hero.png';
 import { useI18n } from '../../i18n/I18nContext';
@@ -78,6 +79,7 @@ export default function Inicio({
             <p className="text-[15px] md:text-lg text-gray-200 mb-6 md:mb-8 line-clamp-2 md:line-clamp-3 drop-shadow-md text-shadow font-medium">
               {sinopsisHero.texto}
             </p>
+            <RecordarLectura obra={hero} className="mb-4 max-w-xl" />
             <div className="flex gap-3 md:gap-4">
               <button
                 onClick={() => alLeerHero(hero)}

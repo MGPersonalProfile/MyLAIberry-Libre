@@ -194,6 +194,12 @@ export const BIBLIOTECA = {
   'detail.preparing':       { es: 'Preparando…', en: 'Getting ready…' },
   'detail.refresh':         { es: 'Buscar capítulos nuevos', en: 'Check for new chapters' },
 
+  'reading.you_were_at_chapter': { es: 'Ibas por el capítulo {n}', en: 'You were on chapter {n}' },
+  'reading.recall_story':        { es: 'Recordar la historia', en: 'Recall the story' },
+  'reading.no_evidence':         { es: 'No sé por dónde vas', en: 'I don’t know where you are' },
+  'reading.recall_title':        { es: 'Recordar la historia', en: 'Recall the story' },
+  'reading.recall_loading':      { es: 'Recordando…', en: 'Recalling…' },
+
   'synopsis.rate_limited': {
     es: 'El traductor ha limitado esta conexión por hoy. Se reintenta solo.',
     en: 'The translator has rate-limited this connection. It will retry on its own.'

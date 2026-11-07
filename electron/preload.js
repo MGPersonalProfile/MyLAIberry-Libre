@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('api', {
 
   getLibrary: () => ipcRenderer.invoke('get-library'),
   updateProgress: (id, currentChapter) => ipcRenderer.invoke('update-progress', id, currentChapter),
+  recordarLectura: (obra, modo) => ipcRenderer.invoke('recordar-lectura', obra, modo),
 
   getChapterContent: (id, chapterIndex) => ipcRenderer.invoke('get-chapter-content', id, chapterIndex),
 
