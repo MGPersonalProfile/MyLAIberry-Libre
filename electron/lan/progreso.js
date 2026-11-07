@@ -35,7 +35,11 @@ function mismoOrigen(req) {
   const origen = req.headers.origin;
   if (!origen) return false;
   try {
-    return new URL(origen).host.toLowerCase() === String(req.headers.host || '').toLowerCase();
+    const u = new URL(origen);
+    if (u.host.toLowerCase() !== String(req.headers.host || '').toLowerCase()) return false;
+    const esHttps = !!(req.socket?.encrypted || req.headers['x-forwarded-proto'] === 'https');
+    if (esHttps && u.protocol !== 'https:') return false;
+    return true;
   } catch {
     return false;
   }

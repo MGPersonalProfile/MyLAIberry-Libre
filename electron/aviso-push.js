@@ -3,6 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 const AGRUPAR_MS = 90000;
+const MAX_AGRUPAR_MS = 5 * 60 * 1000;
 const MAX_REINTENTO = 60 * 60 * 1000;
 const idDe = endpoint => crypto.createHash('sha256').update(endpoint).digest('hex');
 
@@ -53,7 +54,13 @@ function crearEmisor({ dir, transporte, cifrado, reloj = Date.now, programar = s
   };
   const clavePublica = () => serial(() => {
     const s = cargar();
-    if (!s.vapid) {
+    const privadaOk = s.vapid && clave.paraUsar(s.vapid.privateKey);
+    if (!s.vapid || !privadaOk) {
+      if (s.vapid && !privadaOk) {
+        s.suscripciones = {};
+        s.entregas = [];
+        s.lote = null;
+      }
       const par = webPush.generateVAPIDKeys();
       const privada = clave.paraGuardar(par.privateKey);
       if (!clave.estaCifrada(privada)) throw new Error('No hay cifrado de sistema para guardar VAPID');
@@ -106,7 +113,7 @@ function crearEmisor({ dir, transporte, cifrado, reloj = Date.now, programar = s
     }
     if (!cambio && s.lote && !Object.keys(s.lote.obras).length) s.lote = null;
     if (cambio) {
-      if (s.lote) s.lote.hasta = reloj() + agruparMs;
+      if (s.lote) s.lote.hasta = Math.min((s.lote.desde ?? reloj()) + MAX_AGRUPAR_MS, reloj() + agruparMs);
 
       const claves = Object.keys(s.vistos);
       if (claves.length > 20000) for (const k of claves.sort((a, b) => s.vistos[a] - s.vistos[b]).slice(0, claves.length - 10000)) delete s.vistos[k];

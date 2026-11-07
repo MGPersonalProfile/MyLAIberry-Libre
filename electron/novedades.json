@@ -1,5 +1,16 @@
 [
   {
+    "version": "2026.11.7",
+    "fecha": "2026-11-07",
+    "resumen": "Avisos del móvil más fiables.",
+    "detalle": [
+      {
+        "que": "Los avisos de capítulos agrupan novedades como máximo 5 minutos aunque sigan llegando capítulos, la clave de avisos se regenera limpiamente si trasladas la biblioteca a otro equipo sin poder abrir la anterior, y el servidor comprueba el esquema HTTPS del origen.",
+        "porque": "La revisión adversaria de avisos push (Echo) detectó que novedades continuas aplazaban los avisos indefinidamente, que mover la biblioteca dejaba la emisión colgada al no poder abrir la clave VAPID privada previa, y que la comprobación de origen no verificaba el esquema."
+      }
+    ]
+  },
+  {
     "version": "2026.11.6-3",
     "fecha": "2026-11-06",
     "resumen": "Voz en el móvil con la frase resaltada, búsqueda por pareja en AO3 más fiable, un recordatorio sin spoilers más seguro y avisos del móvil más seguros.",
