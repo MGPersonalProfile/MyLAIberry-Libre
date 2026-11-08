@@ -6,6 +6,9 @@ import {
 import AjustesDelLector from './AjustesDelLector';
 import BarraDeVoz from './BarraDeVoz';
 import { useI18n } from '../../i18n/I18nContext';
+import { IconButton } from '../ui/Buttons';
+import { DialogSheet } from '../ui/Layout';
+import { ProgressIndicator } from '../ui/Feedback';
 
 const ENTRA = { type: 'spring', damping: 30, stiffness: 380 };
 
@@ -26,15 +29,14 @@ export default function MandosMovil(p) {
 
 function Boton({ etiqueta, activo, children, ...resto }) {
   return (
-    <button
-      type="button"
-      aria-label={etiqueta}
-      title={etiqueta}
-      className={`w-11 h-11 shrink-0 grid place-items-center rounded-full transition active:scale-90 disabled:opacity-30 ${activo ? 'bg-white/20' : 'active:bg-white/10'}`}
+    <IconButton
+      label={etiqueta}
+      active={activo}
+      className={`!w-11 !h-11 shrink-0 !rounded-full active:scale-90 disabled:!opacity-30 !text-white ${activo ? '!bg-white/20' : 'hover:!bg-white/10 active:!bg-white/10'}`}
       {...resto}
     >
       {children}
-    </button>
+    </IconButton>
   );
 }
 
@@ -79,9 +81,7 @@ function BarraDeAbajo(p) {
       {p.barraDeVoz && <BarraDeVoz {...p.barraDeVoz} />}
       <div className="px-4 pt-3 flex items-center gap-3 text-[11px] text-white/60 tabular-nums">
         <span className="shrink-0">{t('reader.chapter_of', { n: capitulo + 1, total })}</span>
-        <div className="flex-1 h-1 rounded-full bg-white/15 overflow-hidden">
-          <div className="h-full bg-red-600 rounded-full" style={{ width: `${porcentaje}%` }} />
-        </div>
+        <ProgressIndicator thin value={porcentaje} className="flex-1" />
         <span className="shrink-0 w-8 text-right">{Math.round(porcentaje)}%</span>
       </div>
       <div className="h-14 px-2 flex items-center justify-between">
@@ -108,24 +108,13 @@ function BarraDeAbajo(p) {
 function HojaDeAjustes({ ajustes, alCerrar }) {
   const { t } = useI18n();
   return (
-    <>
-      <motion.div
-        data-mandos
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[206] bg-black/40"
-        onClick={alCerrar}
-      />
-      <motion.div
-        data-mandos
-        role="dialog"
-        aria-label={t('reader.reading_settings')}
-        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={ENTRA}
-        className="fixed bottom-0 inset-x-0 z-[207] font-sans rounded-t-2xl bg-[#1c1c1e] text-white px-5 pt-3"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1.25rem)' }}
+    <div data-mandos>
+      <DialogSheet
+        z="z-[207]" className="dark" bodyClassName="px-5 pt-4 pb-5 text-text-primary font-sans"
+        title={t('reader.reading_settings')} onClose={alCerrar} closeLabel={t('common.close')}
       >
-        <div className="mx-auto mb-4 w-10 h-1.5 rounded-full bg-white/25" aria-hidden />
         <AjustesDelLector {...ajustes} enHoja />
-      </motion.div>
-    </>
+      </DialogSheet>
+    </div>
   );
 }

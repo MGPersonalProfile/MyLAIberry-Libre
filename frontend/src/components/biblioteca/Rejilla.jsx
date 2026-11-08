@@ -64,13 +64,13 @@ export default function Rejilla({ obras, consulta, alBuscar, alAbrir }) {
         title={consulta ? t('library.results_for', { q: consulta }) : t('library.mine')}
         subtitle={subtitulo}
         actions={
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap max-md:w-full">
             {alBuscar && (
               <SearchField
                 value={consulta}
                 onChange={alBuscar}
                 placeholder={t('nav.search_placeholder')}
-                className="w-56 md:w-64"
+                className="max-md:w-full md:w-64"
               />
             )}
             <SegmentedControl

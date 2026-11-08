@@ -5,11 +5,43 @@ import { Notice } from '../ui/Feedback';
 import { prepararAlmacenamiento } from './espacioViaje';
 import { encargarAlNavegador } from './fondoViaje';
 import { llevarAnotacionesDeViaje } from './anotacionesDeViaje';
+import {
+  textosConflicto,
+  leerConflictoLocal,
+  guardarConflictoLocal,
+  resolverUsandoPC,
+  resolverConservandoMovil
+} from './conflictoIdioma';
 
-function useViajeObra(obraId, total, disponible) {
+const almacenPwa = {
+  leer: async (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  guardar: async (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { return false; } },
+  borrar: async (k) => { try { localStorage.removeItem(k); } catch { return false; } }
+};
+
+export function AvisoConflictoIdioma({ conflicto, onConservar, onUsarPC }) {
+  if (!conflicto) return null;
+  const t = textosConflicto();
+  return (
+    <div className="p-3 my-2 border border-warning/40 bg-warning/10 rounded-lg text-sm text-center space-y-2" aria-live="assertive">
+      <p className="text-warning font-medium">{t.aviso}</p>
+      <div className="flex justify-center gap-2">
+        <button type="button" onClick={onConservar} className="px-2 py-1 text-xs rounded bg-surface-raised border hover:bg-surface-hover">
+          {t.conservarMovil}
+        </button>
+        <button type="button" onClick={onUsarPC} className="px-2 py-1 text-xs rounded bg-surface-raised border hover:bg-surface-hover">
+          {t.usarPC}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function useViajeObra(obraId, total, disponible, obra) {
   const [estado, setEstado] = useState(null);
   const [activo, setActivo] = useState(false);
   const [libres, setLibres] = useState(null);
+  const [necesarios, setNecesarios] = useState(null);
 
   useEffect(() => {
     if (!disponible) return undefined;
@@ -37,8 +69,11 @@ function useViajeObra(obraId, total, disponible) {
     navigator.serviceWorker.addEventListener('message', recibir);
     window.addEventListener('mylaiberry-conexion', reconectar);
     navigator.serviceWorker.ready.then(r => r.active?.postMessage({ tipo: 'viaje-estado', id: String(obraId) }));
-    navigator.storage?.estimate?.().then(({ usage, quota }) => {
-      if (vivo && Number.isFinite(quota - usage)) setLibres(Math.max(0, Math.floor((quota - usage) / 1048576)));
+    prepararAlmacenamiento(navigator.storage, { total, ficha: obra }).then(espacio => {
+      if (vivo) {
+        if (espacio.disponibles !== null) setLibres(Math.floor(espacio.disponibles / 1048576));
+        if (espacio.necesarios) setNecesarios(Math.max(1, Math.ceil(espacio.necesarios / 1048576)));
+      }
     }).catch(() => {});
     const pulso = setInterval(() => navigator.serviceWorker.ready.then(r =>
       r.active?.postMessage({ tipo: 'viaje-estado', id: String(obraId) })), 5000);
@@ -47,24 +82,49 @@ function useViajeObra(obraId, total, disponible) {
       navigator.serviceWorker.removeEventListener('message', recibir);
       window.removeEventListener('mylaiberry-conexion', reconectar);
     };
-  }, [obraId, total, disponible]);
+  }, [obraId, total, disponible, obra]);
 
-  return { estado, setEstado, activo, setActivo, libres, setLibres };
+  return { estado, setEstado, activo, setActivo, libres, setLibres, necesarios };
 }
 
 export default function GuardarSinConexion({ obra }) {
   const [persistente, setPersistente] = useState(null);
+  const [conflicto, setConflicto] = useState(null);
   const total = Math.max(obra.chapterList?.length || 0, obra.totalChapters || 0);
   const disponible = !!window.__MYLAIBERRY_BASE__ && 'serviceWorker' in navigator && total > 0;
-  const { estado, setEstado, activo, setActivo, libres, setLibres } = useViajeObra(obra.id, total, disponible);
+  const { estado, setEstado, activo, setActivo, libres, setLibres, necesarios } = useViajeObra(obra.id, total, disponible, obra);
+
+  useEffect(() => {
+    if (window.api?.leerEleccionIdioma) {
+      window.api.leerEleccionIdioma(obra.id).then(r => {
+        if (r?.status === 'ok' && estado?.idioma && r.idioma !== estado.idioma) {
+          const c = { obraId: obra.id, local: { idioma: estado.idioma }, pc: { idioma: r.idioma, revision: r.revision } };
+          guardarConflictoLocal(almacenPwa, obra.id, c);
+          setConflicto(c);
+        }
+      }).catch(() => {});
+    }
+    leerConflictoLocal(almacenPwa, obra.id).then(setConflicto).catch(() => {});
+  }, [obra.id, estado?.idioma]);
+
+  const resolverMovil = async () => {
+    if (window.api?.resolverEleccionIdioma) {
+      await resolverConservandoMovil(almacenPwa, obra.id, window.api);
+    }
+    setConflicto(null);
+  };
+  const resolverPC = async () => {
+    await resolverUsandoPC(almacenPwa, obra.id);
+    setConflicto(null);
+  };
 
   if (!disponible) return null;
 
   const enviar = async (tipo) => {
     if (tipo === 'viaje-guardar' || tipo === 'viaje-refrescar') {
-      const espacio = await prepararAlmacenamiento(navigator.storage);
-      if (espacio.libres !== null) setLibres(Math.floor(espacio.libres / 1048576));
-      if (!espacio.permitido) { setEstado(prev => ({ ...prev, error: 'No queda espacio en este navegador.' })); return; }
+      const espacio = await prepararAlmacenamiento(navigator.storage, { total, guardados: estado?.guardados || 0, ficha: obra });
+      if (espacio.disponibles !== null) setLibres(Math.floor(espacio.disponibles / 1048576));
+      if (!espacio.permitido) { setEstado(prev => ({ ...prev, error: espacio.motivo || 'No queda espacio en este navegador.' })); return; }
       setPersistente(espacio.persistente);
       setActivo(true); setEstado(prev => prev && { ...prev, error: null });
     }
@@ -99,7 +159,12 @@ export default function GuardarSinConexion({ obra }) {
               : guardados ? `Reanudar descarga · ${guardados}/${total}` : `Guardar ${total} capítulos en este móvil`}
       </SecondaryButton>
       {estado?.error && <Notice variant="warning" compact>{estado.error}</Notice>}
-      {libres !== null && <p className="text-caption text-text-tertiary">{libres} MB libres aprox. en este navegador</p>}
+      <AvisoConflictoIdioma conflicto={conflicto} onConservar={resolverMovil} onUsarPC={resolverPC} />
+      {libres !== null && (
+        <p className="text-caption text-text-tertiary">
+          {necesarios ? `${necesarios} MB necesarios · ` : ''}{libres} MB disponibles aprox. en este navegador
+        </p>
+      )}
       {persistente === false && <p className="text-caption text-warning">El navegador podría borrar esta copia si necesita espacio.</p>}
       <div className="flex flex-wrap items-center justify-center gap-3">
         {completo && !activo && (

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Check, X, PenLine, Plus, Undo2, ChevronDown, ChevronUp } from 'lucide-react';
 
 import { useI18n } from '../../i18n/I18nContext';
+import { PrimaryButton, SecondaryButton } from '../ui/Buttons';
+import { CLASE_CAMPO } from '../ui/clases';
 
 export default function Estanterias({ estanterias, deshacibles, accion, Accion, tarjeta }) {
   const { t } = useI18n();
@@ -31,11 +33,8 @@ export default function Estanterias({ estanterias, deshacibles, accion, Accion, 
       <form onSubmit={crear} className={`${tarjeta} flex items-center gap-2`}>
         <input value={nueva} onChange={e => setNueva(e.target.value)} maxLength={100}
                placeholder={t('initiative.shelf_new_placeholder')} aria-label={t('initiative.shelf_new')}
-               className="flex-1 min-w-0 bg-transparent outline-none placeholder-gray-500" />
-        <button type="submit" disabled={!nueva.trim()}
-                className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-40 transition-colors">
-          <Plus className="w-3 h-3" /> {t('initiative.shelf_create')}
-        </button>
+               className={`flex-1 ${CLASE_CAMPO}`} />
+        <PrimaryButton type="submit" size="sm" icon={Plus} disabled={!nueva.trim()}>{t('initiative.shelf_create')}</PrimaryButton>
       </form>
     </>
   );
@@ -57,14 +56,9 @@ function RenombrarEstanteria({ e, nombre, setNombre, accion, tarjeta, acabar }) 
       <input value={nombre} onChange={ev => setNombre(ev.target.value)} autoFocus maxLength={100}
              aria-label={t('initiative.shelf_rename')}
              onKeyDown={ev => { if (ev.key === 'Escape') cancelar(); }}
-             className="flex-1 min-w-0 bg-transparent outline-none border-b border-white/20 focus:border-white/50" />
-      <button type="submit" className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg bg-white/10 hover:bg-white/15">
-        <Check className="w-3 h-3" /> {t('initiative.memory_save')}
-      </button>
-      <button type="button" onClick={cancelar}
-              className="text-[11px] px-2 py-1 rounded-lg opacity-60 hover:opacity-100">
-        {t('initiative.memory_cancel')}
-      </button>
+             className={`flex-1 ${CLASE_CAMPO}`} />
+      <PrimaryButton type="submit" size="sm" icon={Check}>{t('initiative.memory_save')}</PrimaryButton>
+      <SecondaryButton size="sm" onClick={cancelar}>{t('initiative.memory_cancel')}</SecondaryButton>
     </form>
   );
 }
@@ -88,9 +82,9 @@ function Estanteria({ e, deshacer, accion, Accion, tarjeta }) {
                 className="min-w-0 text-left flex-1" title={abierta ? t('initiative.shelf_close') : t('initiative.shelf_open')}>
           <p className="truncate flex items-center gap-1.5">
             {e.name}
-            {abierta ? <ChevronUp className="w-3 h-3 opacity-50 shrink-0" /> : <ChevronDown className="w-3 h-3 opacity-50 shrink-0" />}
+            {abierta ? <ChevronUp className="w-3 h-3 text-text-tertiary shrink-0" /> : <ChevronDown className="w-3 h-3 text-text-tertiary shrink-0" />}
           </p>
-          <p className="text-[11px] opacity-50 mt-0.5">{t('initiative.shelf_works', { n: e.ids?.length || 0 })}</p>
+          <p className="text-caption text-text-secondary mt-0.5">{t('initiative.shelf_works', { n: e.ids?.length || 0 })}</p>
         </button>
         <div className="flex flex-wrap justify-end gap-1.5 shrink-0">
           {deshacer && <Accion onClick={() => accion('undoShelf', { id: deshacer.id })} icono={Undo2}>{t('initiative.undo')}</Accion>}
@@ -99,11 +93,11 @@ function Estanteria({ e, deshacer, accion, Accion, tarjeta }) {
         </div>
       </div>
       {abierta && (
-        <ul className="mt-2 space-y-1 border-t border-white/5 pt-2">
-          {!obras.length && <li className="text-[11px] opacity-50">{t('initiative.shelf_empty')}</li>}
+        <ul className="mt-2 space-y-1 border-t border-separator pt-2">
+          {!obras.length && <li className="text-caption text-text-secondary">{t('initiative.shelf_empty')}</li>}
           {obras.map(o => (
             <li key={o.id} className="flex items-center justify-between gap-3">
-              <span className={`truncate ${o.title ? '' : 'opacity-50 italic'}`}>{o.title || t('initiative.shelf_gone')}</span>
+              <span className={`truncate ${o.title ? '' : 'text-text-tertiary italic'}`}>{o.title || t('initiative.shelf_gone')}</span>
               <Accion onClick={() => accion('shelfWorks', { id: e.id, remove: [o.id] })} icono={X}>{t('initiative.shelf_take_out')}</Accion>
             </li>
           ))}

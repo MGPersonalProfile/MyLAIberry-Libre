@@ -7,31 +7,26 @@ import NuevaInvestigacion from './NuevaInvestigacion';
 import ReglasGenerales from './ReglasGenerales';
 import ColaDeTrabajos from './ColaDeTrabajos';
 import { useI18n } from '../../i18n/I18nContext';
+import { SecondaryButton } from '../ui/Buttons';
+import { EmptyState, Notice } from '../ui/Feedback';
+import { SectionHeader } from '../ui/Layout';
+import { CLASE_CARD } from '../ui/clases';
 
-function Seccion({ icono: Icono, titulo, cuantos, children }) {
+function Seccion({ icono, titulo, cuantos, children }) {
   if (!cuantos) return null;
   return (
     <section className="space-y-2">
-      <h3 className="flex items-center gap-2 text-xs uppercase tracking-wide opacity-50">
-        <Icono className="w-3.5 h-3.5" /> {titulo}
-      </h3>
+      <SectionHeader icon={icono} title={titulo} className="!mb-1" />
       {children}
     </section>
   );
 }
 
-function Accion({ onClick, children, icono: Icono }) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-    >
-      {Icono && <Icono className="w-3 h-3" />} {children}
-    </button>
-  );
+function Accion({ onClick, children, icono }) {
+  return <SecondaryButton size="sm" icon={icono} onClick={onClick} className="whitespace-nowrap">{children}</SecondaryButton>;
 }
 
-const tarjeta = 'rounded-xl bg-white/5 px-3 py-2.5 text-sm [overflow-wrap:anywhere]';
+const tarjeta = `${CLASE_CARD} px-3 py-2.5 text-body [overflow-wrap:anywhere]`;
 
 function Candidatas({ job, accion, t }) {
   const rescate = job.kind === 'lost' && !!job.contrastadas?.length;
@@ -39,11 +34,11 @@ function Candidatas({ job, accion, t }) {
   if (!lista.length) return null;
 
   return (
-    <ul className="mt-2 space-y-1.5 border-t border-white/10 pt-2">
+    <ul className="mt-2 space-y-1.5 border-t border-separator pt-2">
       {lista.slice(0, 6).map(f => (
-        <li key={f.url} className="text-[12px]">
+        <li key={f.url} className="text-footnote">
           <div className="flex items-center justify-between gap-2">
-            <span className={`truncate ${f.veredicto === 'descartada' ? 'opacity-40 line-through' : 'opacity-80'}`}>
+            <span className={`truncate ${f.veredicto === 'descartada' ? 'text-text-tertiary line-through' : 'text-text-secondary'}`}>
               {f.title || f.url}
             </span>
             <Accion onClick={() => accion('excludeFinding', { id: job.id, url: f.url })} icono={X}>
@@ -52,7 +47,7 @@ function Candidatas({ job, accion, t }) {
           </div>
 
           {rescate && (
-            <p className="text-[11px] opacity-60 mt-0.5">
+            <p className="text-caption text-text-secondary mt-0.5">
               {f.veredicto === 'descartada'
                 ? t('initiative.contradicts', { pista: f.contradicen[0] })
                 : t('initiative.matches', { n: f.concuerdan.length, dudas: f.sinComprobar.length })}
@@ -72,8 +67,8 @@ export default function PanelIniciativa() {
     estanterias, deshacibles, operaciones, propuestas, buzon
   } = useIniciativa();
 
-  if (!disponible) return <p className="p-6 text-center text-gray-400">{t('assistant.unavailable')}</p>;
-  if (cargando) return <p className="p-6 text-center text-gray-500">…</p>;
+  if (!disponible) return <EmptyState description={t('assistant.unavailable')} />;
+  if (cargando) return <p className="p-6 text-center text-text-secondary">…</p>;
 
   const activas = investigaciones.filter(i => i.status !== 'closed');
   const vigiladas = radar.filter(r => r.status === 'active');
@@ -86,7 +81,7 @@ export default function PanelIniciativa() {
   return (
     <div className="h-full overflow-y-auto px-6 py-6 space-y-7 max-w-3xl mx-auto">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-lg">{t('initiative.title')}</h2>
+        <h2 className="text-title-3 text-text-primary">{t('initiative.title')}</h2>
         <Accion
           onClick={() => accion('settings', { paused: !ajustes?.paused })}
           icono={ajustes?.paused ? Play : Pause}
@@ -96,10 +91,10 @@ export default function PanelIniciativa() {
       </div>
 
       {ajustes?.paused && (
-        <p className="text-sm text-amber-400/90" role="status">{t('initiative.paused_all')}</p>
+        <Notice tone="warning" compact role="status">{t('initiative.paused_all')}</Notice>
       )}
-      {error && <p className="text-sm text-amber-400/90" role="alert">{error}</p>}
-      {vacio && <p className="text-sm opacity-50">{t('initiative.empty')}</p>}
+      {error && <Notice tone="warning" compact>{error}</Notice>}
+      {vacio && <p className="text-small text-text-secondary">{t('initiative.empty')}</p>}
 
       <Seccion icono={Bell} titulo={t('initiative.inbox')} cuantos={avisos.length}>
         {avisos.map(aviso => (
@@ -116,10 +111,10 @@ export default function PanelIniciativa() {
         <NuevaInvestigacion accion={accion} tarjeta={tarjeta} />
         {activas.map(job => (
           <div key={job.id} className={tarjeta}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate">{job.query}</p>
-                <p className="text-[11px] opacity-50 mt-0.5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1 basis-40">
+                <p>{job.query}</p>
+                <p className="text-caption text-text-secondary mt-0.5">
                   {t('initiative.findings', { n: job.findings?.length || 0 })}
                   {job.kind === 'lost' && ' · ' + t('initiative.lost')}
                   {job.status === 'paused' && ' · ' + t('initiative.paused')}
@@ -139,7 +134,7 @@ export default function PanelIniciativa() {
             </div>
 
             {!!job.errors?.length && (
-              <p className="text-[11px] text-amber-400/80 mt-2">{job.errors.join(' · ')}</p>
+              <p className="text-caption text-warning mt-2">{job.errors.join(' · ')}</p>
             )}
 
             <Candidatas job={job} accion={accion} t={t} />
@@ -152,7 +147,7 @@ export default function PanelIniciativa() {
         {enCurso.map(op => (
           <div key={op.id} className={tarjeta}>
             <p className="truncate">{op.title}</p>
-            <p className="text-[11px] opacity-50 mt-0.5">
+            <p className="text-caption text-text-secondary mt-0.5">
               {t('initiative.downloading', { n: op.descargados, total: op.total })}
               {op.traducir && ' · ' + t('initiative.also_translating')}
             </p>
@@ -173,7 +168,7 @@ export default function PanelIniciativa() {
         {buzon.map(n => (
           <div key={n.id} className={tarjeta}>
             <p className="leading-snug">
-              {n.tipo === 'fallo' && <span className="text-amber-400/90">{t('initiative.mailbox_failure')} · </span>}
+              {n.tipo === 'fallo' && <span className="text-warning">{t('initiative.mailbox_failure')} · </span>}
               {n.texto}{n.veces > 1 ? ` ×${n.veces}` : ''}
             </p>
           </div>
@@ -194,8 +189,8 @@ export default function PanelIniciativa() {
             <div className="min-w-0">
 
               <p className="leading-snug">{r.title || r.reason}</p>
-              {r.title && r.reason && <p className="text-[12px] opacity-70 mt-0.5">{r.reason}</p>}
-              <p className="text-[11px] opacity-50 mt-0.5">
+              {r.title && r.reason && <p className="text-footnote text-text-secondary mt-0.5">{r.reason}</p>}
+              <p className="text-caption text-text-secondary mt-0.5">
                 {r.condition === 'complete'
                   ? t('initiative.radar_complete')
                   : t('initiative.radar_chapters', { n: r.chapters })}
@@ -218,15 +213,15 @@ export default function PanelIniciativa() {
         {muertas.map(r => (
           <div key={r.id} className={`${tarjeta} flex items-start justify-between gap-3`}>
             <div className="min-w-0">
-              <p className="leading-snug opacity-80">{r.text}</p>
-              <p className="text-[11px] text-amber-400/70 mt-0.5">{t('initiative.rule_dead')}</p>
+              <p className="leading-snug text-text-secondary">{r.text}</p>
+              <p className="text-caption text-warning mt-0.5">{t('initiative.rule_dead')}</p>
             </div>
             {r.id && <Accion onClick={() => accion('removeRule', { id: r.id })} icono={X}>{t('initiative.rule_remove')}</Accion>}
           </div>
         ))}
       </Seccion>
 
-      <section className="pt-2 border-t border-white/10 text-[11px] opacity-50 space-y-0.5">
+      <section className="pt-2 border-t border-separator text-caption text-text-secondary space-y-0.5">
         <p>{t('initiative.limits')}</p>
         <p>{t('initiative.calls', { n: consumo.calls, tope: ajustes?.dailyCalls ?? 0 })}</p>
         <p>{t('initiative.background', { n: consumo.background, tope: ajustes?.backgroundCalls ?? 0 })}</p>

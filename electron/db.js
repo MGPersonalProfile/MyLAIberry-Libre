@@ -22,6 +22,7 @@ module.exports = {
   ...generos,
   ...seguimiento,
   ...require('./db/subrayados.js'),
+  ...require('./db/idioma-viaje.js'),
   ...require('./db/descubrimientos.js'),
   ...require('./db/fundir.js'),
   ...require('./db/memoria-lectura.js'),
@@ -30,6 +31,17 @@ module.exports = {
   ...trabajos,
 
   listarCopias: () => require('./db/copias.js').listarCopias(nucleo.raizActual()),
+  listarRecuperables: () => require('./db/recuperacion-restauracion.js').listarRecuperables(nucleo.raizActual()),
+  recuperarObra: async (id) => {
+    const r = await require('./db/recuperacion-restauracion.js').recuperarObra(nucleo.raizActual(), id);
+    await nucleo.releerSiAbierta();
+    return r;
+  },
+  recuperarTrabajos: async (seleccion) => {
+    const r = await require('./db/recuperacion-restauracion.js').recuperarTrabajos(nucleo.raizActual(), seleccion);
+    await nucleo.releerSiAbierta();
+    return r;
+  },
   restaurarCopia: async (archivo) => {
     const r = await require('./db/copias.js').restaurarCopia(nucleo.raizActual(), archivo);
 

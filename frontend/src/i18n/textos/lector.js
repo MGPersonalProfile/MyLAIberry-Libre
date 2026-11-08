@@ -114,6 +114,8 @@ export const LECTOR = {
   'reader.font_serif':       { es: 'Serif', en: 'Serif' },
   'reader.font_sans':        { es: 'Sans', en: 'Sans' },
   'reader.size':             { es: 'Tamaño', en: 'Size' },
+  'reader.size_smaller':     { es: 'Letra más pequeña', en: 'Smaller text' },
+  'reader.size_larger':      { es: 'Letra más grande', en: 'Larger text' },
   'reader.font':             { es: 'Tipografía', en: 'Typeface' },
 
   'settings.title':          { es: 'Ajustes', en: 'Settings' },
@@ -414,7 +416,7 @@ export const LECTOR = {
   'settings.open_folder':    { es: 'Abrir', en: 'Open' },
   'settings.moving':         { es: 'Moviendo…', en: 'Moving…' },
   'reader.chapters':         { es: 'Capítulos', en: 'Chapters' },
-  'reader.search_placeholder': { es: 'Buscar un nombre o una frase en lo leído…', en: 'Find a name or a phrase in what you have read…' },
+  'reader.search_placeholder': { es: 'Buscar en lo leído…', en: 'Search what you have read…' },
   'reader.search_all':       { es: 'Buscar en toda la obra (puede destripar)', en: 'Search the whole work (may spoil)' },
   'reader.searching':        { es: 'Buscando…', en: 'Searching…' },
   'reader.search_failed':    { es: 'No se pudo buscar.', en: 'Could not search.' },

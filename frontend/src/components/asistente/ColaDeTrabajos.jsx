@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Pause, Play, RefreshCw } from 'lucide-react';
 
 import { useI18n } from '../../i18n/I18nContext';
+import { Notice } from '../ui/Feedback';
 
 const TIPOS = ['descargar-capitulos', 'comprobar-capitulos', 'traducir-sinopsis', 'clasificar-genero',
   'comprobar-autor', 'comprobar-busqueda', 'importar-marcadores', 'buscar-fondos'];
@@ -46,18 +47,18 @@ export default function ColaDeTrabajos({ Accion, tarjeta }) {
         </div>
       </div>
       {tipos.length > 0 && (
-        <ul className="mt-2 space-y-0.5 text-[12px] opacity-80">
+        <ul className="mt-2 space-y-0.5 text-footnote text-text-secondary">
           {tipos.map(([tipo, n]) => (
             <li key={tipo}>{TIPOS.includes(tipo) ? t(`queue.type.${tipo}`) : tipo} · {n}</li>
           ))}
         </ul>
       )}
       {estado && !estado.enMarcha && (
-        <p className="text-[11px] text-amber-400/80 mt-2">
+        <p className="text-caption text-warning mt-2">
           {estado.reanudaA ? t('queue.resumes_at', { hora: new Date(estado.reanudaA).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t('queue.paused_note')}
         </p>
       )}
-      {error && <p className="text-[11px] text-red-400 mt-2" role="alert">{error}</p>}
+      {error && <Notice tone="error" compact className="mt-2">{error}</Notice>}
     </div>
   );
 }

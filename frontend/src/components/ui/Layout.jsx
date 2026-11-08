@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import { IconButton } from './Buttons';
 import { pulsable } from '../../pulsable';
+import { CLASE_CARD } from './clases';
 
 export function PageHeader({ title, subtitle, actions, className = '' }) {
   return (
@@ -9,7 +10,7 @@ export function PageHeader({ title, subtitle, actions, className = '' }) {
         <h2 className="text-title-1 text-text-primary tracking-tight">{title}</h2>
         {subtitle && <p className="text-body text-text-secondary mt-1">{subtitle}</p>}
       </div>
-      {actions && <div className="flex items-center gap-3 shrink-0">{actions}</div>}
+      {actions && <div className="flex items-center gap-3 shrink-0 max-md:shrink max-md:w-full">{actions}</div>}
     </header>
   );
 }
@@ -31,14 +32,14 @@ export function SectionHeader({ icon: Icon, title, description, action, classNam
   );
 }
 
-export function Card({ children, padded = true, className = '', ...props }) {
+export function Card({ children, as: Elemento = 'div', padded = true, className = '', ...props }) {
   return (
-    <div
-      className={`rounded-lg bg-surface border border-border/70 ${padded ? 'p-4' : ''} ${className}`}
+    <Elemento
+      className={`${CLASE_CARD} ${padded ? 'p-4' : ''} ${className}`}
       {...props}
     >
       {children}
-    </div>
+    </Elemento>
   );
 }
 
@@ -65,7 +66,7 @@ function CabeceraDialogo({ title, subtitle, headerAction, onClose, closeLabel, i
 
 export function DialogSheet({
   inline = false, title, subtitle, header, headerAction, footer,
-  onClose, closeLabel, maxWidth = 'max-w-[540px]', bodyClassName = '', className = '', children
+  onClose, closeLabel, maxWidth = 'max-w-[540px]', bodyClassName = '', className = '', z = 'z-[150]', children
 }) {
   if (inline) {
     return (
@@ -79,7 +80,7 @@ export function DialogSheet({
   }
   const fondoAttrs = onClose ? pulsable(onClose, closeLabel || 'Cerrar') : {};
   return (
-    <div className="fixed inset-0 z-[150] flex items-end md:items-center justify-center md:p-6">
+    <div className={`fixed inset-0 ${z} flex items-end md:items-center justify-center md:p-6`}>
       <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" {...fondoAttrs} />
       <div
         role="dialog"

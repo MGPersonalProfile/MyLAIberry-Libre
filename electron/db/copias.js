@@ -1,6 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { escribirEntero } = require('../escritura-entera.js');
+const { inventariarRestauracion, guardarInventario } = require('./recuperacion-restauracion.js');
 
 const CARPETA = 'copias';
 const BASE = 'mylaiberry-db.json';
@@ -70,14 +71,42 @@ async function listarCopias(raiz) {
   return lista;
 }
 
-async function restaurarCopia(raiz, archivo) {
+async function restaurarCopia(raiz, archivo, { fsOverride } = {}) {
   if (!NOMBRE.test(String(archivo || '')) || path.basename(archivo) !== archivo) throw new Error('Esa copia no existe.');
-  const texto = await fs.readFile(path.join(raiz, CARPETA, archivo), 'utf-8')
+  const fsModulo = fsOverride || fs;
+  const texto = await fsModulo.readFile(path.join(raiz, CARPETA, archivo), 'utf-8')
     .catch(() => { throw new Error('Esa copia no existe.'); });
   const datos = comprobar(texto);
+
+  let datosActuales = { fanfics: [], trabajos: [] };
+  try {
+    const textoActual = await fsModulo.readFile(path.join(raiz, BASE), 'utf-8');
+    datosActuales = comprobar(textoActual);
+  } catch {
+
+  }
+
   const previa = await hacerCopia(raiz, 'antes-de-restaurar');
-  await escribirEntero(path.join(raiz, BASE), texto);
-  return { restaurada: archivo, obras: datos.fanfics.length, copiaDeAntes: previa };
+  const inventario = await inventariarRestauracion(raiz, datosActuales, datos, {
+    origen: archivo,
+    antesDeRestaurar: previa
+  });
+
+  await guardarInventario(raiz, inventario, { fsOverride });
+
+  const idsTerminados = new Set((inventario.trabajosTerminadosPosteriores || []).map(t => t.id));
+  if (Array.isArray(datos.trabajos)) {
+    datos.trabajos = datos.trabajos.filter(t => !idsTerminados.has(t.id));
+  }
+
+  const textoFinal = JSON.stringify(datos, null, 2);
+  if (fsOverride?.writeFile) {
+    await fsOverride.writeFile(path.join(raiz, BASE), textoFinal);
+  } else {
+    await escribirEntero(path.join(raiz, BASE), textoFinal);
+  }
+
+  return { restaurada: archivo, obras: datos.fanfics.length, copiaDeAntes: previa, recuperacion: inventario };
 }
 
 module.exports = { hacerCopia, copiaDelDia, listarCopias, restaurarCopia, CARPETA, MAXIMO, MAXIMO_ANTES };

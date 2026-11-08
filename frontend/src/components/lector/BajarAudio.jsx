@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Download, Headphones, Loader2 } from 'lucide-react';
+import { Download, Headphones } from 'lucide-react';
 
 import { useI18n } from '../../i18n/I18nContext';
+import { SecondaryButton } from '../ui/Buttons';
+import { Girando, Notice, ProgressIndicator } from '../ui/Feedback';
 
 const CADA = 5000;
 
@@ -61,40 +63,40 @@ export default function BajarAudio({ obraId, capitulo, idioma }) {
   if (!pedirAlApi || !estado) return null;
   const enElPc = Boolean(window.api?.guardarAudioCapitulo);
   const titulo = (
-    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-3">{t('reader.audio_title')}</p>
+    <p className="text-xs text-text-secondary font-bold uppercase tracking-wider mb-3">{t('reader.audio_title')}</p>
   );
-  const boton = 'w-full flex items-center justify-center gap-2 py-2 max-md:min-h-11 rounded-lg border border-white/10 text-sm text-gray-200 hover:bg-white/5 disabled:opacity-50';
+  const boton = 'w-full';
 
   if (estado.estado === 'sin-motor' && window.api?.instalarVoces && voces?.disponible && voces.faltan?.length) {
     const mb = Math.ceil(voces.bytesABajar / 1000000);
     return <div>
       {titulo}
-      <button type="button" className={boton} disabled={instalando} onClick={instalar}>
-        {instalando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+      <SecondaryButton className={boton} disabled={instalando} onClick={instalar}
+        icon={instalando ? Girando : Download}>
         {t('reader.audio_install', { mb })}
-      </button>
+      </SecondaryButton>
 
-      <p className="text-xs text-gray-500 mt-2" data-licencias-voces>{t('reader.audio_install_licenses')}</p>
-      {instalando && <div className="mt-3" role="status" aria-live="polite">
-        <progress className="w-full h-2 accent-amber-400" value={progreso?.porcentaje || 0} max="100" />
-        <p className="text-xs text-gray-400">{t('reader.audio_install_progress', { n: progreso?.porcentaje || 0 })}</p>
-      </div>}
-      {errorInstalar && <p role="alert" className="text-xs text-red-300 mt-2">{errorInstalar}</p>}
+      <p className="text-footnote text-text-secondary mt-2" data-licencias-voces>{t('reader.audio_install_licenses')}</p>
+      {instalando && (
+        <ProgressIndicator className="mt-3" role="status" aria-live="polite" value={progreso?.porcentaje || 0}
+          label={t('reader.audio_install_progress', { n: progreso?.porcentaje || 0 })} />
+      )}
+      {errorInstalar && <Notice tone="error" compact className="mt-2">{errorInstalar}</Notice>}
     </div>;
   }
   if (estado.estado === 'sin-motor' || estado.estado === 'error' || estado.estado === 'sin-texto') {
-    return <div>{titulo}<p className="text-xs text-gray-500">{estado.motivo}</p>
-      {errorInstalar && <p role="alert" className="text-xs text-red-300 mt-2">{errorInstalar}</p>}
+    return <div>{titulo}<p className="text-footnote text-text-secondary">{estado.motivo}</p>
+      {errorInstalar && <Notice tone="error" compact className="mt-2">{errorInstalar}</Notice>}
     </div>;
   }
   if (estado.estado === 'falta') {
     return (
       <div>
         {titulo}
-        <button type="button" className={boton} onClick={() => { setEstado({ estado: 'preparando' }); setPedir(true); }}>
-          <Headphones className="w-4 h-4" /> {t('reader.audio_make')}
-        </button>
-        <p className="text-[11px] text-gray-600 mt-2">{t(estado.traducido ? 'reader.audio_hint_translated' : 'reader.audio_hint_original')}</p>
+        <SecondaryButton className={boton} icon={Headphones} onClick={() => { setEstado({ estado: 'preparando' }); setPedir(true); }}>
+          {t('reader.audio_make')}
+        </SecondaryButton>
+        <p className="text-caption text-text-tertiary mt-2">{t(estado.traducido ? 'reader.audio_hint_translated' : 'reader.audio_hint_original')}</p>
       </div>
     );
   }
@@ -102,9 +104,7 @@ export default function BajarAudio({ obraId, capitulo, idioma }) {
     return (
       <div>
         {titulo}
-        <button type="button" className={boton} disabled>
-          <Loader2 className="w-4 h-4 animate-spin" /> {t('reader.audio_preparing')}
-        </button>
+        <SecondaryButton className={boton} disabled icon={Girando}>{t('reader.audio_preparing')}</SecondaryButton>
       </div>
     );
   }
@@ -114,14 +114,14 @@ export default function BajarAudio({ obraId, capitulo, idioma }) {
       {titulo}
       {!enElPc && estado.uri && <audio controls preload="none" src={estado.uri} className="w-full mb-2" />}
       {enElPc ? (
-        <button type="button" className={boton}
+        <SecondaryButton className={boton} icon={Download}
           onClick={() => window.api.guardarAudioCapitulo(obraId, capitulo, { idioma: idioma || null })}>
-          <Download className="w-4 h-4" /> {t('reader.audio_save')} {megas}
-        </button>
+          {t('reader.audio_save')} {megas}
+        </SecondaryButton>
       ) : (
-        <a className={boton} href={estado.uri} download={estado.nombre}>
-          <Download className="w-4 h-4" /> {t('reader.audio_save')} {megas}
-        </a>
+        <SecondaryButton as="a" className={boton} icon={Download} href={estado.uri} download={estado.nombre}>
+          {t('reader.audio_save')} {megas}
+        </SecondaryButton>
       )}
     </div>
   );

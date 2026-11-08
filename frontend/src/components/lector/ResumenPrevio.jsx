@@ -1,4 +1,7 @@
 import { useI18n } from '../../i18n/I18nContext';
+import { SecondaryButton } from '../ui/Buttons';
+import { Notice } from '../ui/Feedback';
+import { Card } from '../ui/Layout';
 
 export default function ResumenPrevio({
   recap, recapError, mejorandoRecap, mejorarRecap, cerrarRecap, alAbrirAjustes
@@ -6,46 +9,28 @@ export default function ResumenPrevio({
   const { t } = useI18n();
 
   return (
-    <div className="mb-10 border-l-2 border-current/30 pl-5 py-1 opacity-75">
-      <div className="flex items-baseline justify-between gap-4 mb-2">
-        <p className="text-[11px] uppercase tracking-widest opacity-60">
-          {t('recap.previously')}
-        </p>
-        <button
-          onClick={cerrarRecap}
-          className="text-[11px] uppercase tracking-wider opacity-50 hover:opacity-100 transition-opacity"
-        >
-          {t('recap.dismiss')}
-        </button>
+    <Card className="dark mb-10 font-sans">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mb-2">
+        <p className="text-footnote uppercase tracking-widest text-text-secondary">{t('recap.previously')}</p>
+        <SecondaryButton size="sm" className="whitespace-nowrap" onClick={cerrarRecap}>{t('recap.dismiss')}</SecondaryButton>
       </div>
-      <p className="text-sm italic leading-relaxed">{recap.texto}</p>
+      <p className="text-small italic leading-relaxed text-text-primary">{recap.texto}</p>
 
       {recapError ? (
-        <div className="mt-2 flex items-baseline gap-3 flex-wrap">
-          <p className="text-[11px] text-amber-400/90">
-            {recapError === 'sin-clave' ? t('recap.needs_key') : t('recap.failed')}
-          </p>
-          {recapError === 'sin-clave' && alAbrirAjustes && (
-            <button
-              onClick={alAbrirAjustes}
-              className="text-[11px] underline underline-offset-2 opacity-70 hover:opacity-100 transition-opacity"
-            >
-              {t('recap.open_settings')}
-            </button>
-          )}
-        </div>
+        <Notice tone="warning" compact className="mt-3"
+          action={recapError === 'sin-clave' && alAbrirAjustes && (
+            <SecondaryButton size="sm" onClick={alAbrirAjustes}>{t('recap.open_settings')}</SecondaryButton>
+          )}>
+          {recapError === 'sin-clave' ? t('recap.needs_key') : t('recap.failed')}
+        </Notice>
       ) : (
 
-        <button
-          onClick={() => mejorarRecap(recap.origen === 'modelo')}
-          disabled={mejorandoRecap}
-          className="mt-2 text-[11px] opacity-50 hover:opacity-100 underline underline-offset-2 transition-opacity disabled:no-underline disabled:cursor-wait"
-        >
+        <SecondaryButton size="sm" className="mt-3" onClick={() => mejorarRecap(recap.origen === 'modelo')} disabled={mejorandoRecap}>
           {mejorandoRecap
             ? t('recap.improving')
             : recap.origen === 'modelo' ? t('recap.again') : t('recap.improve')}
-        </button>
+        </SecondaryButton>
       )}
-    </div>
+    </Card>
   );
 }

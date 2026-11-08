@@ -31,19 +31,20 @@ export function SecondaryButton({
   children,
   icon: Icon,
   size = 'md',
+  as: Elemento = 'button',
   className = '',
   type = 'button',
   ...props
 }) {
   return (
-    <button
-      type={type}
+    <Elemento
+      type={Elemento === 'button' ? type : undefined}
       className={`${BASE_BTN} ${claseTamanoBoton(size)} bg-surface-secondary hover:bg-surface-hover text-text-primary border border-border/70 font-medium ${className}`}
       {...props}
     >
       {Icon && <Icon className="w-4 h-4 shrink-0" />}
       {children}
-    </button>
+    </Elemento>
   );
 }
 

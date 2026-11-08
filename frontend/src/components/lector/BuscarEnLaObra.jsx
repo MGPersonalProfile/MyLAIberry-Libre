@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Search } from 'lucide-react';
-
 import { useI18n } from '../../i18n/I18nContext';
+import { SearchField, Switch } from '../ui/Controls';
+import { Notice } from '../ui/Feedback';
+import { ActionCell, InsetGroupedList } from '../ui/List';
 
 export default function BuscarEnLaObra({ obraId, idioma, actual, total, alElegir }) {
   const { t } = useI18n();
@@ -23,36 +24,41 @@ export default function BuscarEnLaObra({ obraId, idioma, actual, total, alElegir
   };
 
   return (
-    <div className="px-6 py-3 border-b border-white/10" data-buscar-en-la-obra>
-      <form onSubmit={buscar} className="flex items-center gap-2">
-        <Search className="w-4 h-4 text-gray-500 shrink-0" />
-        <input value={texto} onChange={e => setTexto(e.target.value)} maxLength={200}
-               placeholder={t('reader.search_placeholder')} aria-label={t('reader.search_placeholder')}
-               className="flex-1 min-w-0 bg-transparent text-sm text-gray-200 outline-none placeholder-gray-600" />
+    <div className="px-6 py-3 border-b border-separator dark text-text-primary" data-buscar-en-la-obra>
+      <form onSubmit={buscar}>
+        <SearchField value={texto} onChange={setTexto} placeholder={t('reader.search_placeholder')}
+                     clearLabel={t('discover.search_clear')} />
       </form>
-      <label className="mt-2 flex items-center gap-2 text-[11px] text-gray-500">
-        <input type="checkbox" checked={todaLaObra} onChange={e => setTodaLaObra(e.target.checked)} />
-        {t('reader.search_all')}
-      </label>
-      {estado === 'buscando' && <p className="mt-2 text-xs text-gray-500">{t('reader.searching')}</p>}
-      {estado?.error && <p className="mt-2 text-xs text-red-400" role="alert">{estado.error}</p>}
-      {estado?.apariciones && (
-        <div className="mt-2 max-h-72 overflow-y-auto space-y-1">
-          <p className="text-[11px] text-gray-500">
-            {estado.capitulosConElTexto
-              ? t('reader.search_found', { n: estado.capitulosConElTexto, revisados: estado.revisados })
-              : t('reader.search_none', { revisados: estado.revisados })}
-          </p>
+      <div className="mt-3 flex items-center gap-3 text-footnote text-text-secondary">
+        <Switch checked={todaLaObra} onChange={setTodaLaObra} label={t('reader.search_all')} />
+        <span>{t('reader.search_all')}</span>
+      </div>
+      {estado === 'buscando' && <p className="mt-2 text-footnote text-text-secondary" role="status">{t('reader.searching')}</p>}
+      {estado?.error && <Notice tone="error" compact className="mt-2">{estado.error}</Notice>}
+      {estado?.apariciones && <Resultados estado={estado} alElegir={alElegir} />}
+    </div>
+  );
+}
+
+function Resultados({ estado, alElegir }) {
+  const { t } = useI18n();
+  return (
+    <div className="mt-3">
+      <p className="mb-1.5 px-1 text-footnote text-text-secondary">
+        {estado.capitulosConElTexto
+          ? t('reader.search_found', { n: estado.capitulosConElTexto, revisados: estado.revisados })
+          : t('reader.search_none', { revisados: estado.revisados })}
+      </p>
+      {estado.apariciones.length > 0 && (
+        <InsetGroupedList divided className="max-h-72 overflow-y-auto rounded-xl">
           {estado.apariciones.map(a => (
-            <button key={a.indice} onClick={() => alElegir(a.indice)}
-                    className="w-full text-left rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors">
-              <span className="text-xs text-gray-300">{t('reader.search_chapter', { n: a.capitulo, veces: a.veces })}</span>
-              <span className="block text-[11px] text-gray-500 leading-snug line-clamp-2">{a.fragmento}</span>
-            </button>
+            <ActionCell key={a.indice} onClick={() => alElegir(a.indice)}
+                        title={t('reader.search_chapter', { n: a.capitulo, veces: a.veces })}
+                        subtitle={<span className="line-clamp-2">{a.fragmento}</span>} />
           ))}
-          {estado.masAllaDeEstos > 0 && <p className="text-[11px] text-gray-600">{t('reader.search_more', { n: estado.masAllaDeEstos })}</p>}
-        </div>
+        </InsetGroupedList>
       )}
+      {estado.masAllaDeEstos > 0 && <p className="mt-1.5 px-1 text-footnote text-text-tertiary">{t('reader.search_more', { n: estado.masAllaDeEstos })}</p>}
     </div>
   );
 }

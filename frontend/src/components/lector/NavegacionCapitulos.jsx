@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nContext';
+import { SecondaryButton } from '../ui/Buttons';
 
 function formatearTiempo(minutos) {
   if (minutos == null) return '';
@@ -14,30 +15,22 @@ export default function NavegacionCapitulos({ actual, total, ritmo, alIr }) {
   const { t } = useI18n();
 
   return (
-    <div className="mt-32 mb-16 flex justify-between items-center border-t border-current pt-8 opacity-50">
-      <button
-        onClick={() => alIr(Math.max(0, actual - 1))}
-        disabled={actual === 0}
-        className="flex items-center gap-2 min-h-[48px] px-2 -mx-2 hover:opacity-100 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
-      >
-        <ChevronLeft className="w-5 h-5"/> {t('reader.prev')}
-      </button>
-      <span className="font-mono text-sm tracking-widest flex flex-col items-center leading-tight">
+    <div className="mt-32 mb-16 flex justify-between items-center gap-3 border-t border-current/30 pt-8 font-sans">
+      <SecondaryButton className="dark" icon={ChevronLeft} onClick={() => alIr(Math.max(0, actual - 1))} disabled={actual === 0}>
+        {t('reader.prev')}
+      </SecondaryButton>
+      <span className="font-mono text-sm tracking-widest flex flex-col items-center leading-tight opacity-60">
         {actual + 1} / {total}
 
         {ritmo?.restantes > 0 && (
-          <span className="text-[10px] tracking-normal opacity-60 mt-1 font-sans not-italic">
+          <span className="text-[10px] tracking-normal opacity-80 mt-1 font-sans not-italic">
             {t('reader.time_left', { tiempo: formatearTiempo(ritmo.restantes) })}
           </span>
         )}
       </span>
-      <button
-        onClick={() => alIr(Math.min(total - 1, actual + 1))}
-        disabled={actual === total - 1}
-        className="flex items-center gap-2 min-h-[48px] px-2 -mx-2 hover:opacity-100 transition-opacity font-bold disabled:opacity-30 disabled:cursor-not-allowed"
-      >
-        {t('reader.next')} <ChevronRight className="w-5 h-5"/>
-      </button>
+      <SecondaryButton className="dark" onClick={() => alIr(Math.min(total - 1, actual + 1))} disabled={actual === total - 1}>
+        {t('reader.next')} <ChevronRight className="w-4 h-4 shrink-0" />
+      </SecondaryButton>
     </div>
   );
 }

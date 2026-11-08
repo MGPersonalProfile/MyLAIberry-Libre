@@ -1,30 +1,20 @@
 import { useState } from 'react';
-import { Search, SlidersHorizontal, X, ChevronDown } from 'lucide-react';
+import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 
 import { hayFiltro, FILTRO_VACIO } from './filtros';
 import { useI18n } from '../../i18n/I18nContext';
+import { SearchField } from '../ui/Controls';
+import { SecondaryButton } from '../ui/Buttons';
+import { Tag } from '../ui/Feedback';
 
 function Pastilla({ activa, onClick, children, titulo }) {
-  return (
-    <button
-      onClick={onClick}
-      title={titulo}
-      aria-pressed={activa}
-      className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border ${
-        activa
-          ? 'border-red-500 text-red-400 bg-red-500/10'
-          : 'border-white/10 text-gray-400 hover:border-white/30 hover:text-white'
-      }`}
-    >
-      {children}
-    </button>
-  );
+  return <Tag active={activa} onClick={onClick} title={titulo} className="whitespace-nowrap">{children}</Tag>;
 }
 
 function Minimo({ etiqueta, valor, opciones, onCambiar, formato = (n) => n.toLocaleString() }) {
   return (
     <div>
-      <p className="text-[11px] uppercase tracking-wide text-gray-500 mb-2">{etiqueta}</p>
+      <p className="text-caption uppercase tracking-wide text-text-secondary mb-2">{etiqueta}</p>
       <div className="flex gap-1.5 flex-wrap">
         {opciones.map(n => (
           <Pastilla key={n} activa={valor === n} onClick={() => onCambiar(valor === n ? 0 : n)}>
@@ -59,61 +49,42 @@ export default function BarraDeFiltros({ filtro, alCambiar, resumen, total, most
     <div className="mb-8">
 
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[14rem] max-w-md">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
-          <input
-            value={filtro.texto}
-            onChange={(e) => poner({ texto: e.target.value })}
-            placeholder={t('discover.search_placeholder')}
-            aria-label={t('discover.search_placeholder')}
-            className="w-full bg-black/40 border border-white/10 rounded-lg pl-9 pr-8 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-white/30"
-          />
-          {filtro.texto && (
-            <button
-              onClick={() => poner({ texto: '' })}
-              aria-label={t('discover.search_clear')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
+        <SearchField
+          value={filtro.texto}
+          onChange={(texto) => poner({ texto })}
+          placeholder={t('discover.search_placeholder')}
+          clearLabel={t('discover.search_clear')}
+          className="flex-1 min-w-[14rem] max-w-md"
+        />
 
         <label className="flex items-center gap-2 text-sm">
-          <span className="text-gray-500 text-xs uppercase tracking-wide">{t('discover.sort')}</span>
+          <span className="text-text-secondary text-footnote uppercase tracking-wide">{t('discover.sort')}</span>
           <select
             value={filtro.orden}
             onChange={(e) => poner({ orden: e.target.value })}
-            className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30"
+            className="bg-surface-secondary border border-border/60 rounded-md px-3 min-h-[var(--control-search-h)] text-body text-text-primary focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
           >
             {ORDENES.map(([id, texto]) => <option key={id} value={id}>{texto}</option>)}
           </select>
         </label>
 
-        <button
+        <SecondaryButton
           onClick={() => setAbierto(a => !a)}
           aria-expanded={abierto}
-          className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors border ${
-            abierto || puesto
-              ? 'border-white/30 text-white'
-              : 'border-white/10 text-gray-400 hover:border-white/30 hover:text-white'
-          }`}
+          icon={SlidersHorizontal}
+          className={abierto || puesto ? 'border-accent/60' : ''}
         >
-          <SlidersHorizontal className="w-4 h-4" />
           {t('discover.filters')}
           <ChevronDown className={`w-3.5 h-3.5 transition-transform ${abierto ? 'rotate-180' : ''}`} />
-        </button>
+        </SecondaryButton>
 
         {puesto && (
-          <button
-            onClick={() => alCambiar({ ...FILTRO_VACIO })}
-            className="px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-white transition-colors"
-          >
+          <SecondaryButton onClick={() => alCambiar({ ...FILTRO_VACIO })}>
             {t('discover.clear')}
-          </button>
+          </SecondaryButton>
         )}
 
-        <p className="text-sm text-gray-500 ml-auto whitespace-nowrap">
+        <p className="text-small text-text-secondary ml-auto whitespace-nowrap">
           {mostrados === total
             ? t('discover.count', { n: total })
             : t('discover.count_filtered', { n: mostrados, total })}
@@ -121,10 +92,10 @@ export default function BarraDeFiltros({ filtro, alCambiar, resumen, total, most
       </div>
 
       {abierto && (
-        <div className="mt-4 p-5 rounded-xl bg-white/[0.03] border border-white/10 space-y-5">
+        <div className="mt-4 p-5 rounded-lg bg-surface border border-border/70 space-y-5">
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <div>
-              <p className="text-[11px] uppercase tracking-wide text-gray-500 mb-2">{t('discover.source')}</p>
+              <p className="text-caption uppercase tracking-wide text-text-secondary mb-2">{t('discover.source')}</p>
               <div className="flex gap-1.5 flex-wrap">
                 {resumen.fuentes.map(([nombre, cuantas]) => (
                   <Pastilla
@@ -139,7 +110,7 @@ export default function BarraDeFiltros({ filtro, alCambiar, resumen, total, most
             </div>
 
             <div>
-              <p className="text-[11px] uppercase tracking-wide text-gray-500 mb-2">{t('discover.state')}</p>
+              <p className="text-caption uppercase tracking-wide text-text-secondary mb-2">{t('discover.state')}</p>
               <div className="flex gap-1.5 flex-wrap">
                 {[['todas', t('discover.state_all')],
                   ['completas', t('discover.state_done')],
@@ -151,12 +122,12 @@ export default function BarraDeFiltros({ filtro, alCambiar, resumen, total, most
               </div>
 
               {filtro.estado !== 'todas' && (
-                <p className="text-[11px] text-gray-600 mt-2 leading-snug">{t('discover.state_note')}</p>
+                <p className="text-caption text-text-tertiary mt-2 leading-snug">{t('discover.state_note')}</p>
               )}
             </div>
 
             <div>
-              <p className="text-[11px] uppercase tracking-wide text-gray-500 mb-2">{t('discover.availability')}</p>
+              <p className="text-caption uppercase tracking-wide text-text-secondary mb-2">{t('discover.availability')}</p>
               <div className="flex gap-1.5 flex-wrap">
                 {[['todas', t('discover.state_all')], ['leibles', t('discover.readable')]].map(([id, texto]) => (
                   <Pastilla key={id} activa={filtro.disponible === id} onClick={() => poner({ disponible: id })}>
@@ -164,7 +135,7 @@ export default function BarraDeFiltros({ filtro, alCambiar, resumen, total, most
                   </Pastilla>
                 ))}
               </div>
-              <p className="text-[11px] text-gray-600 mt-2 leading-snug">{t('discover.readable_note')}</p>
+              <p className="text-caption text-text-tertiary mt-2 leading-snug">{t('discover.readable_note')}</p>
             </div>
 
             <Minimo
@@ -195,10 +166,10 @@ export default function BarraDeFiltros({ filtro, alCambiar, resumen, total, most
 
           {resumen.etiquetas.length > 0 && (
             <div>
-              <p className="text-[11px] uppercase tracking-wide text-gray-500 mb-2">
+              <p className="text-caption uppercase tracking-wide text-text-secondary mb-2">
                 {t('discover.tags')}
                 {filtro.etiquetas.length > 1 && (
-                  <span className="ml-2 normal-case tracking-normal text-gray-600">{t('discover.tags_all')}</span>
+                  <span className="ml-2 normal-case tracking-normal text-text-tertiary">{t('discover.tags_all')}</span>
                 )}
               </p>
               <div className="flex gap-1.5 flex-wrap max-h-32 overflow-y-auto">

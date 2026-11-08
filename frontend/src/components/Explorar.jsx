@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Compass, X } from 'lucide-react';
-import { PAGINA, TITULO_PAGINA, SUBTITULO_PAGINA, REJILLA } from './pagina';
+import { PAGINA, SUBTITULO_PAGINA, REJILLA } from './pagina';
+import { PageHeader, SectionHeader } from './ui/Layout';
+import { SecondaryButton } from './ui/Buttons';
+import { EmptyState, Tag } from './ui/Feedback';
 import Baldosa from './biblioteca/Baldosa';
 import { useI18n } from '../i18n/I18nContext';
 import useEsMovil from '../hooks/useEsMovil';
@@ -32,18 +35,10 @@ function Chips({ items, activo, onElegir }) {
       {items.map(({ nombre, n, clave = nombre }) => {
         const puesto = activo === clave;
         return (
-          <button
-            key={clave}
-            onClick={() => onElegir(puesto ? null : clave)}
-            className={`px-3 py-1.5 rounded-full text-sm border transition-colors flex items-center gap-2 ${
-              puesto
-                ? 'border-red-500 text-red-400 bg-red-500/10'
-                : 'border-white/15 text-gray-300 hover:border-gray-400 hover:text-white'
-            }`}
-          >
+          <Tag key={clave} active={puesto} onClick={() => onElegir(puesto ? null : clave)} className="!px-3 !py-1.5 !text-small">
             <span className="truncate max-w-[16rem]">{nombre}</span>
-            <span className={puesto ? 'text-red-500/80 text-xs' : 'text-gray-600 text-xs'}>{n}</span>
-          </button>
+            <span className="opacity-60 text-caption">{n}</span>
+          </Tag>
         );
       })}
     </div>
@@ -76,10 +71,12 @@ export default function Explorar({ library = [], onDetalle, consulta = '', alBus
 
   return (
     <main className={PAGINA}>
-      <h2 className={TITULO_PAGINA}>{esMovil ? t('mobile.search') : t('nav.explore')}</h2>
-      {esMovil
-        ? <CampoDeBusqueda consulta={consulta} alBuscar={alBuscar} />
-        : <p className={SUBTITULO_PAGINA}>{t('explore.subtitle')}</p>}
+      <PageHeader
+        title={esMovil ? t('mobile.search') : t('nav.explore')}
+        subtitle={esMovil ? undefined : t('explore.subtitle')}
+        className={esMovil ? '!mb-3' : '!mb-6'}
+      />
+      {esMovil && <CampoDeBusqueda consulta={consulta} alBuscar={alBuscar} />}
       {buscando ? (
         <>
           <p className={SUBTITULO_PAGINA}>{t('explore.results', { n: resultados.length })}</p>
@@ -90,35 +87,28 @@ export default function Explorar({ library = [], onDetalle, consulta = '', alBus
       ) : (<>
 
       <section className="mb-8">
-        <h3 className="text-sm uppercase tracking-widest text-gray-500 mb-3">
-          {t('explore.by_fandom')} <span className="text-gray-700">· {fandoms.length}</span>
-        </h3>
+        <SectionHeader title={`${t('explore.by_fandom')} · ${fandoms.length}`} />
         {fandoms.length > 0
           ? <Chips items={fandoms} activo={fandom} onElegir={setFandom} />
-          : <p className="text-sm text-gray-600">{t('explore.none_yet')}</p>}
+          : <p className="text-small text-text-tertiary px-1">{t('explore.none_yet')}</p>}
       </section>
 
       <section className="mb-10">
-        <h3 className="text-sm uppercase tracking-widest text-gray-500 mb-3">
-          {t('explore.by_genre')} <span className="text-gray-700">· {generos.length}</span>
-        </h3>
+        <SectionHeader title={`${t('explore.by_genre')} · ${generos.length}`} />
         {generos.length > 0
           ? <Chips items={generos} activo={genero} onElegir={setGenero} />
-          : <p className="text-sm text-gray-600">{t('explore.none_yet')}</p>}
+          : <p className="text-small text-text-tertiary px-1">{t('explore.none_yet')}</p>}
       </section>
 
       {hayFiltro ? (
         <>
-          <div className="flex items-baseline gap-4 mb-6 pt-6 border-t border-white/10">
-            <p className="text-gray-400">
+          <div className="flex items-baseline gap-4 mb-6 pt-6 border-t border-separator">
+            <p className="text-text-secondary">
               {t('explore.results', { n: filtradas.length })}
             </p>
-            <button
-              onClick={() => { setFandom(null); setGenero(null); }}
-              className="text-sm text-gray-500 hover:text-white transition-colors flex items-center gap-1"
-            >
-              <X className="w-3.5 h-3.5" /> {t('explore.clear')}
-            </button>
+            <SecondaryButton size="sm" icon={X} onClick={() => { setFandom(null); setGenero(null); }}>
+              {t('explore.clear')}
+            </SecondaryButton>
           </div>
 
           <div className={REJILLA}>
@@ -126,9 +116,8 @@ export default function Explorar({ library = [], onDetalle, consulta = '', alBus
           </div>
         </>
       ) : (
-        <div className="flex flex-col items-center justify-center py-20 text-gray-500 border-t border-white/10">
-          <Compass className="w-14 h-14 mb-4 opacity-30" />
-          <p className="text-lg font-medium">{t('explore.pick')}</p>
+        <div className="border-t border-separator">
+          <EmptyState icon={Compass} title={t('explore.pick')} />
         </div>
       )}
       </>)}

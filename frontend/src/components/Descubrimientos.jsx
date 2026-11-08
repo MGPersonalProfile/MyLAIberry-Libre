@@ -10,8 +10,11 @@ import { porDecidir } from './descubrimientos/plazo';
 import { aplicarFiltro, resumenDe, sePuedeLeer, FILTRO_VACIO } from './descubrimientos/filtros';
 import { usaPortadaDelSitio } from '../portada';
 import { useI18n } from '../i18n/I18nContext';
-import { PAGINA, TITULO_PAGINA, SUBTITULO_PAGINA, REJILLA } from './pagina';
+import { PAGINA, REJILLA } from './pagina';
 import { pulsable } from '../pulsable';
+import { PageHeader } from './ui/Layout';
+import { IconButton, SecondaryButton } from './ui/Buttons';
+import { EmptyState } from './ui/Feedback';
 
 export default function Descubrimientos({ items = [], onAbrir, onDetalle, onDescartar, onGuardar, alCambiar }) {
   const { t } = useI18n();
@@ -25,21 +28,16 @@ export default function Descubrimientos({ items = [], onAbrir, onDetalle, onDesc
   if (items.length === 0) {
     return (
       <main className={PAGINA}>
-        <h2 className={TITULO_PAGINA}>{t('carousel.discoveries')}</h2>
+        <PageHeader title={t('carousel.discoveries')} />
         <Preferencias alCambiar={alCambiar} />
-        <div className="flex flex-col items-center justify-center py-32 text-gray-500">
-          <Compass className="w-16 h-16 mb-4 opacity-30" />
-          <p className="text-xl font-medium">{t('discover.empty')}</p>
-          <p className="text-sm mt-2 max-w-md text-center">{t('discover.empty_hint')}</p>
-        </div>
+        <EmptyState icon={Compass} title={t('discover.empty')} description={t('discover.empty_hint')} className="py-24" />
       </main>
     );
   }
 
   return (
     <main className={PAGINA}>
-      <h2 className={TITULO_PAGINA}>{t('carousel.discoveries')}</h2>
-      <p className={SUBTITULO_PAGINA}>{t('discover.subtitle')}</p>
+      <PageHeader title={t('carousel.discoveries')} subtitle={t('discover.subtitle')} />
       <Preferencias alCambiar={alCambiar} />
       <PorDecidir items={items} onDetalle={onDetalle} onGuardar={onGuardar} onDescartar={onDescartar} />
 
@@ -52,16 +50,11 @@ export default function Descubrimientos({ items = [], onAbrir, onDetalle, onDesc
       />
 
       {visibles.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-gray-500">
-          <Compass className="w-12 h-12 mb-4 opacity-30" />
-          <p className="text-lg font-medium">{t('discover.no_matches')}</p>
-          <button
-            onClick={() => setFiltro({ ...FILTRO_VACIO })}
-            className="mt-4 px-4 py-2 rounded-lg text-sm bg-white/10 hover:bg-white/20 text-white transition-colors"
-          >
-            {t('discover.clear')}
-          </button>
-        </div>
+        <EmptyState
+          icon={Compass}
+          title={t('discover.no_matches')}
+          action={<SecondaryButton onClick={() => setFiltro({ ...FILTRO_VACIO })}>{t('discover.clear')}</SecondaryButton>}
+        />
       ) : (
         <div className={REJILLA}>
           {visibles.map(item => (
@@ -96,32 +89,29 @@ export default function Descubrimientos({ items = [], onAbrir, onDetalle, onDesc
                 )}
 
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity hidden md:flex items-center justify-center gap-2 backdrop-blur-sm">
-                  <button
+                  <IconButton
+                    icon={Play}
                     title={sePuedeLeer(item) ? t('card.read') : t('discover.waiting')}
                     aria-label={t('card.read_aria', { title: item.title })}
                     onClick={(e) => { e.stopPropagation(); onAbrir && onAbrir(item); }}
-                    className="bg-white text-black rounded-full p-3 hover:bg-gray-200 transition-colors hover:scale-110"
-                  >
-                    <Play className="w-5 h-5 fill-black" />
-                  </button>
+                    className="!bg-white !text-black !rounded-full !p-3 [&_svg]:fill-black hover:!bg-gray-200 hover:scale-110"
+                  />
 
-                  <button
+                  <IconButton
+                    icon={Plus}
                     title={t('discover.save')}
                     aria-label={t('discover.save_aria', { title: item.title })}
                     onClick={(e) => { e.stopPropagation(); onGuardar && onGuardar(item); }}
-                    className="border-2 border-gray-400 text-gray-200 rounded-full p-2.5 hover:border-white hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    <Plus className="w-5 h-5" />
-                  </button>
+                    className="!text-white border-2 border-gray-400 !rounded-full hover:border-white hover:!bg-white/10"
+                  />
 
-                  <button
+                  <IconButton
+                    icon={X}
                     title={t('detail.discard_title')}
                     aria-label={t('discover.discard_aria', { title: item.title })}
                     onClick={(e) => { e.stopPropagation(); onDescartar && onDescartar(item); }}
-                    className="border-2 border-gray-400 text-gray-300 rounded-full p-2.5 hover:border-white hover:text-white transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+                    className="!text-white border-2 border-gray-400 !rounded-full hover:border-white hover:!bg-white/10"
+                  />
                 </div>
               </div>
 

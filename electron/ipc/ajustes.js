@@ -185,6 +185,18 @@ function registrar() {
     try { return { status: 'ok', copias: await require('../db.js').listarCopias() }; }
     catch (e) { return { status: 'error', message: e.message }; }
   });
+  ipcMain.handle('listar-recuperables', async () => {
+    try { return { status: 'ok', recuperables: await require('../db.js').listarRecuperables() }; }
+    catch (e) { return { status: 'error', message: e.message }; }
+  });
+  ipcMain.handle('recuperar-obra', async (_e, id) => {
+    try { return { status: 'ok', ...await require('../db.js').recuperarObra(id) }; }
+    catch (e) { return { status: 'error', message: e.message }; }
+  });
+  ipcMain.handle('recuperar-trabajos', async (_e, seleccion) => {
+    try { return { status: 'ok', ...await require('../db.js').recuperarTrabajos(seleccion) }; }
+    catch (e) { return { status: 'error', message: e.message }; }
+  });
   ipcMain.handle('restaurar-copia', async (_e, archivo) => {
     try { return { status: 'ok', ...await require('../db.js').restaurarCopia(archivo) }; }
     catch (e) { return { status: 'error', message: e.message }; }

@@ -6,7 +6,8 @@ const {
   getFanfics, getFanficById, updateProgress, getChapterContent, medirPalabras,
   saveScrollPosition, getScrollPosition, anotarLecturaMedida, getLecturas,
   getSettings, glosarioParaTraducir, getRecap, setRecap, getConfigIA,
-  getTitulosTraducidos, setTitulosTraducidos, listarSubrayados, operarSubrayado
+  getTitulosTraducidos, setTitulosTraducidos, listarSubrayados, operarSubrayado,
+  leerEleccionIdioma, aplicarEleccionIdioma, resolverEleccionIdioma
 } = require('../db.js');
 const { resumirCapitulo, aTextoPlano } = require('../recap.js');
 const { palabrasPorMinuto, minutosRestantes, MEDIDAS_MINIMAS } = require('../ritmo.js');
@@ -213,6 +214,9 @@ function registrar() {
     }
   });
 
+  ipcMain.handle('leer-eleccion-idioma', async (_e, id) => leerEleccionIdioma(id));
+  ipcMain.handle('aplicar-eleccion-idioma', async (_e, op) => aplicarEleccionIdioma(op));
+  ipcMain.handle('resolver-eleccion-idioma', async (_e, op) => resolverEleccionIdioma(op));
 }
 
 module.exports = { registrar, vigente };

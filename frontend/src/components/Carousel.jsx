@@ -1,4 +1,6 @@
 import { Play, Plus, ChevronDown } from 'lucide-react';
+import { IconButton } from './ui/Buttons';
+import { ProgressIndicator } from './ui/Feedback';
 import Cover from './Cover';
 import { useI18n } from '../i18n/I18nContext';
 import { usaPortadaDelSitio } from '../portada';
@@ -48,43 +50,39 @@ export default function Carousel({ title, items, onSelect, onDetail, onDownload 
             )}
 
             <div className={`absolute inset-0 bg-black/60 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex-col justify-center items-center gap-3 backdrop-blur-sm hidden md:flex`}>
-              <button
+              <IconButton
+                icon={Play}
                 title={t('card.read')}
                 aria-label={t('card.read_aria', { title: item.title })}
-                className="bg-white text-black rounded-full p-3 hover:bg-gray-200 transition-colors transform hover:scale-110"
+                className="!bg-white !text-black !rounded-full !p-3 [&_svg]:fill-black hover:!bg-gray-200 transform hover:scale-110"
                 onClick={(e) => { e.stopPropagation(); onSelect && onSelect(item); }}
-              >
-                <Play className="w-6 h-6 fill-black" />
-              </button>
+              />
               <div className="flex gap-3">
 
-                <button
+                <IconButton
+                  icon={Plus}
                   title={pendientes(item) > 0
                     ? t('card.download_pending', { n: pendientes(item) })
                     : t('card.download_done')}
                   aria-label={t('card.download_aria', { title: item.title })}
                   disabled={pendientes(item) === 0}
-                  className="border-2 border-gray-400 rounded-full p-2 hover:border-white hover:text-white text-gray-300 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="!text-gray-300 border-2 border-gray-400 !rounded-full hover:border-white hover:!text-white hover:!bg-white/10"
                   onClick={(e) => { e.stopPropagation(); onDownload && onDownload(item); }}
-                >
-                  <Plus className="w-5 h-5" />
-                </button>
-                <button
+                />
+                <IconButton
+                  icon={ChevronDown}
                   title={t('card.details')}
                   aria-label={t('card.details_aria', { title: item.title })}
-                  className="border-2 border-gray-400 rounded-full p-2 hover:border-white hover:text-white text-gray-300 transition-colors"
+                  className="!text-gray-300 border-2 border-gray-400 !rounded-full hover:border-white hover:!text-white hover:!bg-white/10"
                   onClick={(e) => { e.stopPropagation(); onDetail && onDetail(item); }}
-                >
-                  <ChevronDown className="w-5 h-5" />
-                </button>
+                />
               </div>
               {item.currentChapter > 0 && item.totalChapters > 0 && (
-                 <div className="w-3/4 mt-4 h-1 bg-gray-600 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-red-600"
-                      style={{ width: `${((item.currentChapter + 1) / item.totalChapters) * 100}%` }}
-                    ></div>
-                 </div>
+                <ProgressIndicator
+                  thin
+                  value={((item.currentChapter + 1) / item.totalChapters) * 100}
+                  className="w-3/4 mt-4"
+                />
               )}
             </div>
           </div>

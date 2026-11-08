@@ -5,6 +5,64 @@ import { useI18n } from '../../i18n/I18nContext';
 import AjustesDeVoz from '../AjustesDeVoz';
 import BajarAudio from './BajarAudio';
 import ObraEnteraEnMp3 from './ObraEnteraEnMp3';
+import { IconButton } from '../ui/Buttons';
+import { SegmentedControl } from '../ui/Controls';
+
+const TITULO = 'text-xs text-text-secondary font-bold uppercase tracking-wider mb-3';
+
+function Seccion({ titulo, children }) {
+  return (
+    <div>
+      <p className={TITULO}>{titulo}</p>
+      {children}
+    </div>
+  );
+}
+
+function Tamano({ cuerpo, alCambiarCuerpo }) {
+  const { t } = useI18n();
+  return (
+    <div className="flex items-center justify-between rounded-lg bg-surface-secondary p-1 border border-border/50">
+      <IconButton icon={Type} size="sm" label={t('reader.size_smaller')} onClick={() => alCambiarCuerpo(-2)} />
+      <span className="font-mono text-lg tabular-nums">{cuerpo}px</span>
+      <IconButton icon={Type} label={t('reader.size_larger')} onClick={() => alCambiarCuerpo(2)} />
+    </div>
+  );
+}
+
+function TemaYTipografia({ tema, alCambiarTema, fuente, alCambiarFuente }) {
+  const { t } = useI18n();
+  return (
+    <>
+      <Seccion titulo={t('reader.theme')}>
+        <SegmentedControl stretch ariaLabel={t('reader.theme')} value={tema} onChange={alCambiarTema} options={[
+          { id: 'dark', etiqueta: t('reader.theme_dark'), icono: Moon },
+          { id: 'sepia', etiqueta: t('reader.theme_sepia'), icono: BookOpen },
+          { id: 'light', etiqueta: t('reader.theme_light'), icono: Sun }
+        ]} />
+      </Seccion>
+      <Seccion titulo={t('reader.typography')}>
+        <SegmentedControl stretch ariaLabel={t('reader.typography')} value={fuente} onChange={alCambiarFuente} options={[
+          { id: 'serif', etiqueta: t('reader.font_serif') },
+          { id: 'sans', etiqueta: t('reader.font_sans') }
+        ]} />
+      </Seccion>
+    </>
+  );
+}
+
+function VelocidadAutomatica({ valor, alCambiar }) {
+  const { t } = useI18n();
+  return (
+    <Seccion titulo={t('reader.auto_speed')}>
+      <SegmentedControl stretch ariaLabel={t('reader.auto_speed')} value={Number(valor)} onChange={alCambiar} options={[
+        { id: 20, etiqueta: t('reader.auto_slow') },
+        { id: 30, etiqueta: t('reader.auto_normal') },
+        { id: 45, etiqueta: t('reader.auto_fast') }
+      ]} />
+    </Seccion>
+  );
+}
 
 export default function AjustesDelLector({
   tema, alCambiarTema,
@@ -23,51 +81,20 @@ export default function AjustesDelLector({
       initial={{ opacity: 0, scale: 0.95, y: 10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: 10 }}
-      className={enHoja ? 'flex flex-col gap-6' : 'absolute right-0 top-12 w-64 bg-[#1a1a1a] border border-white/10 rounded-xl p-4 shadow-2xl flex flex-col gap-6'}
+      className={enHoja ? 'dark flex flex-col gap-6 text-text-primary' : 'dark absolute right-0 top-12 w-80 bg-surface text-text-primary border border-border rounded-xl p-4 shadow-2xl flex flex-col gap-6'}
     >
-
-      <div>
-        <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-3">{t('reader.theme')}</p>
-        <div className="flex gap-2">
-          <button onClick={() => alCambiarTema('dark')} className={`flex-1 py-2 max-md:min-h-11 rounded flex items-center justify-center gap-2 border ${tema === 'dark' ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-white/10 text-gray-300 hover:bg-white/5'}`}><Moon className="w-4 h-4"/> {t('reader.theme_dark')}</button>
-          <button onClick={() => alCambiarTema('sepia')} className={`flex-1 py-2 max-md:min-h-11 rounded flex items-center justify-center gap-2 border ${tema === 'sepia' ? 'border-orange-400 text-orange-400 bg-orange-400/10' : 'border-white/10 text-gray-300 hover:bg-white/5'}`}><BookOpen className="w-4 h-4"/> {t('reader.theme_sepia')}</button>
-          <button onClick={() => alCambiarTema('light')} className={`flex-1 py-2 max-md:min-h-11 rounded flex items-center justify-center gap-2 border ${tema === 'light' ? 'border-blue-400 text-blue-400 bg-blue-400/10' : 'border-white/10 text-gray-300 hover:bg-white/5'}`}><Sun className="w-4 h-4"/> {t('reader.theme_light')}</button>
-        </div>
-      </div>
-
-      <div>
-        <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-3">{t('reader.typography')}</p>
-        <div className="flex gap-2">
-          <button onClick={() => alCambiarFuente('serif')} className={`flex-1 py-2 max-md:min-h-11 rounded font-serif text-lg border ${fuente === 'serif' ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-white/10 text-gray-300 hover:bg-white/5'}`}>{t('reader.font_serif')}</button>
-          <button onClick={() => alCambiarFuente('sans')} className={`flex-1 py-2 max-md:min-h-11 rounded font-sans text-lg border ${fuente === 'sans' ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-white/10 text-gray-300 hover:bg-white/5'}`}>{t('reader.font_sans')}</button>
-        </div>
-      </div>
-
-      <div>
-        <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-3">{t('reader.size')}</p>
-        <div className="flex items-center justify-between bg-black/30 rounded-lg p-1 border border-white/5">
-          <button onClick={() => alCambiarCuerpo(-2)} className="p-2 max-md:w-11 max-md:h-11 max-md:grid max-md:place-items-center hover:text-red-500 transition-colors"><Type className="w-4 h-4" /></button>
-          <span className="font-mono text-lg">{cuerpo}px</span>
-          <button onClick={() => alCambiarCuerpo(2)} className="p-2 max-md:w-11 max-md:h-11 max-md:grid max-md:place-items-center hover:text-red-500 transition-colors"><Type className="w-6 h-6" /></button>
-        </div>
-      </div>
-
+      <TemaYTipografia tema={tema} alCambiarTema={alCambiarTema} fuente={fuente} alCambiarFuente={alCambiarFuente} />
+      <Seccion titulo={t('reader.size')}>
+        <Tamano cuerpo={cuerpo} alCambiarCuerpo={alCambiarCuerpo} />
+      </Seccion>
       {hayVoz && <AjustesDeVoz voces={vocesDelIdioma} ajustes={ajustesVoz} alCambiar={alCambiarVoz} />}
       {audio && (
-        <div>
+        <div className="empty:hidden">
           <BajarAudio key={`${audio.obraId}:${audio.capitulo}:${audio.idioma || ''}`} {...audio} />
           <ObraEnteraEnMp3 key={`${audio.obraId}:${audio.idioma || ''}`} obraId={audio.obraId} idioma={audio.idioma} />
         </div>
       )}
-      {enHoja && <label className="text-xs text-gray-400 font-bold uppercase tracking-wider flex items-center justify-between gap-3">
-        {t('reader.auto_speed')}
-        <select value={autoVelocidad} onChange={e => alCambiarAutoVelocidad(Number(e.target.value))}
-          className="min-h-11 rounded-lg bg-[#303034] text-white px-3 text-sm normal-case">
-          <option value="20">{t('reader.auto_slow')}</option>
-          <option value="30">{t('reader.auto_normal')}</option>
-          <option value="45">{t('reader.auto_fast')}</option>
-        </select>
-      </label>}
+      {enHoja && <VelocidadAutomatica valor={autoVelocidad} alCambiar={alCambiarAutoVelocidad} />}
     </motion.div>
   );
 }

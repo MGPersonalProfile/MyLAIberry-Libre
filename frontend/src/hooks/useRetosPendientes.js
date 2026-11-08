@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-const ABIERTOS = ['esperando-persona', 'comprobando'];
+const ABIERTOS = ['esperando-persona', 'comprobando', 'no-resuelto'];
 
 export default function useRetosPendientes() {
   const [retos, setRetos] = useState([]);
@@ -8,8 +8,14 @@ export default function useRetosPendientes() {
 
   useEffect(() => {
     let vivo = true;
-    window.api?.asistenteRetosPendientes?.().then(lista => { if (vivo && Array.isArray(lista)) setRetos(lista.filter(r => ABIERTOS.includes(r.estado))); }).catch(() => {});
+    const avisados = new Set();
+    window.api?.asistenteRetosPendientes?.().then(lista => {
+      if (!vivo || !Array.isArray(lista)) return;
+      const nuevos = lista.filter(r => !avisados.has(r.id) && ABIERTOS.includes(r.estado));
+      setRetos(previos => [...previos, ...nuevos]);
+    }).catch(() => {});
     const quitar = window.api?.onAsistenteRetoPendiente?.(dato => {
+      avisados.add(dato.id);
       setRetos(previos => [...previos.filter(r => r.id !== dato.id), dato].filter(r => ABIERTOS.includes(r.estado)));
       if (!ABIERTOS.includes(dato.estado)) setUltimo(dato);
     });

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useI18n } from '../../i18n/I18nContext';
+import { DestructiveButton, SecondaryButton } from '../ui/Buttons';
+import { Notice } from '../ui/Feedback';
 
 const base = () => window.__MYLAIBERRY_BASE__ || window.location.pathname.split('/app/')[0];
 async function pedir(accion, dato) {
@@ -72,11 +74,11 @@ export default function AvisosPush() {
 
   return <div className="space-y-2 border-t border-border pt-3">
     <p className="text-footnote text-text-secondary">{t('settings.push_desc')}</p>
-    {estadoVisible === 'incompatible' && <p className="text-footnote text-text-secondary">{t('settings.push_https')}</p>}
-    {estadoVisible === 'denegado' && <p className="text-footnote text-text-secondary">{t('settings.push_denied')}</p>}
-    {estadoVisible === 'activa' && <p className="text-footnote text-text-primary">{t('settings.push_active')}</p>}
-    {error && <p role="alert" className="text-footnote text-accent">{error}</p>}
-    {estadoVisible === 'activa' && <button type="button" onClick={desactivar} className="text-footnote text-accent underline py-2">{t('settings.push_disable')}</button>}
-    {['inactiva', 'denegado'].includes(estadoVisible) && <button type="button" onClick={activar} disabled={!publicKey} className="text-footnote text-accent underline py-2 disabled:opacity-40">{t('settings.push_enable')}</button>}
+    {estadoVisible === 'incompatible' && <Notice compact>{t('settings.push_https')}</Notice>}
+    {estadoVisible === 'denegado' && <Notice tone="warning" compact>{t('settings.push_denied')}</Notice>}
+    {estadoVisible === 'activa' && <Notice tone="success" compact>{t('settings.push_active')}</Notice>}
+    {error && <Notice tone="error" compact>{error}</Notice>}
+    {estadoVisible === 'activa' && <DestructiveButton size="sm" onClick={desactivar}>{t('settings.push_disable')}</DestructiveButton>}
+    {['inactiva', 'denegado'].includes(estadoVisible) && <SecondaryButton size="sm" onClick={activar} disabled={!publicKey}>{t('settings.push_enable')}</SecondaryButton>}
   </div>;
 }

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-:root {
+:root,
+.dark {
 
   --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   --font-reading-serif: "Merriweather", "Bookerly", Georgia, "Times New Roman", serif;
@@ -90,6 +91,10 @@
   --container-medium: 960px;
   --container-wide: 1440px;
   --page-px: 32px;
+}
+
+.dark {
+  font-family: var(--font-ui);
 }
 
 :root[data-theme="light"],

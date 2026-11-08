@@ -3,6 +3,9 @@ import { ArrowLeft, Settings, List, Loader2, Languages, Play, Pause, MessageCirc
 
 import AjustesDelLector from './AjustesDelLector';
 import { useI18n } from '../../i18n/I18nContext';
+import { IconButton } from '../ui/Buttons';
+
+const CLASE_MANDO = '!rounded-full hover:!bg-white/10 backdrop-blur-md !text-white';
 
 export default function MandosDelLector({
   titulo, tituloCapitulo, alCerrar,
@@ -20,12 +23,12 @@ export default function MandosDelLector({
       exit={{ opacity: 0, y: -50 }}
       className="fixed top-8 left-0 right-0 p-4 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent z-[205]"
     >
-      <button
+      <IconButton
+        icon={ArrowLeft}
+        label={t('common.close')}
         onClick={alCerrar}
-        className="p-2 rounded-full hover:bg-white/10 transition-colors backdrop-blur-md text-white"
-      >
-        <ArrowLeft className="w-6 h-6" />
-      </button>
+        className={CLASE_MANDO}
+      />
 
       <div className="flex items-center gap-4 text-white backdrop-blur-md bg-black/30 px-4 py-2 rounded-full shadow-lg">
         <span className="font-bold text-sm tracking-widest uppercase opacity-90 truncate max-w-xs">{titulo}</span>
@@ -54,43 +57,37 @@ export default function MandosDelLector({
         </button>
 
         {hayVoz && (
-          <button
+          <IconButton
+            icon={vozActiva ? Pause : Play}
+            label={vozActiva ? t('reader.voice_stop') : t('reader.voice_play')}
             onClick={alAlternarVoz}
-            title={vozActiva ? t('reader.voice_stop') : t('reader.voice_play')}
-            aria-label={vozActiva ? t('reader.voice_stop') : t('reader.voice_play')}
-            className={`p-2 rounded-full transition-colors backdrop-blur-md ${vozActiva ? 'bg-white/20' : 'hover:bg-white/10'}`}
-          >
-            {vozActiva ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-          </button>
+            className={`${CLASE_MANDO} ${vozActiva ? '!bg-white/20' : ''}`}
+          />
         )}
 
-        <button
+        <IconButton
+          icon={List}
+          label={t('reader.toc_title')}
           onClick={alAlternarIndice}
-          title={t('reader.toc_title')}
-          aria-label={t('reader.toc_title')}
-          className={`p-2 rounded-full transition-colors backdrop-blur-md ${indiceAbierto ? 'bg-white/20' : 'hover:bg-white/10'}`}
-        >
-          <List className="w-5 h-5" />
-        </button>
+          className={`${CLASE_MANDO} ${indiceAbierto ? '!bg-white/20' : ''}`}
+        />
 
         {!!window.api?.asistenteChat && (
-          <button
+          <IconButton
+            icon={MessageCircle}
+            label={t('assistant.ask')}
             onClick={alAlternarAsistente}
-            title={t('assistant.ask')}
-            aria-label={t('assistant.ask')}
-            className={`p-2 rounded-full transition-colors backdrop-blur-md ${asistenteAbierto ? 'bg-white/20' : 'hover:bg-white/10'}`}
-          >
-            <MessageCircle className="w-5 h-5" />
-          </button>
+            className={`${CLASE_MANDO} ${asistenteAbierto ? '!bg-white/20' : ''}`}
+          />
         )}
 
         <div className="relative">
-          <button
+          <IconButton
+            icon={Settings}
+            label={t('reader.reading_settings')}
             onClick={alAlternarAjustes}
-            className={`p-2 rounded-full transition-colors backdrop-blur-md ${ajustesAbiertos ? 'bg-white/20' : 'hover:bg-white/10'}`}
-          >
-            <Settings className="w-5 h-5" />
-          </button>
+            className={`${CLASE_MANDO} ${ajustesAbiertos ? '!bg-white/20' : ''}`}
+          />
 
           <AnimatePresence>
             {ajustesAbiertos && (

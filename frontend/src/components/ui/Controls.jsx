@@ -44,13 +44,14 @@ export function SegmentedControl({
   onChange,
   ariaLabel,
   showCheck = false,
+  stretch = false,
   className = ''
 }) {
   return (
     <div
       role="group"
       aria-label={ariaLabel}
-      className={`inline-flex flex-wrap items-center gap-[3px] rounded-md bg-surface-secondary p-[3px] min-h-[var(--control-segmented-h)] border border-border/50 ${className}`}
+      className={`${stretch ? 'flex w-full' : 'inline-flex flex-wrap'} items-center gap-[3px] rounded-md bg-surface-secondary p-[3px] min-h-[var(--control-segmented-h)] border border-border/50 ${className}`}
     >
       {options.map((opt, idx) => {
         const active = value === opt.id;
@@ -63,7 +64,7 @@ export function SegmentedControl({
             title={opt.title}
             onClick={() => onChange?.(opt.id)}
             onKeyDown={(e) => moverSegmento(e, idx, options, onChange)}
-            className={`inline-flex items-center justify-center gap-1.5 rounded-[7px] px-3 py-1.5 min-h-[calc(var(--control-segmented-h)-6px)] max-md:min-h-[var(--control-touch-min)] text-small transition-all duration-150 focus-visible:outline-2 focus-visible:outline-accent ${
+            className={`${stretch ? 'flex-1 min-w-0' : ''} inline-flex items-center justify-center gap-1.5 rounded-[7px] px-3 py-1.5 min-h-[calc(var(--control-segmented-h)-6px)] max-md:min-h-[var(--control-touch-min)] text-small transition-all duration-150 focus-visible:outline-2 focus-visible:outline-accent ${
               active
                 ? 'bg-surface text-text-primary font-semibold shadow-xs border border-border/60'
                 : 'text-text-secondary hover:text-text-primary font-normal'

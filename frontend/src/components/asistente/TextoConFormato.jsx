@@ -35,7 +35,14 @@ const ITEM = /^\s*(?:[-*•]|\d+[.)])\s+/;
 
 function bloques(texto) {
   const salida = [];
+  let codigo = null;
   for (const linea of String(texto || '').split('\n')) {
+
+    if (linea.trim().startsWith('```')) {
+      if (codigo) { salida.push({ tipo: 'codigo', texto: codigo.join('\n') }); codigo = null; } else codigo = [];
+      continue;
+    }
+    if (codigo) { codigo.push(linea); continue; }
     const esItem = ITEM.test(linea);
     const ultimo = salida[salida.length - 1];
     if (!linea.trim()) { salida.push({ tipo: 'hueco' }); continue; }
@@ -45,6 +52,7 @@ function bloques(texto) {
     else if (ultimo?.tipo === 'parrafo') ultimo.lineas.push(limpia);
     else salida.push({ tipo: 'parrafo', lineas: [limpia] });
   }
+  if (codigo) salida.push({ tipo: 'codigo', texto: codigo.join('\n') });
   return salida.filter(b => b.tipo !== 'hueco');
 }
 
@@ -52,6 +60,9 @@ export default function TextoConFormato({ texto }) {
   return (
     <div className="space-y-2 leading-relaxed text-sm break-words">
       {bloques(texto).map((b, i) => {
+        if (b.tipo === 'codigo') {
+          return <pre key={i} className="rounded-md bg-background border border-border/60 p-3 overflow-x-auto font-mono text-small text-text-primary">{b.texto}</pre>;
+        }
         if (b.tipo === 'parrafo') {
           return <p key={i} className="whitespace-pre-wrap"><EnLinea texto={b.lineas.join('\n')} /></p>;
         }

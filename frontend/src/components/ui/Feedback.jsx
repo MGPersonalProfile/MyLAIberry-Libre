@@ -1,4 +1,8 @@
-import { Info, CheckCircle2, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Info, CheckCircle2, AlertTriangle, AlertCircle, Loader2 } from 'lucide-react';
+
+export function Girando({ className = '', ...props }) {
+  return <Loader2 {...props} className={`${className} animate-spin`} />;
+}
 
 export function EmptyState({ icon: Icon, title, description, action, className = '' }) {
   return (
@@ -76,10 +80,10 @@ export function Notice({
   );
 }
 
-export function ProgressIndicator({ value = 0, label, rightLabel, thin = false, className = '' }) {
+export function ProgressIndicator({ value = 0, label, rightLabel, thin = false, className = '', ...props }) {
   const pct = Math.max(0, Math.min(100, Number(value) || 0));
   return (
-    <div className={className}>
+    <div className={className} {...props}>
       {(label || rightLabel) && (
         <div className="flex justify-between text-footnote text-text-secondary mb-1.5">
           <span>{label}</span>

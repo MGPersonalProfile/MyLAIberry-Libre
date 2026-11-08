@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { ProgressIndicator } from '../ui/Feedback';
 
 export default function BarraDeProgreso({ porcentaje }) {
   return (
@@ -6,9 +7,9 @@ export default function BarraDeProgreso({ porcentaje }) {
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 50 }}
-      className="fixed bottom-0 left-0 right-0 h-1.5 bg-black/20 z-[205]"
+      className="fixed bottom-0 left-0 right-0 z-[205]"
     >
-      <div className="h-full bg-red-600/80" style={{ width: `${porcentaje}%` }} />
+      <ProgressIndicator thin value={porcentaje} className="[&>div]:rounded-none" />
     </motion.div>
   );
 }

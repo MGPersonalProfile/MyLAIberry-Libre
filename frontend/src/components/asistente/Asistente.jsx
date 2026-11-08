@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Loader2, Square } from 'lucide-react';
+import { Square, MessageCircle } from 'lucide-react';
+import { SecondaryButton } from '../ui/Buttons';
+import { EmptyState, Girando, Notice } from '../ui/Feedback';
 import useAsistente from '../../hooks/useAsistente';
 import TextoConFormato from './TextoConFormato';
 import TarjetaPendiente from './TarjetaPendiente';
@@ -39,14 +41,14 @@ function Mensaje({ mensaje, alDecidir }) {
   return (
     <div className={`flex ${mio ? 'justify-end' : 'justify-start'}`}>
       <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-        mio ? 'bg-red-600/90 text-white' : 'bg-white/5 text-gray-200'
+        mio ? 'bg-accent text-white' : 'bg-surface-secondary text-text-primary'
       }`}>
         {mio
           ? <p className="whitespace-pre-wrap leading-relaxed text-sm">{mensaje.texto}</p>
           : <TextoConFormato texto={sinReferencias(mensaje.texto)} />}
 
         {!!mensaje.citas?.length && (
-          <div className="mt-3 pt-3 border-t border-white/10 space-y-1">
+          <div className="mt-3 pt-3 border-t border-border/60 space-y-1">
             {mensaje.citas.map(c => (
               <p key={c.ref} className="text-[11px] opacity-60 leading-snug">
                 <span className="opacity-80">{lugarDe(c.ref)}</span>{' '}
@@ -106,9 +108,7 @@ function Conversacion({ punto = null, alCerrar }) {
 
   if (!disponible) {
     return (
-      <div className="p-8 text-center text-gray-400">
-        <p>{t('assistant.unavailable')}</p>
-      </div>
+      <EmptyState icon={MessageCircle} description={t('assistant.unavailable')} />
     );
   }
 
@@ -118,12 +118,8 @@ function Conversacion({ punto = null, alCerrar }) {
         nuevas={nuevas} sinLeer={sinLeer} alAbrir={abrirHilo} alBorrar={borrarHilo} />
       <div className="flex-1 overflow-y-auto overscroll-contain px-4 md:px-6 py-6 space-y-4">
         {hilo.length === 0 && !pensando && (
-          <div className="text-center py-16 text-gray-500">
-            <p className="text-lg mb-2">{t(punto ? 'assistant.empty_title_reading' : 'assistant.empty_title')}</p>
-            <p className="text-sm opacity-70">
-              {punto ? t('assistant.empty_reading') : t('assistant.empty_library')}
-            </p>
-          </div>
+          <EmptyState icon={MessageCircle} title={t(punto ? 'assistant.empty_title_reading' : 'assistant.empty_title')}
+            description={punto ? t('assistant.empty_reading') : t('assistant.empty_library')} />
         )}
 
         {hilo.map(m => <Mensaje key={m.id} mensaje={m} alDecidir={decidir} />)}
@@ -131,9 +127,7 @@ function Conversacion({ punto = null, alCerrar }) {
         {pensando && <Pensando cancelar={cancelar} progreso={progreso} />}
 
         {error && (
-          <div className="text-center text-sm text-amber-400/90 px-4" role="alert">
-            {error}
-          </div>
+          <Notice tone="warning" compact>{error}</Notice>
         )}
 
         <div ref={finRef} />
@@ -153,16 +147,11 @@ function Conversacion({ punto = null, alCerrar }) {
 function Pensando({ cancelar, progreso }) {
   const { t } = useI18n();
   return (
-          <div className="flex items-center gap-3 text-gray-400 text-sm px-1">
-            <Loader2 className="w-4 h-4 animate-spin" />
+          <div className="flex items-center gap-3 text-text-secondary text-small px-1" role="status">
+            <Girando className="w-4 h-4" />
             <span>{progreso ? (progreso.mensaje || t('assistant.research.progress', { pages: progreso.paginas, max: progreso.maxPaginas,
               state: t(`assistant.research.${progreso.estado}`) })) : t('assistant.thinking')}</span>
-            <button
-              onClick={cancelar}
-              className="ml-2 flex items-center gap-1 min-h-[44px] px-2 text-[11px] opacity-60 hover:opacity-100 transition-opacity"
-            >
-              <Square className="w-3 h-3" /> {t('assistant.stop')}
-            </button>
+            <SecondaryButton size="sm" icon={Square} onClick={cancelar}>{t('assistant.stop')}</SecondaryButton>
           </div>
   );
 }

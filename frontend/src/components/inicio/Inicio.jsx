@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { PrimaryButton } from '../ui/Buttons';
 import { Library, Info, Plus } from 'lucide-react';
 
 import Carousel from '../Carousel';
@@ -31,12 +32,7 @@ export function InicioVacio({ alImportar }) {
           <p className="text-lg text-gray-400 mb-8 font-medium">
             {t('empty.body')}
           </p>
-          <button
-            onClick={alImportar}
-            className="bg-white text-black px-8 py-4 rounded font-bold flex items-center gap-2 hover:bg-gray-200 transition-colors text-lg shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)]"
-          >
-            <Plus className="w-5 h-5" /> {t('empty.cta')}
-          </button>
+          <PrimaryButton icon={Plus} className="!px-8 !min-h-14 !text-lg" onClick={alImportar}>{t('empty.cta')}</PrimaryButton>
         </motion.div>
       </div>
     </main>
@@ -73,7 +69,7 @@ export default function Inicio({
             transition={{ duration: 0.8 }}
           >
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-red-600 font-black tracking-[0.2em] text-[11px] md:text-sm bg-black/50 px-2 py-1 rounded">{t('hero.badge')}</span>
+              <span className="text-red-600 font-black whitespace-pre tracking-[0.2em] text-[11px] md:text-sm bg-black/50 px-2 py-1 rounded">{t('hero.badge')}</span>
             </div>
             <h2 className="text-4xl md:text-7xl font-black mb-3 md:mb-4 font-serif leading-[1.05] md:leading-tight text-white drop-shadow-2xl line-clamp-3 break-words">{hero.title}</h2>
             <p className="text-[15px] md:text-lg text-gray-200 mb-6 md:mb-8 line-clamp-2 md:line-clamp-3 drop-shadow-md text-shadow font-medium">

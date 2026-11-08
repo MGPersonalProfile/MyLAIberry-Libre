@@ -201,14 +201,24 @@ async function traducirParaViaje(estado, indice) {
   const nombre = `la traducción del capítulo ${indice + 1}`;
   if (!await preguntarAlPC('has-translation', [id, indice, idioma], nombre)) return;
   const html = textoDe(await preguntarAlPC('translate-chapter', [id, indice, idioma], nombre));
-  if (html) await escribirViaje('traducciones', { obra: id, indice, idioma, html });
+  if (html) {
+    if (typeof comprobarContenidoViaje === 'function') {
+      const c = comprobarContenidoViaje('traduccion', html);
+      if (!c.permitido) throw Object.assign(new Error(c.motivo), { name: 'QuotaExceededError' });
+    }
+    await escribirViaje('traducciones', { obra: id, indice, idioma, html });
+  }
 }
 
 async function fijarTraduccionLeida(args, html) {
   const id = String(args[0]), estado = await leerViaje('obras', id).catch(() => null);
   if (!estado || !textoDe(html) || !Number.isInteger(args[1])) return;
   await escribirViaje('traducciones', { obra: id, indice: args[1], idioma: args[2], html });
-  if (!viajeEnCurso && estado.idioma !== args[2]) await escribirViaje('obras', { ...estado, idioma: args[2] });
+  if (typeof programarIdiomaDeViaje === 'function') {
+    await programarIdiomaDeViaje(id, args[2]);
+  } else if (!viajeEnCurso && estado.idioma !== args[2]) {
+    await escribirViaje('obras', { ...estado, idioma: args[2] });
+  }
 }
 
 async function fijadoDe(canal, args) {
@@ -228,6 +238,15 @@ async function descargarTramoViaje(estado) {
   const fin = Math.min(estado.total, estado.guardados + 12);
   for (let i = estado.guardados; i < fin; i++) {
     if (viajeCancelado.has(estado.id)) break;
+    if (typeof comprobarEspacioViaje === 'function') {
+      const est = await (typeof navigator !== 'undefined' ? navigator.storage?.estimate?.() : null)?.catch?.(() => null);
+      if (est && !comprobarEspacioViaje({ total: estado.total, guardados: i }, est).permitido) {
+        estado.error = 'No queda espacio para guardar esta obra en el móvil.';
+        estado.continuar = false;
+        await escribirViaje('obras', { ...estado });
+        break;
+      }
+    }
     if (estado.revisionPendiente || !await leerViaje('capitulos', [estado.id, i])) {
       const html = await traerCapituloViaje(estado.id, i);
       if (html) {
@@ -276,6 +295,13 @@ async function recogerFondo(registro) {
   const porIndice = new Map();
   for (const r of await registro.matchAll()) porIndice.set(Number(new URL(r.request.url).pathname.split('/').pop()), r);
   for (let i = estado.guardados; i < estado.total; i++) {
+    if (typeof comprobarEspacioViaje === 'function') {
+      const est = await (typeof navigator !== 'undefined' ? navigator.storage?.estimate?.() : null)?.catch?.(() => null);
+      if (est && !comprobarEspacioViaje({ total: estado.total, guardados: i }, est).permitido) {
+        estado.error = 'No queda espacio para guardar esta obra en el móvil.';
+        break;
+      }
+    }
     const r = porIndice.get(i);
     if (!r && (estado.revisionPendiente || !await leerViaje('capitulos', [id, i]))) break;
     if (r) {
@@ -323,6 +349,12 @@ async function descargarViaje(id, total, forzar = false, ficha = null) {
   let agotado = false;
   const reloj = setTimeout(() => { agotado = true; }, PRESUPUESTO_VIAJE_MS);
   try {
+    if (typeof comprobarEspacioViaje === 'function') {
+      const estInicial = await (typeof navigator !== 'undefined' ? navigator.storage?.estimate?.() : null)?.catch?.(() => null);
+      if (estInicial && !comprobarEspacioViaje({ total, guardados: 0, ficha }, estInicial).permitido) {
+        throw Object.assign(new Error('No queda espacio para guardar esta obra en el móvil.'), { name: 'QuotaExceededError' });
+      }
+    }
     let estado = await descargarTramoViaje(await prepararViaje(id, total, forzar, ficha));
     while (estado.continuar && !agotado && !viajeCancelado.has(id)) estado = await descargarTramoViaje(estado);
     salida = estado;
@@ -349,8 +381,13 @@ const pendienteDeViaje = (o, conectado) => !!o && !o.completa
 
 async function reanudarViaje(conectado) {
   if (viajeEnCurso) return;
-  const pendiente = (await obrasDeViaje()).find(o => pendienteDeViaje(o, conectado));
+  const lista = await obrasDeViaje();
+  const pendiente = lista.find(o => pendienteDeViaje(o, conectado));
   if (pendiente) return descargarViaje(pendiente.id, pendiente.total);
+  if (conectado && typeof completarIdiomaDeViaje === 'function') {
+    const pendIdioma = lista.find(o => o?.traduccionPendiente && o?.idioma);
+    if (pendIdioma) return completarIdiomaDeViaje(pendIdioma);
+  }
 }
 
 async function mensajeViaje(d) {

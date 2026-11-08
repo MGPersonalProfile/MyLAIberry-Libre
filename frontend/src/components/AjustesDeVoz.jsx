@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
+import { Plus, X } from 'lucide-react';
+import { IconButton } from './ui/Buttons';
+import { CLASE_CAMPO } from './ui/clases';
 import { parrafosDelDom, textoDe } from '../voz';
 import { personajesEnTextos, quienHabla } from '../voz-personajes';
 import { trocearDialogos } from '../voz-dialogos';
@@ -65,7 +68,7 @@ export default function AjustesDeVoz({ voces, ajustes, alCambiar }) {
         id="voz-narracion"
         value={ajustes.vozNarracion}
         onChange={(e) => alCambiar({ vozNarracion: e.target.value })}
-        className="w-full bg-surface-secondary border border-border rounded-md px-3 py-2 text-callout text-text-primary mb-3"
+        className={`w-full mb-3 ${CLASE_CAMPO}`}
       >
         <option value="">{t('reader.voice_automatic')}</option>
         {opciones}
@@ -78,7 +81,7 @@ export default function AjustesDeVoz({ voces, ajustes, alCambiar }) {
         id="voz-dialogo"
         value={ajustes.vozDialogo}
         onChange={(e) => alCambiar({ vozDialogo: e.target.value })}
-        className="w-full bg-surface-secondary border border-border rounded-md px-3 py-2 text-callout text-text-primary mb-3"
+        className={`w-full mb-3 ${CLASE_CAMPO}`}
       >
         <option value="">{t('reader.voice_dialogue_auto')}</option>
         {opciones}
@@ -92,7 +95,7 @@ export default function AjustesDeVoz({ voces, ajustes, alCambiar }) {
               id={`voz-${clave}`}
               value={ajustes[clave] || ''}
               onChange={(e) => alCambiar({ [clave]: e.target.value })}
-              className="w-full bg-surface-secondary border border-border rounded-md px-2 py-2 text-footnote text-text-primary"
+              className={`w-full !px-2 ${CLASE_CAMPO}`}
             >
               <option value="">{t('reader.voice_gender_auto')}</option>
               {opciones}
@@ -140,20 +143,13 @@ export default function AjustesDeVoz({ voces, ajustes, alCambiar }) {
                 value={asignaciones[personaje] || ''}
                 onChange={(evento) => asignar(personaje, evento.target.value)}
                 aria-label={`${t('reader.character_voice_for')} ${personaje}`}
-                className="min-w-0 flex-1 bg-surface-secondary border border-border rounded-md px-2 py-2 text-footnote text-text-primary"
+                className={`flex-1 !px-2 ${CLASE_CAMPO}`}
               >
                 <option value="">{t('reader.voice_dialogue_auto')}</option>
                 {opciones}
               </select>
               {asignaciones[personaje] && (
-                <button
-                  type="button"
-                  onClick={() => asignar(personaje, '')}
-                  aria-label={`${t('reader.character_voice_remove')} ${personaje}`}
-                  className="w-8 h-8 text-text-tertiary hover:text-text-primary"
-                >
-                  ×
-                </button>
+                <IconButton size="sm" icon={X} onClick={() => asignar(personaje, '')} label={`${t('reader.character_voice_remove')} ${personaje}`} />
               )}
             </div>
           ))}
@@ -163,16 +159,9 @@ export default function AjustesDeVoz({ voces, ajustes, alCambiar }) {
               onChange={(evento) => setNuevo(evento.target.value)}
               placeholder={t('reader.character_name')}
               aria-label={t('reader.character_name')}
-              className="min-w-0 flex-1 bg-surface-secondary border border-border rounded-md px-3 py-2 text-footnote text-text-primary"
+              className={`flex-1 ${CLASE_CAMPO}`}
             />
-            <button
-              type="submit"
-              disabled={!nuevo.trim()}
-              aria-label={t('reader.character_add')}
-              className="w-9 rounded-md border border-border text-text-secondary disabled:opacity-30"
-            >
-              +
-            </button>
+            <IconButton type="submit" icon={Plus} disabled={!nuevo.trim()} label={t('reader.character_add')} className="border border-border" />
           </form>
         </div>
       </details>

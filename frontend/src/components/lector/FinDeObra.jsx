@@ -1,5 +1,6 @@
 import Cover from '../Cover';
 import { useI18n } from '../../i18n/I18nContext';
+import { Notice, Tag } from '../ui/Feedback';
 
 export default function FinDeObra({ sugerencias, alElegir, completa }) {
   const { t } = useI18n();
@@ -7,14 +8,13 @@ export default function FinDeObra({ sugerencias, alElegir, completa }) {
   if (terminada && !sugerencias.length) return null;
 
   return (
-    <div className="mb-24 border-t border-current pt-10">
-      <p className="text-sm uppercase tracking-widest opacity-50 mb-1">
-        {terminada ? t('reader.the_end') : t('reader.caught_up')}
-      </p>
-      {!terminada && (
-        <p className="text-sm opacity-70 mb-6 max-w-xl">
+    <div className="mb-24 border-t border-current/30 pt-10">
+      {terminada ? (
+        <p className="text-sm uppercase tracking-widest opacity-50 mb-1">{t('reader.the_end')}</p>
+      ) : (
+        <Notice title={t('reader.caught_up')} className="dark mb-6 max-w-xl font-sans">
           {completa === false ? t('reader.caught_up_ongoing') : t('reader.caught_up_unknown')}
-        </p>
+        </Notice>
       )}
       {sugerencias.length > 0 && (
         <h3 className="text-2xl font-bold mb-8">{terminada ? t('reader.what_now') : t('reader.meanwhile')}</h3>
@@ -32,9 +32,7 @@ export default function FinDeObra({ sugerencias, alElegir, completa }) {
             </div>
             <p className="font-bold text-sm leading-tight line-clamp-2">{s.title}</p>
             <p className="text-xs opacity-60 mt-1">{s.author}</p>
-            {s.origen === 'descubierta' && (
-              <p className="text-[11px] opacity-50 mt-1">{t('reader.ready_to_read')}</p>
-            )}
+            {s.origen === 'descubierta' && <Tag tone="success" className="mt-1.5 font-sans">{t('reader.ready_to_read')}</Tag>}
             {s.porque?.length > 0 && (
               <p className="text-[11px] opacity-40 mt-0.5 line-clamp-2">
                 {t('suggest.because', { tags: s.porque.join(', ') })}

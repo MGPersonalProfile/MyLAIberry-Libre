@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { BookOpen, X, Check, Download } from 'lucide-react';
 
 import { useI18n } from '../../i18n/I18nContext';
+import { IconButton } from '../ui/Buttons';
 import { pulsable } from '../../pulsable';
 import BuscarEnLaObra from './BuscarEnLaObra';
 
@@ -26,16 +27,14 @@ export default function IndiceLateral({
       animate={{ x: 0 }}
       exit={{ x: '100%' }}
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-      className="absolute top-0 right-0 w-96 max-w-[85vw] h-full bg-[#1a1a1a] border-l border-white/10 shadow-2xl flex flex-col"
+      className="dark absolute top-0 right-0 w-96 max-w-[85vw] h-full bg-surface text-text-primary border-l border-border shadow-2xl flex flex-col"
     >
-      <div className="flex items-center justify-between p-6 border-b border-white/10">
+      <div className="flex items-center justify-between p-6 border-b border-separator">
         <div className="flex items-center gap-3">
-          <BookOpen className="w-5 h-5 text-red-500" />
-          <h3 className="text-white font-bold text-lg">{t('reader.chapters')}</h3>
+          <BookOpen className="w-5 h-5 text-accent" />
+          <h3 className="text-title-3 text-text-primary">{t('reader.chapters')}</h3>
         </div>
-        <button onClick={alCerrar} className="p-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
-          <X className="w-5 h-5" />
-        </button>
+        <IconButton icon={X} onClick={alCerrar} label={t('reader.close_toc')} />
       </div>
       {obraId != null && <BuscarEnLaObra obraId={obraId} idioma={idioma} actual={actual} total={Math.max(capitulos.length, descargados || 0)} alElegir={alElegir} />}
       <div ref={listaRef} className="relative flex-1 overflow-y-auto py-2 scrollbar-hide">

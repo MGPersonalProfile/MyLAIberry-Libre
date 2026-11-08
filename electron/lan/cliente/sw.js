@@ -6,7 +6,7 @@ const TECHO = 800;
 const ESENCIAL = ['/app/', '/manifest.webmanifest', '/icono-192.png', '/icono-512.png', '/puente.json'].map(r => BASE + r);
 const esNuestra = u => u.origin === self.location.origin && u.pathname.startsWith(BASE + '/');
 
-const LECTURAS = new Set(['asistente-ver', 'repeated-works', 'check-repeated-chapters', 'search-in-work', 'detect-site', 'estadisticas-lectura', 'recordar-lectura']);
+const LECTURAS = new Set(['asistente-ver', 'repeated-works', 'check-repeated-chapters', 'search-in-work', 'detect-site', 'estadisticas-lectura', 'recordar-lectura', 'leer-eleccion-idioma']);
 
 const EN_VIVO = new Set(['asistente-retos-pendientes', 'queue-status', 'lan-estado', 'estado-voces', 'avisos-disponibles', 'avisos-via', 'exportar-lectura']);
 const DEL_AUDIO = new Set(['audio-capitulo', 'audio-obra']);

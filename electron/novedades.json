@@ -1,5 +1,96 @@
 [
   {
+    "version": "2026.11.8",
+    "fecha": "2026-11-07",
+    "resumen": "La interfaz usa los mismos botones, filtros y avisos en más pantallas, sin cambiar el aspecto clásico. Control de cuota real y sincronización robusta de idioma en el móvil (A35), y recuperación de obras y cola tras restaurar una copia de seguridad (A44).",
+    "detalle": [
+      {
+        "que": "Descubrimientos usa los mismos botones, etiquetas de filtro, buscador, interruptores y avisos que el resto de la app. Todo funciona igual.",
+        "porque": "Iba con controles propios distintos a los de Biblioteca y Ajustes."
+      },
+      {
+        "que": "Explorar usa las mismas etiquetas de filtro, cabeceras, botón de quitar filtros y aviso de pantalla vacía que el resto. Los resultados no cambian.",
+        "porque": "Tenía botones y etiquetas propios."
+      },
+      {
+        "que": "Mi lista usa la cabecera, el estado vacío y el botón de quitar comunes.",
+        "porque": "Tenía su botón y su cartel propios."
+      },
+      {
+        "que": "Autores usa el botón de dejar de seguir, la cabecera y el estado vacío comunes.",
+        "porque": "Tenía estilos propios."
+      },
+      {
+        "que": "En Inicio, los botones y barras de progreso al pasar el ratón por una portada, y el botón de importar de la pantalla vacía, usan los componentes comunes. El hero y los carruseles no cambian.",
+        "porque": "Mantiene el aspecto clásico; sólo se unifican controles."
+      },
+      {
+        "que": "Los mandos del lector (barra superior e inferior en móvil y barra del escritorio) usan los botones y el indicador de progreso comunes. Mismo sitio y mismas acciones.",
+        "porque": "Cada barra tenía su propio botón."
+      },
+      {
+        "que": "Si cancelas desde el móvil una comprobación que ya está en marcha, el reto se queda cancelado aunque la comprobación termine después.",
+        "porque": "El resultado tardío lo volvía a poner como reanudado o pendiente."
+      },
+      {
+        "que": "Un reto que caduca mientras se está comprobando se queda caducado y no vuelve a aparecer en la lista del móvil.",
+        "porque": "Al terminar la comprobación reaparecía como pendiente."
+      },
+      {
+        "que": "El móvil ya no pierde un aviso de comprobación pendiente que llega justo mientras carga la lista inicial.",
+        "porque": "La lista inicial sustituía a los avisos recibidos antes que ella."
+      },
+      {
+        "que": "Los intentos fallidos con un token ajeno ya no inutilizan el reto de su dueño.",
+        "porque": "Cinco intentos erróneos revocaban el token para siempre y el reto sólo se podía pasar desde el PC."
+      },
+      {
+        "que": "Si la comprobación de un reto falla por un error pasajero, el móvil sigue mostrándolo y puedes volver a intentarlo.",
+        "porque": "Quedaba como no resuelto, desaparecía de la lista y no admitía reintento."
+      },
+      {
+        "que": "Los ajustes del lector (tema, tipografía, tamaño, velocidad), el buscador del índice, el MP3 del capítulo y de la obra, los mandos de la voz del móvil, el cuaderno y el panel del asistente usan los botones, selectores y avisos comunes, con la letra de interfaz y no la de lectura. Todo funciona igual.",
+        "porque": "Cada uno tenía sus botones y colores propios, y en el panel de ajustes el texto «Oscuro» se salía del botón."
+      },
+      {
+        "que": "El final de obra, el resumen «En el capítulo anterior», los avisos de carga y traducción, la navegación entre capítulos y la barra de progreso del lector usan las tarjetas, avisos y botones comunes. Sin controles nuevos permanentes.",
+        "porque": "Tenían botones subrayados y textos sueltos."
+      },
+      {
+        "que": "El asistente (pestañas, caja de escribir, selector de conversaciones, borrado con confirmación, estados vacíos y errores) y el índice de capítulos del lector usan los botones, avisos y selectores comunes. Los bloques de código del asistente ahora se ven como bloques.",
+        "porque": "Tenía controles propios y los bloques de código salían con las comillas sin formato."
+      },
+      {
+        "que": "Los paneles del asistente (investigaciones, pistas, estanterías, recuerdos, reglas, cola de trabajos, resultados web, confirmaciones y retos pendientes) usan las tarjetas, botones, selectores y avisos comunes. Mismas acciones.",
+        "porque": "Cada panel tenía sus botones y campos propios."
+      },
+      {
+        "que": "Los avisos de notificaciones, el calendario de lectura, las voces del lector, los avisos breves, de conflicto, de versión y de sin conexión usan los componentes comunes. En el móvil, el buscador de la biblioteca ya no se sale por la derecha.",
+        "porque": "Tenían botones y colores propios; el buscador se salía de la pantalla en el móvil."
+      },
+      {
+        "que": "Los avisos y botones dentro del texto del lector (resumen previo, errores de carga, navegación) mantienen su aspecto oscuro aunque la interfaz esté en claro.",
+        "porque": "Con la interfaz en claro salían tarjetas blancas sobre un lector oscuro."
+      },
+      {
+        "que": "El móvil comprueba el espacio real disponible con una reserva de seguridad del 10 % y aplica un límite de 5 MiB por traducción, evitando saturar el almacenamiento.",
+        "porque": "Antes una descarga grande podía agotar el espacio del dispositivo o fallar a mitad sin informar de la cuota real."
+      },
+      {
+        "que": "Al cambiar de idioma en una obra guardada sin conexión, las traducciones correspondientes se descargan automáticamente sin tener que pulsar «Revisar cambios».",
+        "porque": "Antes el cambio sólo afectaba a las lecturas posteriores y requería intervención manual para tener los capítulos en el idioma deseado."
+      },
+      {
+        "que": "Si el idioma de una obra se cambia en dos dispositivos distintos, la ficha de la obra avisa del conflicto y permite elegir explícitamente qué preferencia conservar.",
+        "porque": "Antes dos cambios simultáneos se sobreescribían silenciosamente sin que el lector supiera qué versión prevalecía."
+      },
+      {
+        "que": "Al restaurar una copia de seguridad antigua en el PC, las obras y descargas posteriores no se pierden: se genera un inventario y se pueden recuperar con un solo clic.",
+        "porque": "Antes, volver a una copia antigua dejaba las obras añadidas posteriormente fuera de la biblioteca aunque sus archivos siguieran en el disco."
+      }
+    ]
+  },
+  {
     "version": "2026.11.7-4",
     "fecha": "2026-11-07",
     "resumen": "Descubrimientos investigados con coste real medido, investigación ampliada bajo demanda e integración en «Por decidir». Fichas con todas las etiquetas y verificación de premisas con pruebas en el asistente. Importación y lectura de cómics de Webtoon con viñetas en imagen.",

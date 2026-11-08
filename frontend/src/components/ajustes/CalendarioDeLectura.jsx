@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nContext';
+import { IconButton } from '../ui/Buttons';
 
 const dosCifras = n => String(n).padStart(2, '0');
 
@@ -18,9 +19,9 @@ export default function CalendarioDeLectura({ calendario }) {
   return (
     <div className="mt-3" data-testid="calendario-lectura">
       <div className="flex items-center justify-between mb-2">
-        <button type="button" onClick={() => mover(-1)} className="p-2 -m-2 text-text-secondary" aria-label="mes anterior"><ChevronLeft className="w-4 h-4" /></button>
+        <IconButton size="sm" icon={ChevronLeft} onClick={() => mover(-1)} label="mes anterior" />
         <span className="text-footnote text-text-secondary capitalize">{titulo}</span>
-        <button type="button" onClick={() => mover(1)} className="p-2 -m-2 text-text-secondary" aria-label="mes siguiente"><ChevronRight className="w-4 h-4" /></button>
+        <IconButton size="sm" icon={ChevronRight} onClick={() => mover(1)} label="mes siguiente" />
       </div>
       <div className="grid grid-cols-7 gap-1">
         {celdas.map((d, i) => {

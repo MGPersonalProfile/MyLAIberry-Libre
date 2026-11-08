@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
 
 import { useI18n } from '../../i18n/I18nContext';
+import { PrimaryButton } from '../ui/Buttons';
+import { CLASE_CAMPO } from '../ui/clases';
 
 export default function ReglasGenerales({ reglas, accion, Accion, tarjeta }) {
   const { t } = useI18n();
@@ -27,14 +29,11 @@ export default function ReglasGenerales({ reglas, accion, Accion, tarjeta }) {
       <form onSubmit={anadir} className={`${tarjeta} flex flex-wrap items-center gap-2`} data-regla-general>
         <input value={termino} onChange={e => setTermino(e.target.value)} maxLength={60}
                placeholder={t('initiative.rule_term')} aria-label={t('initiative.rule_term')}
-               className="flex-1 min-w-28 bg-transparent outline-none placeholder-gray-500" />
+               className={`flex-1 min-w-28 ${CLASE_CAMPO}`} />
         <input value={valor} onChange={e => setValor(e.target.value)} maxLength={60}
                placeholder={t('initiative.rule_value')} aria-label={t('initiative.rule_value')}
-               className="flex-1 min-w-36 bg-transparent outline-none placeholder-gray-500" />
-        <button type="submit" disabled={!termino.trim()}
-                className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-40 transition-colors">
-          <Plus className="w-3 h-3" /> {t('initiative.memory_add')}
-        </button>
+               className={`flex-1 min-w-36 ${CLASE_CAMPO}`} />
+        <PrimaryButton type="submit" size="sm" icon={Plus} disabled={!termino.trim()}>{t('initiative.memory_add')}</PrimaryButton>
       </form>
     </>
   );
