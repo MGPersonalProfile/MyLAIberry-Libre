@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Hourglass, Check, X } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Hourglass, Check, X, CheckCheck, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import Cover from '../Cover';
 import { Card, SectionHeader } from '../ui/Layout';
@@ -7,7 +7,8 @@ import { PrimaryButton, SecondaryButton } from '../ui/Buttons';
 import { Tag } from '../ui/Feedback';
 import { useI18n } from '../../i18n/I18nContext';
 import { pulsable } from '../../pulsable';
-import { porDecidir, restante } from './plazo';
+import { loteDePropuestas, restante } from './plazo';
+import { accionPorGesto } from './gestoTarjeta';
 import DetalleInvestigacion from './DetalleInvestigacion';
 
 function LineasExplicacion({ explicacion, t }) {
@@ -33,13 +34,34 @@ function LineasExplicacion({ explicacion, t }) {
   );
 }
 
+function useGestoDeslizar(item, onGuardar, onDescartar) {
+  const inicioRef = useRef(null);
+  const onTouchStart = (e) => {
+    if (e.touches?.length === 1) {
+      inicioRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() };
+    }
+  };
+  const onTouchEnd = (e) => {
+    if (!inicioRef.current) return;
+    const t = e.changedTouches?.[0];
+    if (t) {
+      const act = accionPorGesto(inicioRef.current, { x: t.clientX, y: t.clientY, t: Date.now() });
+      if (act === 'guardar') onGuardar?.(item);
+      else if (act === 'descartar') onDescartar?.(item);
+    }
+    inicioRef.current = null;
+  };
+  return { onTouchStart, onTouchEnd, onTouchCancel: () => { inicioRef.current = null; } };
+}
+
 function TarjetaPropuesta({ item, ahora, abierta, alAlternar, onDetalle, onGuardar, onDescartar }) {
   const { t } = useI18n();
   const queda = restante(item.propuesta.vence, ahora);
   const explicacion = item.explicacion;
+  const gestos = useGestoDeslizar(item, onGuardar, onDescartar);
 
   return (
-    <Card className="flex flex-col gap-2">
+    <Card className="flex flex-col gap-2" {...gestos}>
       <div className="flex gap-3">
         <div className="w-16 shrink-0 aspect-[2/3] rounded-md overflow-hidden cursor-pointer" {...pulsable(() => onDetalle?.(item), item.title)} tabIndex={-1}>
           <Cover story={item} className="w-full h-full" imgClassName="w-full h-full object-cover" />
@@ -78,22 +100,51 @@ export default function PorDecidir({ items = [], onDetalle, onGuardar, onDescart
   const { t } = useI18n();
   const [ahora, setAhora] = useState(() => Date.now());
   const [abiertoId, setAbiertoId] = useState(null);
+  const [pagina, setPagina] = useState(0);
 
   useEffect(() => {
     const reloj = setInterval(() => setAhora(Date.now()), 60000);
     return () => clearInterval(reloj);
   }, []);
 
-  const lista = porDecidir(items);
-  if (!lista.length) return null;
+  const info = loteDePropuestas(items, pagina);
+  if (!info.total) return null;
+
+  const guardarLote = async () => {
+    for (const item of info.lote) await onGuardar?.(item);
+  };
+
+  const descartarLote = async () => {
+    for (const item of info.lote) await onDescartar?.(item);
+  };
 
   return (
     <section aria-labelledby="por-decidir" className="mb-8">
       <SectionHeader icon={Hourglass} title={<span id="por-decidir">{t('pending.title')}</span>}
         description={t('pending.subtitle')}
-        action={<Tag tone="accent">{t('pending.count', { n: lista.length })}</Tag>} />
+        action={<Tag tone="accent">{t('pending.batch_summary', { total: info.total, revisar: info.revisar })}</Tag>} />
+
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <PrimaryButton size="sm" icon={CheckCheck} onClick={guardarLote} aria-label={t('pending.keep_batch_aria', { n: info.revisar })}>
+          {t('pending.keep_batch')}
+        </PrimaryButton>
+        <SecondaryButton size="sm" icon={X} onClick={descartarLote} aria-label={t('pending.discard_batch_aria', { n: info.revisar })}>
+          {t('pending.discard_batch')}
+        </SecondaryButton>
+        {info.hayAnterior && (
+          <SecondaryButton size="sm" icon={ChevronLeft} onClick={() => setPagina(p => Math.max(0, p - 1))}>
+            {t('pending.prev_batch')}
+          </SecondaryButton>
+        )}
+        {info.haySiguiente && (
+          <SecondaryButton size="sm" icon={ChevronRight} onClick={() => setPagina(p => p + 1)}>
+            {t('pending.next_batch')}
+          </SecondaryButton>
+        )}
+      </div>
+
       <ul className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {lista.map(item => (
+        {info.lote.map(item => (
           <li key={item.id}>
             <TarjetaPropuesta item={item} ahora={ahora} abierta={abiertoId === item.id}
               alAlternar={() => setAbiertoId(abiertoId === item.id ? null : item.id)}

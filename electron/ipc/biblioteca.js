@@ -102,6 +102,20 @@ function registrar() {
     } catch (e) { return { status: 'error', message: e.message }; }
   });
 
+  ipcMain.handle('undo-discard', async (event, fanficId) => {
+    try {
+      const r = await require('../db').deshacerDescarte(String(fanficId));
+      require('../ventana').avisar('discoveries-updated', {});
+      return r;
+    } catch (e) { return { status: 'error', message: e.message }; }
+  });
+
+  ipcMain.handle('get-discarded-works', async () => {
+    try {
+      return await require('../db').descartesRecientes();
+    } catch { return []; }
+  });
+
   ipcMain.handle('delete-fanfic', async (event, id) => {
     return await deleteFanfic(id);
   });

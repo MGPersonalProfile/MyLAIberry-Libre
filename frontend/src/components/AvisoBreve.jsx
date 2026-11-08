@@ -12,7 +12,8 @@ export default function AvisoBreve() {
     const alAvisar = (e) => {
       clearTimeout(quitar);
       setAviso(e.detail);
-      quitar = setTimeout(() => setAviso(null), e.detail.tipo === 'error' ? 6000 : 3500);
+      const tiempo = e.detail.duracion || (e.detail.tipo === 'error' ? 6000 : 3500);
+      quitar = setTimeout(() => setAviso(null), tiempo);
     };
 
     const alRechazar = (e) => {
@@ -37,7 +38,24 @@ export default function AvisoBreve() {
           initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
           className="fixed left-1/2 -translate-x-1/2 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] md:bottom-8 z-[450] max-w-[92vw] rounded-lg bg-surface shadow-xl"
         >
-          <Notice tone={aviso.tipo === 'error' ? 'warning' : 'success'} compact>{aviso.texto}</Notice>
+          <Notice
+            tone={aviso.tipo === 'error' ? 'warning' : 'success'}
+            compact
+            action={aviso.accion ? (
+              <button
+                type="button"
+                onClick={() => {
+                  aviso.accion.alPulsar?.();
+                  setAviso(null);
+                }}
+                className="text-footnote font-semibold underline hover:no-underline cursor-pointer px-1 text-accent"
+              >
+                {aviso.accion.etiqueta}
+              </button>
+            ) : null}
+          >
+            {aviso.texto}
+          </Notice>
         </motion.div>
       )}
     </AnimatePresence>

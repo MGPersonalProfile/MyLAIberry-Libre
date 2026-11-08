@@ -89,7 +89,21 @@ export function useAcciones({ refrescar, interfaz, t }) {
     try {
       const r = await window.api?.discardWork?.(story.id);
       if (r?.status === 'error') throw new Error(r.message);
-      avisar(t('aviso.descartada', { titulo: story.title }));
+      avisar(
+        t('aviso.descartada', { titulo: story.title }),
+        'ok',
+        {
+          etiqueta: t('common.undo'),
+          alPulsar: async () => {
+            const res = await window.api?.deshacerDescarte?.(story.id);
+            if (res?.status === 'ok') {
+              avisar(t('aviso.descarte_deshecho', { titulo: story.title }));
+              fetchDiscoveries();
+            }
+          }
+        },
+        10000
+      );
       setShowDetail(null);
     } catch (err) {
       avisar(t('aviso.fallo', { motivo: motivo(err) }), 'error');

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { BookOpen, X, Sparkles } from 'lucide-react';
 import { useI18n } from '../i18n/I18nContext';
 import { Card } from './ui/Layout';
@@ -11,31 +11,56 @@ import {
 } from '../recordar-historia-logica';
 
 export default function RecordarLectura({ obra, movil = false, className = '' }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [abierto, setAbierto] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [evaluacion, setEvaluacion] = useState(null);
-  const [error, setError] = useState(null);
+
+  const [obraActiva, setObraActiva] = useState(obra?.id);
+  const [capActivo, setCapActivo] = useState(obra?.currentChapter);
+  if (obra?.id !== obraActiva || obra?.currentChapter !== capActivo) {
+    setObraActiva(obra?.id);
+    setCapActivo(obra?.currentChapter);
+    setAbierto(false);
+    setCargando(false);
+    setEvaluacion(null);
+  }
+
+  const obraRef = useRef(obra);
+  const abiertoRef = useRef(abierto);
+  useEffect(() => {
+    obraRef.current = obra;
+    abiertoRef.current = abierto;
+  });
 
   if (!debeMostrarRecordatorio(obra)) return null;
   const n = capituloActual(obra);
 
+  const cerrar = () => {
+    setAbierto(false);
+  };
+
   const alternar = async () => {
     if (abierto) {
-      setAbierto(false);
+      cerrar();
       return;
     }
+    const idSolicitud = obra?.id;
+    const capSolicitud = obra?.currentChapter;
+    const peticionVigente = () => obraRef.current?.id === idSolicitud && obraRef.current?.currentChapter === capSolicitud && abiertoRef.current;
     setAbierto(true);
     setCargando(true);
-    setError(null);
     try {
-      const res = await window.api?.recordarLectura?.(obra.id, 'breve');
-      setEvaluacion(evaluarRespuestaRecordatorio(res));
+      const res = await window.api?.recordarLectura?.(obra.id, 'breve', lang);
+      if (!peticionVigente()) return;
+      setEvaluacion(evaluarRespuestaRecordatorio(res, obraRef.current));
     } catch (err) {
-      setError(err?.message || 'Error');
-      setEvaluacion(evaluarRespuestaRecordatorio(null));
+      if (!peticionVigente()) return;
+      const esOffline = typeof navigator !== 'undefined' && !navigator?.onLine
+        || err?.message?.includes?.('fetch') || err?.message?.includes?.('offline') || err?.code === 'offline';
+      setEvaluacion(evaluarRespuestaRecordatorio({ status: esOffline ? 'offline' : 'error', message: err?.message }, obraRef.current));
     } finally {
-      setCargando(false);
+      if (peticionVigente()) setCargando(false);
     }
   };
 
@@ -51,6 +76,8 @@ export default function RecordarLectura({ obra, movil = false, className = '' })
           icon={Sparkles}
           onClick={alternar}
           disabled={cargando}
+          aria-expanded={abierto}
+          aria-controls="recordar-historia-panel"
           className="shrink-0"
         >
           {cargando ? t('reading.recall_loading') : t('reading.recall_story')}
@@ -58,29 +85,49 @@ export default function RecordarLectura({ obra, movil = false, className = '' })
       </div>
 
       {abierto && (
-        <Card data-recordar-panel className="mt-3 bg-surface-secondary/75 border border-border/80 p-4">
+        <Card
+          id="recordar-historia-panel"
+          role="region"
+          aria-labelledby="recordar-historia-titulo"
+          data-recordar-panel
+          className="mt-3 bg-surface-secondary/75 border border-border/80 p-4"
+        >
           <div className="flex items-center justify-between gap-3 mb-2.5 pb-2 border-b border-separator/60">
-            <div className="flex items-center gap-2 text-text-primary font-semibold text-sm">
+            <div id="recordar-historia-titulo" className="flex items-center gap-2 text-text-primary font-semibold text-sm">
               <BookOpen className="w-4 h-4 text-accent" />
               <span>{t('reading.recall_title')}</span>
             </div>
-            <IconButton icon={X} onClick={() => setAbierto(false)} aria-label={t('common.close')} title={t('common.close')} />
+            <IconButton icon={X} onClick={cerrar} aria-label={t('common.close')} title={t('common.close')} />
           </div>
           {cargando && (
-            <p className="text-footnote text-text-secondary animate-pulse">{t('reading.recall_loading')}</p>
+            <p role="status" aria-live="polite" className="text-footnote text-text-secondary animate-pulse">
+              {t('reading.recall_loading')}
+            </p>
           )}
-          {!cargando && evaluacion?.sinConstancia && (
-            <Notice data-recordar-vacio variant="info" compact>
+          {!cargando && evaluacion?.estado === 'sin_evidencia' && (
+            <Notice data-recordar-vacio role="status" aria-live="polite" variant="info" compact>
               {t('reading.no_evidence')}
             </Notice>
           )}
-          {!cargando && evaluacion?.mostrarTexto && (
-            <p data-recordar-texto className="text-body text-text-primary leading-relaxed whitespace-pre-line">
+          {!cargando && evaluacion?.estado === 'sin_contenido' && (
+            <Notice data-recordar-sin-contenido role="status" aria-live="polite" variant="info" compact>
+              {t('reading.no_content')}
+            </Notice>
+          )}
+          {!cargando && evaluacion?.estado === 'sin_conexion' && (
+            <Notice data-recordar-offline role="alert" variant="warning" compact>
+              {t('reading.recall_offline')}
+            </Notice>
+          )}
+          {!cargando && evaluacion?.estado === 'error' && (
+            <Notice data-recordar-error role="alert" variant="error" compact>
+              {t('reading.recall_error')}
+            </Notice>
+          )}
+          {!cargando && evaluacion?.estado === 'disponible' && evaluacion?.mostrarTexto && (
+            <p data-recordar-texto role="status" aria-live="polite" className="text-body text-text-primary leading-relaxed whitespace-pre-line">
               {evaluacion.texto}
             </p>
-          )}
-          {error && !evaluacion?.mostrarTexto && (
-            <Notice variant="error" compact className="mt-2">{error}</Notice>
           )}
         </Card>
       )}

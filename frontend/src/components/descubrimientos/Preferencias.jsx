@@ -3,6 +3,7 @@ import { useI18n } from '../../i18n/I18nContext';
 import { SecondaryButton } from '../ui/Buttons';
 import { Switch } from '../ui/Controls';
 import { Notice } from '../ui/Feedback';
+import HistorialDescartes from './HistorialDescartes';
 
 export default function Preferencias({ alCambiar }) {
   const { t } = useI18n();
@@ -91,5 +92,6 @@ export default function Preferencias({ alCambiar }) {
     </fieldset>}
     {error && <Notice variant="warning" compact className="mt-2">{error}</Notice>}
     {aviso && <Notice variant="info" compact className="mt-2">{aviso}</Notice>}
+    <HistorialDescartes alCambiar={alCambiar} />
   </details></>;
 }

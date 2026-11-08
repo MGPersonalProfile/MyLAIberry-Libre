@@ -1,29 +1,22 @@
 const BASE = new URL(self.registration.scope).pathname.replace(/\/$/, '');
 const PREFIJO = `mylaiberry-${self.registration.scope}`;
-const CACHE = PREFIJO + 'contenido-2', APP = PREFIJO + 'app-2', ESTADO = PREFIJO + 'estado-2';
+const CACHE = PREFIJO + 'contenido-2', APP = PREFIJO + 'app-2', ESTADO = PREFIJO + 'estado-2', TECHO = 800;
 const PLAZO_MS = 4000, PLAZO_INSTALAR = 60000, PLAZO_PAGINA = 1500, PLAZO_LECTURA = 8000, PLAZO_CON_COPIA = 2500, TECHO_LECTURA = 90000, TECHO_ACCION = 180000, TECHO_LARGO = 600000;
-const TECHO = 800;
 const ESENCIAL = ['/app/', '/manifest.webmanifest', '/icono-192.png', '/icono-512.png', '/puente.json'].map(r => BASE + r);
 const esNuestra = u => u.origin === self.location.origin && u.pathname.startsWith(BASE + '/');
 
 const LECTURAS = new Set(['asistente-ver', 'repeated-works', 'check-repeated-chapters', 'search-in-work', 'detect-site', 'estadisticas-lectura', 'recordar-lectura', 'leer-eleccion-idioma']);
 
 const EN_VIVO = new Set(['asistente-retos-pendientes', 'queue-status', 'lan-estado', 'estado-voces', 'avisos-disponibles', 'avisos-via', 'exportar-lectura']);
-const DEL_AUDIO = new Set(['audio-capitulo', 'audio-obra']);
+const DEL_AUDIO = new Set(['audio-capitulo', 'audio-obra']), ESENCIALES = new Set(['get-library', 'get-settings', 'get-chapter-content', 'translate-chapter']);
 const pideAlgo = args => Array.isArray(args) && args.some(a => a && typeof a === 'object' && a.pedir === true);
 const DE_LEER = { has: (c, args) => /^(get|has|listar)-/.test(c) || ['translate-chapter', 'translate-synopsis'].includes(c)
   || LECTURAS.has(c) || EN_VIVO.has(c) || (DEL_AUDIO.has(c) && !pideAlgo(args)) };
-const ESENCIALES = new Set(['get-library', 'get-settings', 'get-chapter-content', 'translate-chapter']);
-const fallaSinCopia = c => ESENCIALES.has(c) || LECTURAS.has(c) || EN_VIVO.has(c) || DEL_AUDIO.has(c);
-const sinCopia = c => EN_VIVO.has(c) || DEL_AUDIO.has(c);
-const DE_PROGRESO = new Set(['update-progress', 'save-scroll-position']);
+const fallaSinCopia = c => ESENCIALES.has(c) || LECTURAS.has(c) || EN_VIVO.has(c) || DEL_AUDIO.has(c), sinCopia = c => EN_VIVO.has(c) || DEL_AUDIO.has(c);
 
-const PROYECTABLES = new Set(['get-library', 'get-work', 'get-fanfic', 'get-scroll-position']);
+const DE_PROGRESO = new Set(['update-progress', 'save-scroll-position']), PROYECTABLES = new Set(['get-library', 'get-work', 'get-fanfic', 'get-scroll-position']);
 
-const PC_CAIDO_MS = 15000;
-let pcCaidoHasta = 0;
-const pcNoContesta = () => Date.now() < pcCaidoHasta;
-const pcContesta = (si) => { pcCaidoHasta = si ? 0 : Date.now() + PC_CAIDO_MS; };
+const PC_CAIDO_MS = 15000; let pcCaidoHasta = 0; const pcNoContesta = () => Date.now() < pcCaidoHasta, pcContesta = (si) => { pcCaidoHasta = si ? 0 : Date.now() + PC_CAIDO_MS; };
 
 function vigilar(peticion) {
   let hecha = false;
@@ -41,17 +34,22 @@ const LARGAS = new Set(['asistente-reto-reanudar', 'asistente-chat', 'asistente-
   'scrape-story', 'refresh-chapters', 'resume-download', 'buscar-en-otros-sitios', 'import-bookmarks', 'adopt-work', 'get-recap']);
 const json = (datos, status = 200) => new Response(JSON.stringify(datos), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
 const claveDe = (canal, args) => `${self.location.origin}${BASE}/__api__/${canal}?a=${encodeURIComponent(JSON.stringify(args))}`;
-const progresoClave = obra => `${BASE}/__progreso__/${encodeURIComponent(obra)}`;
-const revisionClave = obra => `${BASE}/__revision__/${encodeURIComponent(obra)}`;
-async function revisionDe(obra) {
-  const r = await (await caches.open(ESTADO)).match(revisionClave(obra)); return r ? Number(await r.json()) || 0 : 0;
-}
-async function recordarRevision(obra, revision) {
-  if (Number.isInteger(revision) && revision >= 0) await (await caches.open(ESTADO)).put(revisionClave(obra), json(revision));
-}
+const progresoClave = obra => `${BASE}/__progreso__/${encodeURIComponent(obra)}`, revisionClave = obra => `${BASE}/__revision__/${encodeURIComponent(obra)}`, capClave = obra => `${BASE}/__capitulo__/${encodeURIComponent(obra)}`;
+const recordarCapitulo = async (o, c) => { if (Number.isInteger(c) && c >= 0) await (await caches.open(ESTADO)).put(capClave(o), json(c)); };
+const capituloDe = async (o) => {
+  const c = await caches.open(ESTADO), p = await c.match(progresoClave(o));
+  if (p) { const d = await p.json().catch(() => null); if (Number.isInteger(d?.capitulo)) return d.capitulo; }
+  const g = await c.match(capClave(o)); return g ? Number(await g.json().catch(() => null)) : null;
+};
+const recordatorioAutorizado = async (args, cuerpo) => {
+  const v = cuerpo?.valor, cap = await capituloDe(args[0]);
+  if (!v || v.status !== 'ok') return false;
+  return cap === null || ((!Number.isInteger(v.limite) || v.limite < cap) && (!Array.isArray(v.capitulos) || !v.capitulos.some(i => i >= cap)));
+};
+const revisionDe = async (obra) => { const r = await (await caches.open(ESTADO)).match(revisionClave(obra)); return r ? Number(await r.json()) || 0 : 0; };
+const recordarRevision = async (obra, revision) => { if (Number.isInteger(revision) && revision >= 0) await (await caches.open(ESTADO)).put(revisionClave(obra), json(revision)); };
 async function dispositivo() {
-  const cache = await caches.open(ESTADO), clave = `${BASE}/__dispositivo__`;
-  const r = await cache.match(clave); if (r) return r.json();
+  const cache = await caches.open(ESTADO), clave = `${BASE}/__dispositivo__`, r = await cache.match(clave); if (r) return r.json();
   const id = crypto.randomUUID(); await cache.put(clave, json(id)); return id;
 }
 const cacheDe = url => {
@@ -64,8 +62,7 @@ async function instalar() {
 
   const lista = await conPlazo(fetch(`${BASE}/app/precarga.json`), PLAZO_INSTALAR);
   if (!lista.ok) throw new Error('No se pudo preparar la app sin conexión');
-  const urls = [...ESENCIAL, ...(await lista.json()).map(r => `${BASE}/app/${r}`)]
-    .map(r => new URL(r, self.location.origin).href);
+  const urls = [...ESENCIAL, ...(await lista.json()).map(r => `${BASE}/app/${r}`)].map(r => new URL(r, self.location.origin).href);
   await (await caches.open(ESTADO)).put(INSTALADO(), json(urls));
   for (const url of new Set(urls)) {
     const r = await conPlazo(fetch(url), PLAZO_INSTALAR);
@@ -76,9 +73,10 @@ async function instalar() {
   for (const canal of ['get-settings', 'get-library']) {
     try {
       const { estado, cuerpo } = await llamarAlPC(canal, [], PLAZO_INSTALAR);
-      if (estado !== 200 || cuerpo.error) continue;
-      if (canal === 'get-settings') await recordarAjustes(cuerpo.valor);
-      await guardarLectura(canal, [], cuerpo, claveDe(canal, []));
+      if (estado === 200 && !cuerpo.error) {
+        if (canal === 'get-settings') await recordarAjustes(cuerpo.valor);
+        await guardarLectura(canal, [], cuerpo, claveDe(canal, []));
+      }
     } catch {  }
   }
   await self.skipWaiting();
@@ -96,9 +94,7 @@ async function activar() {
   const lista = await (await caches.open(ESTADO)).match(INSTALADO());
   if (lista) {
     const instalado = new Set(await lista.json()), app = await caches.open(APP);
-    for (const clave of await app.keys()) {
-      if (new URL(clave.url).pathname.startsWith(BASE + '/app/') && !instalado.has(clave.url)) await app.delete(clave);
-    }
+    for (const clave of await app.keys()) if (new URL(clave.url).pathname.startsWith(BASE + '/app/') && !instalado.has(clave.url)) await app.delete(clave);
   }
   await self.clients.claim();
 }
@@ -140,8 +136,7 @@ async function primeroLaRed(peticion, trabajos) {
 async function llamarAlPC(canal, args, plazo = PLAZO_LECTURA) {
   const r = await conPlazo(fetch(`${BASE}/api/${encodeURIComponent(canal)}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(args)
-  }), plazo);
-  return { estado: r.status, cuerpo: await r.json() };
+  }), plazo); return { estado: r.status, cuerpo: await r.json() };
 }
 
 let sondeo = null;
@@ -208,21 +203,19 @@ async function avisarDeLoFresco(canal) {
 }
 async function trasLlamar(canal, args, cuerpo, clave) {
   if (DE_LEER.has(canal, args) && !sinCopia(canal)) await guardarLectura(canal, args, cuerpo, clave);
-  if (canal === 'get-settings') await recordarAjustes(cuerpo.valor);
-  if (canal === 'update-settings') await recordarAjustes(args[0]);
-  if (canal === 'has-translation' && typeof args[2] === 'string')
-    await (await caches.open(ESTADO)).put(`${BASE}/__idioma__`, json(args[2]));
+  if (canal === 'get-settings' || canal === 'update-settings') await recordarAjustes(canal === 'get-settings' ? cuerpo.valor : args[0]);
+  if (canal === 'has-translation' && typeof args[2] === 'string') await (await caches.open(ESTADO)).put(`${BASE}/__idioma__`, json(args[2]));
   if (canal === 'translate-chapter' && typeof args[2] === 'string') await fijarTraduccionLeida(args, cuerpo.valor);
   if (canal === 'get-chapter-content') await adelantarObra(args[0], Number(args[1]) + 1, 3);
   if (canal === 'get-library' && Array.isArray(cuerpo.valor)) await adelantarBiblioteca(cuerpo.valor);
-  const obras = Array.isArray(cuerpo.valor) ? cuerpo.valor : [cuerpo.valor];
-  for (const obra of obras) if (obra?.id && Number.isInteger(obra.lecturaRevision))
-    await recordarRevision(String(obra.id), obra.lecturaRevision);
+  for (const o of (Array.isArray(cuerpo.valor) ? cuerpo.valor : [cuerpo.valor])) if (o?.id) {
+    if (Number.isInteger(o.lecturaRevision)) await recordarRevision(String(o.id), o.lecturaRevision);
+    if (Number.isInteger(o.currentChapter)) await recordarCapitulo(String(o.id), o.currentChapter);
+  }
 }
 async function recordarAjustes(ajustes) {
   if (!ajustes || typeof ajustes !== 'object') return;
-  const cache = await caches.open(ESTADO), clave = `${BASE}/__ajustes__`;
-  const previo = await cache.match(clave).then(r => r ? r.json() : {});
+  const cache = await caches.open(ESTADO), clave = `${BASE}/__ajustes__`, previo = await cache.match(clave).then(r => r ? r.json() : {});
   await cache.put(clave, json({ ...previo, ...ajustes }));
   if (ajustes.lang) await cache.put(`${BASE}/__idioma__`, json(ajustes.lang));
 }
@@ -231,6 +224,7 @@ async function ajustesGuardados() {
   return r ? r.json() : {};
 }
 async function claveContextual(canal, args) {
+  if (canal === 'recordar-lectura') return claveDe(canal, [...args, { c: await capituloDe(args[0]), rev: await revisionDe(args[0]) }]);
   if (!['get-chapter-titles', 'get-recap'].includes(canal)) return claveDe(canal, args);
   const a = await ajustesGuardados();
   return claveDe(canal, [...args, { idioma: a.lang || 'es', traducido: !!a.readTranslated }]);
@@ -257,8 +251,7 @@ async function adelantarObra(id, desde, cuantos) {
   const idioma = idiomaGuardado ? await idiomaGuardado.json() : null;
   for (let i = desde; i < desde + cuantos; i++) {
     if (!await traerYGuardar('get-chapter-content', [id, i])) return;
-    if (!idioma) continue;
-    if (!await traerYGuardar('has-translation', [id, i, idioma])) return;
+    if (!idioma || !await traerYGuardar('has-translation', [id, i, idioma])) continue;
     const hay = await (await caches.open(CACHE)).match(claveDe('has-translation', [id, i, idioma]));
     if (hay && (await hay.json()).valor) await traerYGuardar('translate-chapter', [id, i, idioma]);
   }
@@ -289,6 +282,7 @@ async function apuntarProgreso(canal, args) {
       ancla: canal === 'save-scroll-position' ? posicion?.ancla || null
         : (previo?.capitulo === capitulo ? previo.ancla : null) };
     await cache.put(clave, json(p));
+    if (canal === 'update-progress') await recordarCapitulo(obra, capitulo);
     if (canal === 'save-scroll-position') await cache.put(
       claveDe('get-scroll-position', [obra, capitulo]), json({ valor: posicion }));
   });
@@ -299,6 +293,7 @@ async function escribirProgreso(peticion, canal, args) {
   try {
     const respuesta = await conPlazo(fetch(peticion), PLAZO_LECTURA), cuerpo = await respuesta.clone().json().catch(() => null);
     if (respuesta.ok && Number.isInteger(cuerpo?.valor?.revision)) await recordarRevision(String(args[0]), cuerpo.valor.revision);
+    if (respuesta.ok && canal === 'update-progress') await recordarCapitulo(String(args[0]), args[1]);
     return respuesta;
   }
   catch { await apuntarProgreso(canal, args); return json({ valor: null }); }
@@ -308,8 +303,7 @@ function mandarProgreso() {
   return mandando;
 }
 async function enviarPendientes() {
-  const cache = await caches.open(ESTADO);
-  const contestadas = new Set();
+  const cache = await caches.open(ESTADO), contestadas = new Set();
   try {
     for (const clave of await cache.keys()) {
       const ruta = new URL(clave.url).pathname, progreso = ruta.startsWith(BASE + '/__progreso__/');
@@ -373,6 +367,10 @@ async function copia(canal, args, clave) {
   if (posicion) cuerpo.valor = (await posicion.clone().json()).valor;
   if (await conLoGuardado(canal, args, cuerpo)) hay = true;
   if (await conPendientes(canal, args, cuerpo)) hay = true;
+  if (canal === 'recordar-lectura' && !(await recordatorioAutorizado(args, cuerpo))) {
+    if (r) await (await caches.open(CACHE)).delete(clave);
+    return null;
+  }
   return hay ? json(cuerpo) : null;
 }
 
@@ -384,11 +382,14 @@ async function respuestaConPendientes(canal, args, r) {
   return json(cuerpo);
 }
 async function actualizarCopias(p) {
-  const cache = await caches.open(CACHE);
-  const local = await (await caches.open(ESTADO)).match(claveDe('get-scroll-position', [p.obra, p.capitulo]));
+  const cache = await caches.open(CACHE), local = await (await caches.open(ESTADO)).match(claveDe('get-scroll-position', [p.obra, p.capitulo]));
   const posicion = local ? (await local.json()).valor : undefined;
   for (const k of await cache.keys()) {
     const u = new URL(k.url), canal = u.pathname.split('/').pop();
+    if (canal === 'recordar-lectura' && String(JSON.parse(u.searchParams.get('a') || '[]')[0]) === String(p.obra)) {
+      const c = await (await cache.match(k)).json().catch(() => null);
+      if (c?.valor && (c.valor.limite >= p.capitulo || c.valor.capitulos?.some(i => i >= p.capitulo))) await cache.delete(k);
+    }
     if (!PROYECTABLES.has(canal)) continue;
     const cuerpo = await (await cache.match(k)).json();
     await cache.put(k, json(proyectar(canal, JSON.parse(u.searchParams.get('a')), cuerpo, p, posicion)));
@@ -400,7 +401,7 @@ self.addEventListener('fetch', e => {
   if (!esNuestra(url)) return;
   const api = url.pathname.startsWith(BASE + '/api/') && decodeURIComponent(url.pathname.slice(BASE.length + 5));
   if (!(e.request.method === 'POST' && api) && (e.request.method !== 'GET' || /\/eventos$/.test(url.pathname))) return;
-  const trabajos = [], respuesta = api === CANAL_SESIONES ? atenderSesion(e.request, trabajos) : api ? llamada(e.request, api, trabajos) : primeroLaRed(e.request, trabajos);
+  const trabajos = [], respuesta = RUTA_IMAGEN.test(url.pathname) && e.request.method === 'GET' ? atenderImagenComic(e.request) : api === CANAL_SESIONES ? atenderSesion(e.request, trabajos) : api ? llamada(e.request, api, trabajos) : primeroLaRed(e.request, trabajos);
   e.respondWith(respuesta);
 
   e.waitUntil((async () => {

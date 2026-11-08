@@ -7,7 +7,7 @@ const viajeCancelado = new Set();
 
 function abrirViaje() {
   return new Promise((ok, mal) => {
-    const r = indexedDB.open(BD_VIAJE, 3);
+    const r = indexedDB.open(BD_VIAJE, 4);
 
     r.onupgradeneeded = (e) => {
       const antes = (e && e.oldVersion) || 0;
@@ -17,6 +17,7 @@ function abrirViaje() {
       }
       if (antes < 2) r.result.createObjectStore('sesiones', { keyPath: 'sessionId' });
       if (antes < 3) r.result.createObjectStore('traducciones', { keyPath: ['obra', 'indice', 'idioma'] });
+      if (antes < 4) r.result.createObjectStore('imagenes', { keyPath: ['obra', 'capitulo', 'imagen'] });
     };
     r.onsuccess = () => ok(r.result);
     r.onerror = () => mal(r.error);
@@ -110,11 +111,12 @@ async function borrarViaje(id) {
   if (!estado) return;
   const bd = await abrirViaje();
   await new Promise((ok, mal) => {
-    const tx = bd.transaction(['obras', 'capitulos', 'traducciones'], 'readwrite');
+    const tx = bd.transaction(['obras', 'capitulos', 'traducciones', 'imagenes'], 'readwrite');
     tx.objectStore('obras').delete(id);
     for (let i = 0; i < (estado.almacenados || estado.total); i++) tx.objectStore('capitulos').delete([id, i]);
 
     tx.objectStore('traducciones').delete(IDBKeyRange.bound([id], [id, []]));
+    tx.objectStore('imagenes').delete(IDBKeyRange.bound([id], [id, []]));
     tx.oncomplete = () => { bd.close(); ok(); };
     tx.onerror = () => { bd.close(); mal(tx.error); };
     tx.onabort = () => { bd.close(); mal(tx.error || new Error('Borrado local interrumpido.')); };
@@ -173,7 +175,7 @@ async function traerCapituloViaje(id, indice) {
       const { estado, cuerpo } = await llamarAlPC('get-chapter-content', [id, indice]);
       if (estado === 200) {
         const html = cuerpo?.valor;
-        return typeof html === 'string' && html.replace(/<[^>]*>/g, '').trim() ? html : null;
+        return contenidoDeViaje(html);
       }
     } catch {  }
     if (intento < 2) await new Promise(ok => setTimeout(ok, 300 * (intento + 1)));
@@ -250,7 +252,7 @@ async function descargarTramoViaje(estado) {
     if (estado.revisionPendiente || !await leerViaje('capitulos', [estado.id, i])) {
       const html = await traerCapituloViaje(estado.id, i);
       if (html) {
-        await escribirViaje('capitulos', { obra: estado.id, indice: i, html });
+        await escribirCapituloViaje(estado, i, html);
         await (await caches.open(CACHE)).delete(claveDe('get-chapter-content', [estado.id, i]));
       } else estado.faltantes.push(i);
     }
@@ -307,8 +309,8 @@ async function recogerFondo(registro) {
     if (r) {
       const respuesta = await r.responseReady.catch(() => null);
       const html = respuesta?.ok ? (await respuesta.json().catch(() => null))?.valor : null;
-      if (typeof html !== 'string' || !html.replace(/<[^>]*>/g, '').trim()) break;
-      await escribirViaje('capitulos', { obra: id, indice: i, html });
+      if (!contenidoDeViaje(html)) break;
+      try { await escribirCapituloViaje(estado, i, html); } catch (e) { if (e.name === 'QuotaExceededError') estado.error = e.message; break; }
       await (await caches.open(CACHE)).delete(claveDe('get-chapter-content', [id, i]));
     }
     estado.guardados = i + 1;
@@ -362,7 +364,7 @@ async function descargarViaje(id, total, forzar = false, ficha = null) {
   catch (e) {
     const estado = await leerViaje('obras', id).catch(() => null);
     const cuota = e.name === 'QuotaExceededError';
-    const error = cuota ? 'No queda espacio para guardar esta obra en el móvil.'
+    const error = cuota ? (e.espacioViaje ? e.message : 'No queda espacio para guardar esta obra en el móvil.')
       : e.message || 'No se pudo guardar la obra. Reintenta al reconectar.';
     salida = { id, total, guardados: 0, ...estado, continuar: false, enCurso: false, error,
       reintentarAlConectar: !cuota };

@@ -4,6 +4,7 @@ const { mismoOrigen, drenar } = require('./progreso.js');
 const { rutaSegura, esIdValido } = require('./rutas-seguras.js');
 const { puenteParaElMovil, CON_CODIGO_OBLIGATORIO } = require('./puente.js');
 const eventos = require('./eventos.js');
+const { conComic, resolverImagen } = require('./comic-lan.js');
 
 const CARPETA_APP = path.join(__dirname, '..', '..', 'frontend', 'dist');
 const MAXIMO = 1024 * 1024;
@@ -171,6 +172,12 @@ async function servirCapitulo(res, [id, n], llamar) {
   }
 }
 
+async function servirImagenComic(res, [id, n, i], comic) {
+  const f = await resolverImagen(comic, id, n, i);
+  if (!f) return json(res, 404, { error: 'No hay nada aquí.' });
+  return enviar(res, 200, f.mime, fs.readFileSync(f.ruta), { 'Cache-Control': 'private, max-age=31536000, immutable' });
+}
+
 async function llamarApi(req, res, canal, llamar, { codigoLan = false } = {}) {
   const permitidos = new Set(Object.values(puenteParaElMovil().metodos));
 
@@ -213,6 +220,7 @@ async function atenderPush(req, res, accion, ctx) {
 async function atenderApp(req, res, partes, url, ctx) {
   if (!ctx || typeof ctx.llamar !== 'function') return false;
   const [primero, ...resto] = partes;
+  if (ctx.comic) ctx = { ...ctx, llamar: conComic(ctx.llamar, ctx.comic) };
   if (primero === 'push' && resto.length === 1) {
     await atenderPush(req, res, resto[0], ctx);
     return true;
@@ -239,6 +247,7 @@ async function atenderApp(req, res, partes, url, ctx) {
   if (primero === 'eventos' && !resto.length) { eventos.suscribir(req, res); return true; }
   if (primero === 'epub' && resto.length === 1) { await servirEpub(res, resto[0], url, ctx.epub); return true; }
   if (primero === 'capitulo' && resto.length === 2) { await servirCapitulo(res, resto, ctx.llamar); return true; }
+  if (primero === 'imagen-capitulo' && resto.length === 3) { await servirImagenComic(res, resto, ctx.comic); return true; }
   if (primero === 'audio-obra' && resto.length === 1) { await servirAudioObra(res, resto[0], url, ctx.audioObra); return true; }
   if (primero === 'fichero' && !resto.length) {
     servirFichero(res, url.searchParams.get('ruta'), typeof ctx.raizDatos === 'function' ? ctx.raizDatos() : ctx.raizDatos, req.headers?.range);

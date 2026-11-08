@@ -12,6 +12,8 @@ function opcionesDelServidor() {
   return {
 
     app: { llamar: require('../ipc-registro.js').llamar, raizDatos: () => getDataLocation().actual, epub: prepararEpub,
+
+      comic: { manifiesto: (id, n) => require('../db.js').leerManifiesto(id, n), carpeta: (id, n) => require('../db.js').carpetaComicCapitulo(id, n) },
       audioObra: (id, idioma) => require('../audio-obra.js').paraZip(id, idioma),
 
       subirLibro: (ruta) => require('./descargas.js').importarLibro(ruta, d => require('../ventana.js').avisar('scrape-progress', d)) },

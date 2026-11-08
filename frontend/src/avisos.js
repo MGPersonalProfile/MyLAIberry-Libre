@@ -1,6 +1,17 @@
-export function avisar(texto, tipo = 'ok') {
+export function avisar(texto, tipo = 'ok', accion = null, duracion = null) {
   if (!texto) return;
-  window.dispatchEvent(new CustomEvent('mylaiberry-aviso', { detail: { texto: String(texto), tipo, id: Date.now() + Math.random() } }));
+  const t = typeof tipo === 'object' && tipo !== null ? tipo.tipo || 'ok' : tipo;
+  const a = typeof tipo === 'object' && tipo !== null ? tipo.accion : accion;
+  const d = typeof tipo === 'object' && tipo !== null ? tipo.duracion : duracion;
+  window.dispatchEvent(new CustomEvent('mylaiberry-aviso', {
+    detail: {
+      texto: String(texto),
+      tipo: t,
+      accion: a && typeof a === 'object' ? a : null,
+      duracion: typeof d === 'number' ? d : null,
+      id: Date.now() + Math.random()
+    }
+  }));
 }
 
 export function motivo(err) {

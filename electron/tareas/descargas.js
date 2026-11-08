@@ -70,8 +70,9 @@ function crearGuardador({ id, total, enDiscoInicial, ajustes, alGuardar }) {
 
 async function planDeDescarga({ id, hasta, avanzar }) {
   const obra = await getFanficById(id);
+  if (!obra || obra.origen === 'descartada') return null;
   if (obra?.needsChapterSelection) return null;
-  if (!obra || !Array.isArray(obra.chapterList) || obra.chapterList.length === 0) return null;
+  if (!Array.isArray(obra.chapterList) || obra.chapterList.length === 0) return null;
 
   const total = obra.chapterList.length;
   const meta = Math.min(total, hasta || total);

@@ -197,6 +197,9 @@ export const BIBLIOTECA = {
   'reading.you_were_at_chapter': { es: 'Ibas por el capítulo {n}', en: 'You were on chapter {n}' },
   'reading.recall_story':        { es: 'Recordar la historia', en: 'Recall the story' },
   'reading.no_evidence':         { es: 'No sé por dónde vas', en: 'I don’t know where you are' },
+  'reading.no_content':          { es: 'No hay capítulos anteriores descargados para recordar', en: 'No previous downloaded chapters to recall' },
+  'reading.recall_error':        { es: 'No se pudo generar el recordatorio', en: 'Could not generate recap' },
+  'reading.recall_offline':      { es: 'Sin conexión para consultar el recordatorio', en: 'Offline: cannot retrieve recap' },
   'reading.recall_title':        { es: 'Recordar la historia', en: 'Recall the story' },
   'reading.recall_loading':      { es: 'Recordando…', en: 'Recalling…' },
 
@@ -335,6 +338,8 @@ export const BIBLIOTECA = {
   'common.confirm': { es: 'Confirmar', en: 'Confirm' },
   'common.cancel':  { es: 'Cancelar', en: 'Cancel' },
   'common.close':   { es: 'Cerrar', en: 'Close' },
+  'common.undo':    { es: 'Deshacer', en: 'Undo' },
+  'aviso.descarte_deshecho': { es: '«{titulo}» recuperada', en: '"{titulo}" recovered' },
 
   'sync.conflict':  {
     es: 'La app también está abierta en «{equipo}» con esta misma biblioteca. Ciérrala allí para no perder cambios.',

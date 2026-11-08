@@ -83,9 +83,37 @@ async function descartarObra(id) {
   const entroSola = esDeLaBiblioteca(o) && Date.now() - (o?.propuesta?.adoptadaAlVencer || 0) < 60 * 60 * 1000;
   if (!o || (o.origen !== 'descubierta' && !entroSola)) throw new Error('Sólo se descartan obras de Descubrimientos.');
   o.origen = 'descartada';
+  o.descartadaEn = Date.now();
   delete o.descarteMasivo;
   await writeDB();
   return { status: 'ok' };
+}
+
+async function deshacerDescarte(id) {
+  const d = await leer();
+  const o = d.fanfics.find(f => String(f.id) === String(id));
+  if (!o || o.origen !== 'descartada') throw new Error('Sólo se recuperan obras descartadas.');
+  o.origen = 'descubierta';
+  delete o.descartadaEn;
+  delete o.descarteMasivo;
+  await writeDB();
+  return { status: 'ok', obra: o };
+}
+
+async function descartesRecientes(ahora = Date.now(), limiteDias = 7) {
+  const d = await leer();
+  const maxMs = limiteDias * 24 * 60 * 60 * 1000;
+  return (d.fanfics || [])
+    .filter(o => o.origen === 'descartada' && (!o.descartadaEn || ahora - o.descartadaEn <= maxMs))
+    .sort((a, b) => (b.descartadaEn || 0) - (a.descartadaEn || 0))
+    .map(o => ({
+      id: String(o.id),
+      title: o.title,
+      author: o.author,
+      source: o.source,
+      descartadaEn: o.descartadaEn || null,
+      propuesta: o.propuesta || null
+    }));
 }
 
 async function marcarPropuesta(id, propuesta) {
@@ -107,4 +135,12 @@ async function propuestasVencidas(ahora = Date.now()) {
     .map(o => ({ id: String(o.id), title: o.title }));
 }
 
-module.exports = { getPreferenciasDescubrimientos, decidirDescubrimientos, descartarObra, marcarPropuesta, propuestasVencidas };
+module.exports = {
+  getPreferenciasDescubrimientos,
+  decidirDescubrimientos,
+  descartarObra,
+  deshacerDescarte,
+  descartesRecientes,
+  marcarPropuesta,
+  propuestasVencidas
+};

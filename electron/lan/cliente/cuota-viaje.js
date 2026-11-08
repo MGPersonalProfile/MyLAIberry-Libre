@@ -66,6 +66,19 @@ function comprobarEspacioViaje(estado, estimacion, limites) {
   };
 }
 
+function comprobarImagenesViaje(datos = {}, estimacion = null, limites = null) {
+  const l = limitesDeViaje(limites);
+  const necesarios = Math.max(0, Number(datos.bytesNuevos) || 0);
+  const ocupado = Math.max(0, (Number(datos.bytesGuardados) || 0) - (Number(datos.bytesPrevios) || 0));
+  let disponibles = Math.max(0, l.techoOffline - ocupado);
+  if (estimacion && Number.isFinite(estimacion.quota) && Number.isFinite(estimacion.usage)) {
+    disponibles = Math.min(disponibles, Math.max(0, estimacion.quota - estimacion.usage - Math.floor(estimacion.quota * l.reservaRatio)));
+  }
+  const permitido = necesarios <= disponibles;
+  return { permitido, necesarios, disponibles, limite: l.techoOffline,
+    motivo: permitido ? null : 'No queda espacio para guardar esta obra en el móvil.' };
+}
+
 function comprobarContenidoViaje(tipo, contenido, limites) {
   const limitesEff = limitesDeViaje(limites);
   const bytes = typeof contenido === 'number' ? contenido : medirBytesUtf8(contenido);
@@ -89,6 +102,7 @@ if (typeof module !== 'undefined' && module.exports) {
     limitesDeViaje,
     estimarPendiente,
     comprobarEspacioViaje,
+    comprobarImagenesViaje,
     comprobarContenidoViaje
   };
 }

@@ -1,5 +1,52 @@
 [
   {
+    "version": "2026.11.8-2",
+    "fecha": "2026-11-08",
+    "resumen": "Correcciones de seguridad en la interfaz de seguimiento sin spoilers (A40).",
+    "detalle": [
+      {
+        "que": "La PWA valida autónomamente los recordatorios guardados y no entrega ninguno posterior al progreso vigente al retroceder sin conexión.",
+        "porque": "La revisión adversaria de Echo detectó que el Service Worker devolvía la copia guardada sin comprobar si el usuario había retrocedido el progreso desconectado del PC."
+      },
+      {
+        "que": "El panel de recordar historia invalida cualquier petición previa si cambias de obra o retrocedes mientras carga.",
+        "porque": "La revisión adversaria de Echo identificó que en Inicio una respuesta tardía de una historia previa podía asignarse erróneamente a la obra que acababa de seleccionarse."
+      },
+      {
+        "que": "La interfaz rechaza cualquier respuesta que no declare explícitamente su límite de lectura o contenga capítulos fuera de autorización.",
+        "porque": "La revisión adversaria de Echo observó que una respuesta incompleta sin campo de límite era aceptada por el frontend."
+      },
+      {
+        "que": "El motor y el panel revalidan el progreso antes de entregar el texto narrativo si el lector retrocede mientras se genera el recordatorio.",
+        "porque": "La revisión adversaria de Echo identificó una ventana temporal de concurrencia donde un retroceso durante la generación podía mostrar spoilers."
+      },
+      {
+        "que": "La interfaz distingue con precisión entre falta de constancia de lectura, capítulos no descargados, errores de motor y desconexión de red.",
+        "porque": "La revisión de Echo detectó que cualquier fallo o falta de descarga se comunicaba al usuario engañosamente como «no sé por dónde vas»."
+      },
+      {
+        "que": "El panel de recordar historia es completamente accesible con aria-expanded, aria-controls y regiones aria-live.",
+        "porque": "La revisión de Echo identificó carencias de accesibilidad en los controles del panel para lectores de pantalla."
+      },
+      {
+        "que": "El recordatorio de lectura se ofrece tras 7 días de inactividad y cuando existen capítulos anteriores leídos para recapitular.",
+        "porque": "La revisión de Echo observó que se ofrecía recordar la historia inmediatamente tras leer y para obras sin capítulos previos terminados."
+      },
+      {
+        "que": "El motor y el panel soportan localización completa en inglés (ES/EN) para progreso, fechas y avisos de error.",
+        "porque": "La revisión de Echo detectó que las fechas y el texto de progreso se generaban siempre en español y con mensajes sin localizar."
+      },
+      {
+        "que": "En «Por decidir» (A51): deshacer descarte con aviso de 10 s y recuperación durante 7 días desde el historial; lotes de 10 por relevancia con guardar y descartar lote; y gestos táctiles en móvil para guardar y descartar sin descargas duplicadas.",
+        "porque": "Completa la experiencia de revisión previa de propuestas antes de incorporar obras a la biblioteca."
+      },
+      {
+        "que": "Los webcómics de Webtoon se pueden guardar en el móvil con todas sus viñetas y leer sin conexión. Cada capítulo se guarda entero o no se guarda: si falta una viñeta o se acaba el espacio, ese capítulo no entra y los anteriores se conservan. Antes de empezar, la app calcula cuánto ocupará la serie y avisa si no cabe (se respeta el límite de 1 GB y se deja libre un 10 % del espacio del móvil). Al borrar la copia de una obra también se borran sus viñetas. Está probado con un móvil simulado; falta probarlo en un teléfono real.",
+        "porque": "La copia sin conexión sólo sabía guardar texto: un capítulo de viñetas se quedaba en blanco al perder la conexión."
+      }
+    ]
+  },
+  {
     "version": "2026.11.8",
     "fecha": "2026-11-07",
     "resumen": "La interfaz usa los mismos botones, filtros y avisos en más pantallas, sin cambiar el aspecto clásico. Control de cuota real y sincronización robusta de idioma en el móvil (A35), y recuperación de obras y cola tras restaurar una copia de seguridad (A44).",

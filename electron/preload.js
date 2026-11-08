@@ -4,7 +4,7 @@ contextBridge.exposeInMainWorld('api', {
 
   getLibrary: () => ipcRenderer.invoke('get-library'),
   updateProgress: (id, currentChapter) => ipcRenderer.invoke('update-progress', id, currentChapter),
-  recordarLectura: (obra, modo) => ipcRenderer.invoke('recordar-lectura', obra, modo),
+  recordarLectura: (obra, modo, lang) => ipcRenderer.invoke('recordar-lectura', obra, modo, lang),
 
   getChapterContent: (id, chapterIndex) => ipcRenderer.invoke('get-chapter-content', id, chapterIndex),
 
@@ -93,6 +93,8 @@ contextBridge.exposeInMainWorld('api', {
 
   adoptWork: (id, opciones) => ipcRenderer.invoke('adopt-work', id, opciones),
   discardWork: (id) => ipcRenderer.invoke('discard-work', id),
+  deshacerDescarte: (id) => ipcRenderer.invoke('undo-discard', id),
+  getDescartesRecientes: () => ipcRenderer.invoke('get-discarded-works'),
 
   getBackdrop: (id) => ipcRenderer.invoke('get-backdrop', id),
 
