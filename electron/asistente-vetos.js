@@ -1,5 +1,6 @@
 const { lecturaDe, parejasDe, traeCasilla, sinAcentos } = require('./asistente-vetos-parejas');
 const { claveDeObra } = require('./misma-obra');
+const { estadoDeCompatibilidad, esRecomendable, ESTADOS } = require('./asistente-compatibilidad');
 
 const CATEGORIAS = [
   { categoria: 'M/M', patron: /\bm\s*\/\s*m\b|(?<![a-z])slash\b|\byaoi\b/i },
@@ -31,6 +32,8 @@ const categoriasVetadas = (preferences) => vetosDe(preferences).categorias;
 function crearRegistro() {
   const retiradas = [], sinComprobar = [], permitidas = new Set(), titulosPermitidos = new Set();
 
+  const noVerificadas = [], verificadas = new Set();
+
   const claves = (o) => {
     const titulo = sinAcentos(o.title ?? o.titulo ?? '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
     const autorDato = o.author ?? o.autor;
@@ -40,8 +43,17 @@ function crearRegistro() {
       id ? `id:${sinAcentos(o.source ?? o.fuente ?? '')}:${id}` : null,
       titulo && autor ? `ta:${titulo}:${autor}` : null].filter(Boolean);
   };
+  const porIdentidad = (o) => claves(o).filter(c => c.startsWith('u:') || c.startsWith('id:'));
   return {
-    retiradas, sinComprobar,
+    retiradas, sinComprobar, noVerificadas,
+
+    verifica(o) { const k = porIdentidad(o); k.forEach(c => verificadas.add(c));
+      for (let i = noVerificadas.length - 1; i >= 0; i--) if (claves(noVerificadas[i]).some(c => k.includes(c))) noVerificadas.splice(i, 1); },
+    verificada(o) { return porIdentidad(o).some(c => verificadas.has(c)); },
+
+    pendiente(o, compat) { const k = claves(o);
+      if (!noVerificadas.some(r => claves(r).some(c => k.includes(c)))) noVerificadas.push({ titulo: String(o.title ?? o.titulo ?? ''), url: o.url, id: o.id ?? o.idOrigen,
+        source: o.source ?? o.fuente, autor: o.author ?? o.autor, estado: compat.estado, motivo: compat.motivo }); },
     anota(o, categoria) { const id = o.id ?? o.idOrigen; retiradas.push({ titulo: String(o.title ?? o.titulo ?? ''), url: o.url, id,
       source: o.source ?? o.fuente, autor: o.author ?? o.autor, categoria }); },
     recuerda(o, { conCasilla = false } = {}) {
@@ -76,7 +88,8 @@ function mirar(obra, vetos, registro) {
   if (vetadas.length && !libre) return { categoria: vetadas[0] };
   const antes = registro?.recuerda(obra, { conCasilla: traeCasilla(etiquetas) });
   if (antes && !libre) return { categoria: antes };
-  return { categoria: null, sinCategoria: !categorias.length && !traeCasilla(etiquetas) };
+
+  return { categoria: null, sinCategoria: !categorias.length && !traeCasilla(etiquetas), compat: estadoDeCompatibilidad(obra, { previa: !!registro?.verificada?.(obra) }) };
 }
 
 const choca = (obra, vetadas, opc = {}) => mirar(obra, { categorias: vetadas, exentas: opc.exentas || new Set(), ambitos: opc.ambitos || [] }, opc.registro).categoria;
@@ -84,8 +97,16 @@ const choca = (obra, vetadas, opc = {}) => mirar(obra, { categorias: vetadas, ex
 const MENSAJE = {
   vetada: (c) => `Es ${c}, y el usuario no lee ${c} (sus disgustos): no se la recomiendes ni la importes salvo que la pida él sabiéndolo.`,
   quitadas: (n, vetadas) => `${n === 1 ? 'Se quitó 1 obra' : `Se quitaron ${n} obras`} ${vetadas.join(' o ')} por los disgustos del usuario; no las busques por otro camino.`,
+  pendientes: (n, vetadas) => `${n === 1 ? 'Una obra no está comprobada' : `${n} obras no están comprobadas`} contra los disgustos (${vetadas.join(' o ')}): NO las recomiendes como compatibles. Abre su ficha con abrir_ficha_web para leer las etiquetas completas, o dilo.`,
   sinCategoria: (n, vetadas) => `${n === 1 ? 'Una obra no dice' : `${n} obras no dicen`} su categoría ni su pareja: no se pudo comprobar que no sean ${vetadas.join(' o ')}. No afirmes que encajan con sus disgustos; dilo.`
 };
+
+function conCompat(obra, m, registro) {
+  const c = m.compat;
+  if (!c) return obra;
+  if (c.estado === ESTADOS.COMPATIBLE) { if (obra.verificacionRelaciones?.etiquetasCompletas === true) registro?.verifica(obra); } else registro?.pendiente(obra, c);
+  return { ...obra, compatibilidad: { estado: c.estado, recomendable: esRecomendable(c.estado), motivo: c.motivo, ...(c.accion ? { accion: c.accion, url: obra.url } : {}) } };
+}
 
 function sinVetadas(resultado, vetadas, opc = {}) {
   if (!vetadas.length || !resultado || typeof resultado !== 'object') return resultado;
@@ -96,8 +117,8 @@ function sinVetadas(resultado, vetadas, opc = {}) {
     registro?.anota(resultado, propia.categoria);
     return { ...resultado, vetada: MENSAJE.vetada(propia.categoria) };
   }
-  if (propia.sinCategoria) { registro?.sinCategoria(resultado); return { ...resultado, sinCategoria: MENSAJE.sinCategoria(1, vetadas) }; }
-  const cuenta = { quitadas: 0, sin: 0 };
+  if (propia.sinCategoria) { registro?.sinCategoria(resultado); return conCompat({ ...resultado, sinCategoria: MENSAJE.sinCategoria(1, vetadas) }, propia, registro); }
+  const cuenta = { quitadas: 0, sin: 0, pend: [], rec: [] };
   const filtrar = (lista) => lista.filter(x => {
     const m = mirar(x, vetos, registro);
     if (m.categoria) { cuenta.quitadas++; registro?.anota(x, m.categoria); }
@@ -113,14 +134,20 @@ function sinVetadas(resultado, vetadas, opc = {}) {
       if (m.categoria) { registro?.anota(v, m.categoria); return { vetada: MENSAJE.vetada(m.categoria) }; }
       if (m.sinCategoria) registro?.sinCategoria(v);
       else registro?.acepta(v);
-      return v;
+      const con = conCompat(v, m, registro);
+      const ficha = { title: v.title ?? v.titulo, url: v.url, estado: con.compatibilidad?.estado };
+      if (con.compatibilidad?.recomendable) cuenta.rec.push(ficha); else if (con.compatibilidad) cuenta.pend.push({ ...ficha, motivo: con.compatibilidad.motivo, ...(con.compatibilidad.accion ? { accion: con.compatibilidad.accion } : {}) });
+      return con;
     }
 
     if (/^Tu biblioteca/.test(String(v.fuente || ''))) return v;
-    const antes = { ...cuenta };
+    const antes = { quitadas: cuenta.quitadas, sin: cuenta.sin, pend: cuenta.pend.length, rec: cuenta.rec.length };
     const fuera = Object.fromEntries(Object.entries(v).map(([k, x]) => [k, Array.isArray(x) ? filtrar(x) : limpiar(x)]));
     const q = cuenta.quitadas - antes.quitadas, s = cuenta.sin - antes.sin;
-    return { ...fuera, ...(q ? { vetadasPorDisgusto: MENSAJE.quitadas(q, vetadas) } : {}), ...(s ? { sinCategoriaPorDisgusto: MENSAJE.sinCategoria(s, vetadas) } : {}) };
+    const pendientes = cuenta.pend.slice(antes.pend), recomendables = cuenta.rec.slice(antes.rec);
+    return { ...fuera, ...(q ? { vetadasPorDisgusto: MENSAJE.quitadas(q, vetadas) } : {}), ...(s ? { sinCategoriaPorDisgusto: MENSAJE.sinCategoria(s, vetadas) } : {}),
+
+      ...(pendientes.length ? { pendientesDeVerificar: pendientes, pendientesPorDisgusto: MENSAJE.pendientes(pendientes.length, vetadas) } : {}), ...(recomendables.length ? { recomendables } : {}) };
   }
   return limpiar(resultado);
 }

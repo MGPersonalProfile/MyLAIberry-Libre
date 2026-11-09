@@ -38,14 +38,16 @@ function useGestoDeslizar(item, onGuardar, onDescartar) {
   const inicioRef = useRef(null);
   const onTouchStart = (e) => {
     if (e.touches?.length === 1) {
-      inicioRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() };
+      const scrollY = typeof window !== 'undefined' ? window.scrollY : 0;
+      inicioRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, scrollY, t: Date.now() };
     }
   };
   const onTouchEnd = (e) => {
     if (!inicioRef.current) return;
     const t = e.changedTouches?.[0];
     if (t) {
-      const act = accionPorGesto(inicioRef.current, { x: t.clientX, y: t.clientY, t: Date.now() });
+      const scrollY = typeof window !== 'undefined' ? window.scrollY : 0;
+      const act = accionPorGesto(inicioRef.current, { x: t.clientX, y: t.clientY, scrollY, t: Date.now() });
       if (act === 'guardar') onGuardar?.(item);
       else if (act === 'descartar') onDescartar?.(item);
     }
@@ -61,7 +63,7 @@ function TarjetaPropuesta({ item, ahora, abierta, alAlternar, onDetalle, onGuard
   const gestos = useGestoDeslizar(item, onGuardar, onDescartar);
 
   return (
-    <Card className="flex flex-col gap-2" {...gestos}>
+    <Card className="flex flex-col gap-2 touch-pan-y" {...gestos}>
       <div className="flex gap-3">
         <div className="w-16 shrink-0 aspect-[2/3] rounded-md overflow-hidden cursor-pointer" {...pulsable(() => onDetalle?.(item), item.title)} tabIndex={-1}>
           <Cover story={item} className="w-full h-full" imgClassName="w-full h-full object-cover" />
@@ -96,7 +98,7 @@ function TarjetaPropuesta({ item, ahora, abierta, alAlternar, onDetalle, onGuard
   );
 }
 
-export default function PorDecidir({ items = [], onDetalle, onGuardar, onDescartar }) {
+export default function PorDecidir({ items = [], onDetalle, onGuardar, onDescartar, onDescartarLote }) {
   const { t } = useI18n();
   const [ahora, setAhora] = useState(() => Date.now());
   const [abiertoId, setAbiertoId] = useState(null);
@@ -115,7 +117,11 @@ export default function PorDecidir({ items = [], onDetalle, onGuardar, onDescart
   };
 
   const descartarLote = async () => {
-    for (const item of info.lote) await onDescartar?.(item);
+    if (onDescartarLote) {
+      await onDescartarLote(info.lote);
+    } else {
+      for (const item of info.lote) await onDescartar?.(item);
+    }
   };
 
   return (

@@ -111,6 +111,54 @@ export function useAcciones({ refrescar, interfaz, t }) {
     fetchDiscoveries();
   };
 
+  const descartarLote = async (lote) => {
+    if (!Array.isArray(lote) || !lote.length) return;
+    try {
+      const descartados = [];
+      for (const item of lote) {
+        const r = await window.api?.discardWork?.(item.id);
+        if (r?.status !== 'error') descartados.push(item);
+      }
+      if (descartados.length === 1) {
+        avisar(
+          t('aviso.descartada', { titulo: descartados[0].title }),
+          'ok',
+          {
+            etiqueta: t('common.undo'),
+            alPulsar: async () => {
+              const res = await window.api?.deshacerDescarte?.(descartados[0].id);
+              if (res?.status === 'ok') {
+                avisar(t('aviso.descarte_deshecho', { titulo: descartados[0].title }));
+                fetchDiscoveries();
+              }
+            }
+          },
+          10000
+        );
+      } else if (descartados.length > 1) {
+        avisar(
+          t('pending.batch_discarded', { n: descartados.length }),
+          'ok',
+          {
+            etiqueta: t('common.undo'),
+            alPulsar: async () => {
+              for (const item of descartados) {
+                await window.api?.deshacerDescarte?.(item.id);
+              }
+              avisar(t('pending.batch_undo_done', { n: descartados.length }));
+              fetchDiscoveries();
+            }
+          },
+          10000
+        );
+      }
+      setShowDetail(null);
+    } catch (err) {
+      avisar(t('aviso.fallo', { motivo: motivo(err) }), 'error');
+    }
+    fetchDiscoveries();
+  };
+
   const handlePortada = async (fanfic) => {
     const nueva = fanfic.portadaPreferida === 'generada' ? 'autor' : 'generada';
     exigir(await window.api?.setCoverPreference?.(fanfic.id, nueva));
@@ -205,7 +253,7 @@ export function useAcciones({ refrescar, interfaz, t }) {
   };
   return {
     abrirDescubrimiento, guardarDescubrimiento, alternarSeguirAutor, dejarDeSeguirAutor,
-    alternarMiLista, decidirGenero, descartarDescubrimiento,
+    alternarMiLista, decidirGenero, descartarDescubrimiento, descartarLote,
     handlePortada, exportarEpub, handleRefresh, handleDownload, handleDelete,
     avisoAutor, exportando, avisoEpub
   };

@@ -11,6 +11,8 @@ function inicial() {
 
     operations: [],
 
+    ejecuciones: [],
+
     pendientes: [],
 
     settings: { proactive: true, dailyCalls: LLAMADAS_AL_DIA, backgroundCalls: 6, model: 'deepseek-flash', paused: false, desarrollador: false } };

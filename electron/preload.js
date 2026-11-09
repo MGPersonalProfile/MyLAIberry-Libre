@@ -59,6 +59,9 @@ contextBridge.exposeInMainWorld('api', {
 
   buscarEnOtrosSitios: (id) => ipcRenderer.invoke('buscar-en-otros-sitios', id),
 
+  obtenerCatalogoSerie: (serieUrl, opciones) => ipcRenderer.invoke('obtener-catalogo-serie', serieUrl, opciones),
+  importarObrasSerie: (obras, opciones) => ipcRenderer.invoke('importar-obras-serie', obras, opciones),
+
   alPedirAbrirObra: (cb) => {
     ipcRenderer.removeAllListeners('abrir-obra');
     const fn = (_e, datos) => cb(datos);
@@ -138,7 +141,6 @@ contextBridge.exposeInMainWorld('api', {
 
   onDiscoveriesUpdated: (callback) => {
     const oyente = (event, data) => callback(data);
-    ipcRenderer.removeAllListeners('discoveries-updated');
     ipcRenderer.on('discoveries-updated', oyente);
     return () => ipcRenderer.removeListener('discoveries-updated', oyente);
   },
@@ -229,6 +231,13 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('asistente-investigacion-progreso', oyente);
     return () => ipcRenderer.removeListener('asistente-investigacion-progreso', oyente);
   },
+
+  asistenteEjecuciones: (opciones) => ipcRenderer.invoke('asistente-ejecuciones', opciones),
+  onAsistenteEjecucion: (callback) => {
+    const oyente = (_event, data) => callback(data);
+    ipcRenderer.on('asistente-ejecucion', oyente);
+    return () => ipcRenderer.removeListener('asistente-ejecucion', oyente);
+  },
   onAsistenteEstadoPeticion: (callback) => {
     const oyente = (_event, data) => callback(data);
     ipcRenderer.on('asistente-estado-peticion', oyente);
@@ -236,6 +245,11 @@ contextBridge.exposeInMainWorld('api', {
   },
 
   asistenteRetosPendientes: () => ipcRenderer.invoke('asistente-retos-pendientes'),
+
+  asistenteRetoRemotoIniciar: (id, token, opciones) => ipcRenderer.invoke('asistente-reto-remoto-iniciar', id, token, opciones),
+  asistenteRetoRemotoEstado: (id, token) => ipcRenderer.invoke('asistente-reto-remoto-estado', id, token),
+  asistenteRetoRemotoTocar: (id, token, toque) => ipcRenderer.invoke('asistente-reto-remoto-tocar', id, token, toque),
+  asistenteRetoRemotoFinalizar: (id, token) => ipcRenderer.invoke('asistente-reto-remoto-finalizar', id, token),
   asistenteRetoReanudar: (id, token) => ipcRenderer.invoke('asistente-reto-reanudar', id, token),
   asistenteRetoCancelar: (id, token) => ipcRenderer.invoke('asistente-reto-cancelar', id, token),
   onAsistenteRetoPendiente: (callback) => {

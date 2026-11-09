@@ -1,3 +1,5 @@
+import { textoDelEquipo } from './equipo.js';
+
 export function avisar(texto, tipo = 'ok', accion = null, duracion = null) {
   if (!texto) return;
   const t = typeof tipo === 'object' && tipo !== null ? tipo.tipo || 'ok' : tipo;
@@ -25,12 +27,12 @@ export function esFalloDelPC(err) {
 }
 
 export function esSinConexion(err) {
-  return esFalloDelPC(err) && /^Sin conexión con tu PC/.test(motivo(err));
+  return esFalloDelPC(err) && err.sinConexion === true;
 }
 
 export function exigir(r) {
   if (r && (r.status === 'error' || r.success === false)) {
-    const e = new Error(r.message || 'el PC no pudo hacerlo');
+    const e = new Error(r.message || textoDelEquipo('offline.no_pudo'));
     e.delPC = true;
     throw e;
   }

@@ -24,7 +24,6 @@ export const AJUSTES = {
   'mobile.import':  { es: 'Importar por dirección', en: 'Import from a link' },
   'mobile.tabs':    { es: 'Secciones', en: 'Sections' },
   'mobile.read':    { es: 'Leer', en: 'Read' },
-  'mobile.offline': { es: 'Sin conexión con tu PC · lo guardado', en: 'PC not reachable · saved copy' },
 
   'update.title':           { es: 'Versión', en: 'Version' },
   'update.desc':            { es: 'Busca versiones nuevas en las publicaciones del proyecto en GitHub y comprueba el instalador antes de abrirlo. Nada se instala sin que lo pulses.', en: 'Looks for new versions in the project releases on GitHub and checks the installer before running it. Nothing is installed until you press it.' },
@@ -55,7 +54,7 @@ export const AJUSTES = {
   'lectura.retomadas': { es: 'obras retomadas', en: 'works picked up again' },
   'lectura.vacio':     { es: 'Aún no hay sesiones: aparecerán según leas.', en: 'No sessions yet: they will show up as you read.' },
   'lectura.error':     { es: 'No se pudieron leer tus estadísticas de lectura.', en: 'Could not read your reading stats.' },
-  'lectura.privado':   { es: 'Se guardan solo en tu PC y en tu móvil. Solo salen si las exportas.', en: 'Kept only on your PC and phone. They leave only if you export them.' },
+  'lectura.privado':   { es: 'Se guardan solo en tu biblioteca (el equipo que la sirve) y en tu móvil. Solo salen si las exportas.', en: 'Kept only in your library (the machine that serves it) and on your phone. They leave only if you export them.' },
 
   'settings.ai_key_other_device':      { es: 'La clave guardada se cifró en otro equipo y aquí no se puede abrir. Escríbela de nuevo.', en: 'The saved key was encrypted on another device and cannot be opened here. Type it again.' },
   'settings.ai_key_other_device_file': { es: 'La clave guardada se cifró en otro equipo; se usa la del fichero de claves de este.', en: 'The saved key was encrypted on another device; the one in this device\'s key file is used.' },

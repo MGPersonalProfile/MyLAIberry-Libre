@@ -1,10 +1,12 @@
+import { equipoActual } from '../../equipo.js';
+
 const CLAVE_PREFIJO = 'mylaiberry-conflicto-idioma-';
 
-export function textosConflicto() {
+export function textosConflicto(equipo = equipoActual()) {
   return {
-    aviso: 'El idioma elegido en este móvil es distinto del elegido en el PC.',
+    aviso: `El idioma elegido en este móvil es distinto del elegido en el ${equipo.nombre}.`,
     conservarMovil: 'Conservar el de este móvil',
-    usarPC: 'Usar el del PC'
+    usarPC: `Usar el del ${equipo.nombre}`
   };
 }
 

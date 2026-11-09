@@ -25,6 +25,8 @@ function porFuente(fuente, obras = [], enBiblioteca = new Set(), filtros) {
         enBiblioteca: enBiblioteca.has(claveDeObra(o.url)) || undefined,
         tags: tags.slice(0, 10),
         estadoVerificacion: o.estadoVerificacion || 'no_comprobada',
+
+        verificacionRelaciones: o.verificacionRelaciones || { estado: 'listado_recortado', origen: 'listado', url: o.url, etiquetasCompletas: false },
         ...(avisos.length ? { avisos } : {}),
         ...(o.prioridadPareja ? { prioridadPareja: o.prioridadPareja, parejaPrincipal: o.parejaPrincipal } : {}),
         ...(o.sinComprobar ? { sinComprobar: o.sinComprobar } : {})

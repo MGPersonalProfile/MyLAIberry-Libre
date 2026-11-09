@@ -1,3 +1,5 @@
+import { fijarEquipo, textoDelEquipo, textoSinConexion } from './equipo.js';
+
 export function baseDelServidor() {
   const ruta = window.location.pathname;
   const i = ruta.indexOf('/app/');
@@ -27,7 +29,13 @@ export function argumentosParaEnviar(args) {
   return lista;
 }
 
-async function llamar(base, canal, args) {
+function sinConexion(sufijo = '') {
+  const e = falloDelPC(textoSinConexion({ sufijo }));
+  e.sinConexion = true;
+  return e;
+}
+
+export async function llamar(base, canal, args) {
   args = argumentosParaEnviar(args);
   let r;
   try {
@@ -36,8 +44,10 @@ async function llamar(base, canal, args) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(args)
     });
-  } catch { throw falloDelPC('Sin conexión con tu PC.'); }
-  const cuerpo = await r.json().catch(() => ({ error: `El PC contestó ${r.status}.` }));
+  } catch { throw sinConexion(); }
+  const cuerpo = await r.json().catch(() => ({ error: textoDelEquipo('offline.respondio', { n: r.status }) }));
+
+  if (cuerpo.sinConexion) throw sinConexion(cuerpo.codigo === 'no-hecho' ? 'offline.no_hecho' : 'offline.no_guardado');
   if (cuerpo.error) throw falloDelPC(cuerpo.error);
   return traducirFicheros(cuerpo.valor);
 }
@@ -95,10 +105,10 @@ function conCompartido(suscribirAviso) {
 export async function descargarEpub(base, id, opciones = {}) {
   const t = opciones?.traducido === undefined ? '' : `?traducido=${opciones.traducido ? 1 : 0}`;
   let r;
-  try { r = await fetch(`${base}/epub/${encodeURIComponent(id)}${t}`); } catch { throw falloDelPC('Sin conexión con tu PC.'); }
+  try { r = await fetch(`${base}/epub/${encodeURIComponent(id)}${t}`); } catch { throw sinConexion(); }
   if (!r.ok) {
     const cuerpo = await r.json().catch(() => ({}));
-    return { status: 'error', message: cuerpo.error || `El PC contestó ${r.status}.` };
+    return { status: 'error', message: cuerpo.error || textoDelEquipo('offline.respondio', { n: r.status }) };
   }
   const nombre = nombreDeDescarga(r.headers.get('Content-Disposition')) || 'obra.epub';
   const enlace = document.createElement('a');
@@ -137,15 +147,15 @@ export async function subirLibro(base, fichero, alAvanzar = () => {}) {
     const cuerpo = r ? await r.json().catch(() => ({})) : {};
     if (r?.ok && Number.isSafeInteger(cuerpo.recibidos)) { desde = cuerpo.recibidos; fallos = 0; alAvanzar(Math.round(desde / fichero.size * 100)); continue; }
 
-    if (r && r.status !== 409) return { status: 'error', message: cuerpo.error || `El PC contestó ${r.status}.` };
-    if (++fallos >= 3) return { status: 'error', message: r ? (cuerpo.error || 'La subida no avanza.') : 'Sin conexión con tu PC.' };
+    if (r && r.status !== 409) return { status: 'error', message: cuerpo.error || textoDelEquipo('offline.respondio', { n: r.status }) };
+    if (++fallos >= 3) return { status: 'error', message: r ? (cuerpo.error || 'La subida no avanza.') : textoSinConexion() };
     if (Number.isSafeInteger(cuerpo.recibidos)) desde = cuerpo.recibidos;
   }
   let fin;
-  try { fin = await fetch(`${base}/subir?id=${id}&fin=1`, { method: 'POST' }); } catch { return { status: 'error', message: 'Sin conexión con tu PC.' }; }
+  try { fin = await fetch(`${base}/subir?id=${id}&fin=1`, { method: 'POST' }); } catch { return { status: 'error', message: textoSinConexion() }; }
   const cuerpo = await fin.json().catch(() => ({}));
-  if (!fin.ok || cuerpo.error) return { status: 'error', message: cuerpo.error || `El PC contestó ${fin.status}.` };
-  return cuerpo.valor || { status: 'error', message: 'El PC no dijo qué pasó.' };
+  if (!fin.ok || cuerpo.error) return { status: 'error', message: cuerpo.error || textoDelEquipo('offline.respondio', { n: fin.status }) };
+  return cuerpo.valor || { status: 'error', message: textoDelEquipo('offline.sin_respuesta') };
 }
 
 export function nombreDeDescarga(cabecera) {
@@ -167,7 +177,8 @@ export async function instalarApiWeb() {
       if (e.data?.tipo === 'mylaiberry-fresco') window.dispatchEvent(new CustomEvent('mylaiberry-fresco', { detail: e.data.canal }));
     });
   }
-  const { metodos, avisos } = await (await fetch(`${base}/puente.json`)).json();
+  const { metodos, avisos, equipo } = await (await fetch(`${base}/puente.json`)).json();
+  fijarEquipo(equipo);
   const suscribir = conectarAvisos(base);
   const api = {};
   for (const [nombre, canal] of Object.entries(metodos)) api[nombre] = (...args) => llamar(base, canal, args);
@@ -181,6 +192,23 @@ export async function instalarApiWeb() {
   api.exportarEpub = (id, opciones) => descargarEpub(base, id, opciones);
   api.guardarAudioObra = (id, opciones) => descargarAudioObra(base, id, opciones);
   api.subirLibro = (fichero, alAvanzar) => subirLibro(base, fichero, alAvanzar);
+  api.fotogramaRetoRemoto = (id, token, ultimo) => pedirFotogramaReto(base, id, token, ultimo);
   window.api = api;
   return true;
+}
+
+export async function pedirFotogramaReto(base, id, token, ultimo = null) {
+  let r;
+  try {
+    r = await fetch(`${base}/reto-remoto/${encodeURIComponent(id)}/fotograma${ultimo ? `?ultimo=${ultimo}` : ''}`,
+      { headers: { 'X-Reto-Token': token }, cache: 'no-store', credentials: 'same-origin' });
+  } catch { throw sinConexion(); }
+  const idFotograma = Number(r.headers.get('X-Fotograma-Id'));
+  if (r.status === 204) return { id: idFotograma, igual: true, cadenciaMs: Number(r.headers.get('X-Cadencia-Ms')) || 1000 };
+  if (!r.ok) {
+    const cuerpo = await r.json().catch(() => ({}));
+    throw Object.assign(falloDelPC(cuerpo.error || textoDelEquipo('offline.respondio', { n: r.status })), { codigo: cuerpo.codigo, estado: r.status });
+  }
+  const [w, h] = String(r.headers.get('X-Viewport') || '').split('x').map(Number);
+  return { id: idFotograma, blob: await r.blob(), viewport: { w, h }, cadenciaMs: Number(r.headers.get('X-Cadencia-Ms')) || 1000 };
 }

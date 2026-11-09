@@ -62,7 +62,9 @@ const manejadoresIPC = [
 
   require('./ipc/asistente.js'),
 
-  require('./ipc/retos.js')
+  require('./ipc/retos.js'),
+
+  require('./ipc/series.js')
 ];
 
 function registrarTrabajos() {

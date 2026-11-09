@@ -68,4 +68,4 @@ function lecturaDe({ titulo = '', etiquetas = [], sinopsis = '', fandom = '' }) 
 const CASILLAS = /^(?:m\/m|f\/m|m\/f|f\/f|gen|multi|other)$/i;
 const traeCasilla = (etiquetas) => etiquetas.some(e => CASILLAS.test(sinAcentos(e).trim()));
 
-module.exports = { lecturaDe, parejasDe, traeCasilla, sinAcentos, PAREJAS, PALABRAS };
+module.exports = { lecturaDe, parejasDe, traeCasilla, sinAcentos, PAREJAS, PALABRAS, FANDOMS };

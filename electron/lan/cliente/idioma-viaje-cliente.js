@@ -19,7 +19,7 @@ async function programarIdiomaDeViaje(id, nuevoIdioma) {
 }
 
 async function descargarCapituloTraduccion(id, i, idioma) {
-  const nombre = `la traducción del capítulo ${i + 1}`;
+  const nombre = i + 1;
   let tiene = false;
   try {
     tiene = await preguntarAlPC('has-translation', [id, i, idioma], nombre);

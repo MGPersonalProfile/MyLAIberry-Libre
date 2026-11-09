@@ -103,6 +103,8 @@ const CAPITULO = [
   '})()'
 ].join('\n');
 
+const { extraerSeriesDeFicha: extraerSeriesWN } = require('./series-webnovel.js');
+
 async function scrape(url, onProgress) {
   const libro = urlDeLibro(url);
   if (!libro) throw new Error('Esa dirección de Webnovel no lleva a ninguna novela');
@@ -111,6 +113,15 @@ async function scrape(url, onProgress) {
 
   avisar('Abriendo la novela en Webnovel…');
   const ficha = await mirar(libro, FICHA);
+
+  let series = [];
+  try {
+    const html = await mirar(libro, 'document.documentElement.outerHTML');
+    const { JSDOM } = require('jsdom');
+    series = extraerSeriesWN(new JSDOM(html).window.document, libro);
+  } catch {
+    series = [];
+  }
 
   avisar('Leyendo el índice de capítulos…', 'extracting');
   const crudos = await mirar(libro + '/catalog', ENLACES);
@@ -147,6 +158,7 @@ async function scrape(url, onProgress) {
     totalChapters: capitulos.length,
 
     chapters: capitulos,
+    series: Array.isArray(ficha.series) ? ficha.series : series,
 
     capitulosLibres: libres,
     capitulosDePago: capitulos.length - libres

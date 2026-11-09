@@ -1,7 +1,8 @@
 function claveDeObra(url) {
   const u = String(url || '');
   const m = u.match(/archiveofourown\.org\/works\/(\d+)/) || u.match(/royalroad\.com\/fiction\/(\d+)/) ||
-    u.match(/fanfiction\.net\/s\/(\d+)/) || u.match(/gutenberg\.org\/ebooks\/(\d+)/);
+    u.match(/fanfiction\.net\/s\/(\d+)/) || u.match(/gutenberg\.org\/ebooks\/(\d+)/) ||
+    u.match(/webnovel\.com\/book\/(\d+)/) || u.match(/wetriedtls\.com\/series\/([^/?#]+)/);
   return m ? m[0] : u.replace(/^https?:\/\/(www\.|m\.)?/, '').replace(/[?#].*$/, '').replace(/\/+$/, '');
 }
 

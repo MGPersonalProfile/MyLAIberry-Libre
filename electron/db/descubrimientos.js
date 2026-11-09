@@ -93,7 +93,18 @@ async function deshacerDescarte(id) {
   const d = await leer();
   const o = d.fanfics.find(f => String(f.id) === String(id));
   if (!o || o.origen !== 'descartada') throw new Error('Sólo se recuperan obras descartadas.');
+  const limiteMs = 7 * 24 * 60 * 60 * 1000;
+  if (o.descartadaEn && Date.now() - o.descartadaEn > limiteMs) {
+    throw new Error('El plazo de 7 días para recuperar este descarte ha vencido.');
+  }
   o.origen = 'descubierta';
+  if (o.propuesta) {
+    if (o.propuesta.vence && o.propuesta.vence <= Date.now()) {
+      const horas = Number(o.propuesta.horas) || 72;
+      o.propuesta.vence = Date.now() + horas * 3600 * 1000;
+    }
+    delete o.propuesta.adoptadaAlVencer;
+  }
   delete o.descartadaEn;
   delete o.descarteMasivo;
   await writeDB();
@@ -104,7 +115,7 @@ async function descartesRecientes(ahora = Date.now(), limiteDias = 7) {
   const d = await leer();
   const maxMs = limiteDias * 24 * 60 * 60 * 1000;
   return (d.fanfics || [])
-    .filter(o => o.origen === 'descartada' && (!o.descartadaEn || ahora - o.descartadaEn <= maxMs))
+    .filter(o => o.origen === 'descartada' && Number.isFinite(o.descartadaEn) && ahora - o.descartadaEn <= maxMs && !o.descarteMasivo)
     .sort((a, b) => (b.descartadaEn || 0) - (a.descartadaEn || 0))
     .map(o => ({
       id: String(o.id),

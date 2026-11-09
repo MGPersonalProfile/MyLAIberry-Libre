@@ -46,7 +46,8 @@ export default function Inicio({
   const { t } = useI18n();
   const esMovil = useEsMovil();
   return (
-    <>
+
+    <div className="dark bg-background text-text-primary">
       {esMovil ? (
         <PortadaMovil hero={hero} alLeer={alLeerHero} alVerFicha={alVerFicha} alAlternarMiLista={alAlternarMiLista} />
       ) : (
@@ -130,6 +131,6 @@ export default function Inicio({
           <Carousel title={t('carousel.completed')} items={filas.completadas} {...acciones} />
         )}
       </div>
-    </>
+    </div>
   );
 }

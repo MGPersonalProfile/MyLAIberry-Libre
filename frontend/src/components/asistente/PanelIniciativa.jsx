@@ -1,8 +1,11 @@
+import { useEffect, useRef } from 'react';
 import { Bell, Search, Eye, Brain, Languages, Pause, Play, X, Check, Download, Library, PenLine } from 'lucide-react';
 import useIniciativa from '../../hooks/useIniciativa';
 import Recuerdos from './Recuerdos';
 import Estanterias from './Estanterias';
 import Pistas from './Pistas';
+import EjecucionInvestigacion from './EjecucionInvestigacion';
+import useEjecucionesInvestigacion from '../../hooks/useEjecucionesInvestigacion';
 import NuevaInvestigacion from './NuevaInvestigacion';
 import ReglasGenerales from './ReglasGenerales';
 import ColaDeTrabajos from './ColaDeTrabajos';
@@ -61,11 +64,15 @@ function Candidatas({ job, accion, t }) {
 
 export default function PanelIniciativa() {
   const { t } = useI18n();
+
+  const refrescarRef = useRef(null);
+  const ejecuciones = useEjecucionesInvestigacion({ alTerminar: () => refrescarRef.current?.() });
   const {
-    disponible, cargando, error, accion, consumo, ajustes,
+    disponible, cargando, error, accion, consumo, ajustes, refrescar,
     avisos, investigaciones, radar, memoria, reglas,
     estanterias, deshacibles, operaciones, propuestas, buzon
   } = useIniciativa();
+  useEffect(() => { refrescarRef.current = refrescar; });
 
   if (!disponible) return <EmptyState description={t('assistant.unavailable')} />;
   if (cargando) return <p className="p-6 text-center text-text-secondary">…</p>;
@@ -137,6 +144,10 @@ export default function PanelIniciativa() {
               <p className="text-caption text-warning mt-2">{job.errors.join(' · ')}</p>
             )}
 
+            {ejecuciones.disponible && (
+              <EjecucionInvestigacion job={job} ejecucion={ejecuciones.de(job.id)} desactualizado={ejecuciones.desactualizado}
+                iniciar={ejecuciones.iniciar} cancelar={ejecuciones.cancelar} reintentar={ejecuciones.reintentar} />
+            )}
             <Candidatas job={job} accion={accion} t={t} />
             {job.kind === 'lost' && <Pistas job={job} accion={accion} />}
           </div>

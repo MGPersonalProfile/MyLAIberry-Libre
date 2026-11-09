@@ -1,5 +1,6 @@
 export const LECTOR = {
 
+  'comic.panel_title':       { es: 'Viñeta {n}', en: 'Panel {n}' },
   'reader.chapter_n':        { es: 'Capítulo {n}', en: 'Chapter {n}' },
   'reader.chapter_of':       { es: 'Cap. {n} de {total}', en: 'Ch. {n} of {total}' },
   'reader.reading_settings': { es: 'Lectura', en: 'Reading' },

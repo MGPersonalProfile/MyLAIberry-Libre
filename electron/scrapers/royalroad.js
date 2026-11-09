@@ -184,6 +184,18 @@ async function recogerTabla(win, onProgress) {
   return recogerCapitulos(win, onProgress);
 }
 
+const { extraerSeriesDeFicha: extraerSeriesRR } = require('./series-royalroad.js');
+
+async function leerSeriesRR(win, url) {
+  try {
+    const html = await win.webContents.executeJavaScript('document.documentElement.outerHTML');
+    const { JSDOM } = require('jsdom');
+    return extraerSeriesRR(new JSDOM(html).window.document, url);
+  } catch {
+    return [];
+  }
+}
+
 function armarResultado(metadata, capitulos) {
 
   const { generos, autorHref, etiquetasEstado, ui, capitulos: incrustados, ...resto } = metadata;
@@ -205,7 +217,8 @@ function armarResultado(metadata, capitulos) {
 
     ...(completa !== undefined ? { completa } : {}),
     chapters: capitulos,
-    source: 'RoyalRoad'
+    source: 'RoyalRoad',
+    series: Array.isArray(metadata.series) ? metadata.series : []
   };
 }
 
@@ -214,6 +227,10 @@ async function leerFicha(win, onProgress) {
 
   const metadata = await ejecutarAunqueNavegue(win, GUION_METADATOS);
   if (metadata.error) throw new Error(metadata.error);
+
+  if (!metadata.series) {
+    metadata.series = await leerSeriesRR(win, metadata.url || win.webContents?.getURL?.() || '');
+  }
 
   const capitulos = metadata.capitulos?.length ? metadata.capitulos : await recogerTabla(win, onProgress);
   const resultado = armarResultado(metadata, capitulos);

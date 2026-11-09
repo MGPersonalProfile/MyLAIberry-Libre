@@ -36,4 +36,42 @@ function sinNombrarRetiradas(texto, registro) {
     : 'Lo que encontré choca con tus disgustos, así que no te recomiendo nada de ello.';
 }
 
-module.exports = { retiradasNombradas, sinNombrarRetiradas };
+const COMPATIBLE = /\b(?:compatibles?|no\s+choca|encaja(?:n)?\s+con\s+tus|apta|sin\s+(?:slash|m\/m)|no\s+es\s+(?:slash|m\/m)|libre\s+de\s+(?:slash|m\/m))\b/i;
+
+const CAUTELA = /sin\s+comprobar|sin\s+verificar|no\s+(?:he\s+podido|puedo|pude)\s+(?:comprobar|verificar|confirmar)|no\s+(?:est[aá]|esta)\s+(?:comprobad|verificad)|no\s+comprobad|no\s+verificad|pendiente|por\s+comprobar|falta\s+(?:abrir|comprobar)|antes\s+de\s+recomend|no\s+(?:te\s+)?la\s+(?:doy|recomiendo)|no\s+s[eé]\s+si|puede\s+(?:que\s+)?chocar|datos\s+insuficientes|no\s+clasificad|sin\s+clasificar/i;
+
+const segmentos = (texto) => String(texto).split(/\n/).flatMap(linea => linea.split(/(?<=[.;!?])\s+(?=\S)/));
+
+const pedidaPorElUsuario = (r, textoDelUsuario) => !!textoDelUsuario && nombra(String(textoDelUsuario), r);
+
+function ofrecidaComoBuena(seg, r, textoDelUsuario) {
+  if (!nombra(seg, r)) return false;
+
+  const dicho = String(r.titulo || '') ? seg.split(new RegExp(escapar(String(r.titulo)), 'i')).join(' ') : seg;
+  if (CAUTELA.test(dicho)) return false;
+  return COMPATIBLE.test(dicho) || (r.estado !== 'pendiente_verificacion' && !pedidaPorElUsuario(r, textoDelUsuario));
+}
+
+function pendientesPresentadasComoBuenas(texto, registro, textoDelUsuario = '') {
+  if (!registro?.noVerificadas?.length || !texto) return [];
+  return registro.noVerificadas.filter(r => !registro.verificada?.(r) && segmentos(texto).some(seg => ofrecidaComoBuena(seg, r, textoDelUsuario)));
+}
+
+const ETIQUETA_DEL_ESTADO = { relacion_no_clasificada: 'lleva una relación que no se puede clasificar', datos_insuficientes: 'no publica datos suficientes',
+  pendiente_verificacion: 'está pendiente de abrir su ficha completa' };
+
+function sinRecomendarPendientes(texto, registro, textoDelUsuario = '') {
+  const malas = pendientesPresentadasComoBuenas(texto, registro, textoDelUsuario);
+  if (!malas.length) return texto;
+  const dicho = new Set();
+  const nuevo = String(texto).split(/\n/).map(linea => segmentos(linea).map(seg => {
+    const r = malas.find(x => ofrecidaComoBuena(seg, x, textoDelUsuario));
+    if (!r) return seg;
+    if (dicho.has(r.url || r.titulo)) return '';
+    dicho.add(r.url || r.titulo);
+    return `«${r.titulo}»: aún no he podido comprobar si choca con tus disgustos (${ETIQUETA_DEL_ESTADO[r.estado] || 'sin comprobar'}); no te la doy por compatible, y puedo abrir su ficha para comprobarla.`;
+  }).filter(Boolean).join(' ')).join('\n');
+  return nuevo.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+module.exports = { retiradasNombradas, sinNombrarRetiradas, pendientesPresentadasComoBuenas, sinRecomendarPendientes };

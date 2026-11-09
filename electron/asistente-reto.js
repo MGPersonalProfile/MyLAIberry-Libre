@@ -87,23 +87,41 @@ async function alAbandonar(e, { ventana, lectores, cerrar, progreso, sitio, alAb
   return error;
 }
 
-async function conPlazo({ promesa, ventana, plan, presupuestoHasta = Infinity, sitio, progreso, mientrasAvance, cerrar, alAbandonarReto, ...lectores }) {
+function relojDeLaEspera() {
+  let pausado = 0, desde = 0;
+  return { empezar() { desde = Date.now(); }, terminar() { const ms = Date.now() - desde; pausado += ms; desde = 0; return ms; },
+    get suspendido() { return !!desde; },
+    transcurrido: inicio => Date.now() - inicio - pausado - (desde ? Date.now() - desde : 0) };
+}
+
+async function conPlazo({ promesa, ventana, plan, presupuestoHasta = Infinity, sitio, progreso, mientrasAvance, cerrar, alAbandonarReto,
+  esperarDirector, esperaDirectorMs = 0, alTerminarEspera, ...lectores }) {
   const planAhora = typeof plan === 'function' ? plan : () => plan;
   const fechaLimite = () => typeof presupuestoHasta === 'function' ? presupuestoHasta() : presupuestoHasta;
   const inicial = planAhora();
   let abandonar, retoDesde = 0, sondeando = false, presenciaAnterior = inicial.puedeResolverReto;
   const empezo = Date.now(); const fuera = new Promise((_, no) => { abandonar = no; });
   const pedir = Promise.race([promesa, fuera]); const maximo = Math.max(inicial.totalMs, PLAZOS.totalPersonaMs);
-  const techo = setTimeout(() => abandonar(Date.now() >= fechaLimite() ? tiempoAgotado()
-    : new Error(`La investigación: ${sitio} no terminó en ${Math.round(planAhora().totalMs / 1000)} s.`)),
-  maximo);
+  const espera = relojDeLaEspera();
+  const armar = ms => setTimeout(() => {
+    const resto = maximo - espera.transcurrido(empezo);
+    if (resto > 50) { techo = armar(resto); return; }
+    abandonar(Date.now() >= fechaLimite() ? tiempoAgotado()
+      : new Error(`La investigación: ${sitio} no terminó en ${Math.round(planAhora().totalMs / 1000)} s.`));
+  }, ms);
+  let techo = armar(maximo);
+  const esperaAlDirector = async win => {
+    espera.empezar();
+    try { return await esperarDirector({ win, sitio, url: win.webContents.getURL() }) === 'resuelto'; }
+    finally { alTerminarEspera?.(espera.terminar()); }
+  };
   const mirar = setInterval(async () => {
     if (sondeando) return;
     sondeando = true;
     try {
       const actual = planAhora();
       if (Date.now() >= fechaLimite()) { abandonar(tiempoAgotado()); return; }
-      if (Date.now() - empezo >= actual.totalMs) {
+      if (espera.transcurrido(empezo) >= actual.totalMs) {
         abandonar(new Error(`La investigación: ${sitio} no terminó en ${Math.round(actual.totalMs / 1000)} s.`)); return;
       }
       const win = ventana();
@@ -121,12 +139,16 @@ async function conPlazo({ promesa, ventana, plan, presupuestoHasta = Infinity, s
       progreso({ estado: 'comprobacion', ...(actual.puedeResolverReto ? {} : { mensaje: avisoDuranteElReto(sitio, actual) }) });
     }
     if (actual.puedeResolverReto && !win.isVisible()) { win.setTitle('MyLAIberry — comprobación del sitio'); win.showInactive(); win.__mlEnsenadaPorReto = true; }
-    if (Date.now() - retoDesde >= actual.retoMs) abandonar(Object.assign(new Error(`La investigación: ${sitio} pide una comprobación humana.`), { reto: true }));
+    if (Date.now() - retoDesde >= actual.retoMs) {
+
+      if (esperarDirector && !actual.puedeResolverReto && await esperaAlDirector(win)) { retoDesde = 0; return; }
+      abandonar(Object.assign(new Error(`La investigación: ${sitio} pide una comprobación humana.`), { reto: true }));
+    }
     } finally { sondeando = false; }
   }, inicial.cada);
   try {
     return await mientrasAvance(ventana(), pedir, 'La investigación',
-      { quietoMs: inicial.quietoMs, cada: inicial.cadaVigia, retoMs: Infinity, retoMaxMs: Math.max(inicial.totalMs, PLAZOS.totalPersonaMs), recargasMs: [] });
+      { quietoMs: inicial.quietoMs, cada: inicial.cadaVigia, retoMs: Infinity, retoMaxMs: Math.max(inicial.totalMs, PLAZOS.totalPersonaMs) + (esperarDirector ? esperaDirectorMs : 0), recargasMs: [] });
   } catch (e) {
     throw await alAbandonar(e, { ventana, lectores, cerrar, progreso, sitio, alAbandonarReto });
   } finally {

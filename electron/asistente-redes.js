@@ -24,6 +24,9 @@ const REDES = [
 
   ['vetada', (t, x) => retiradasNombradas(t, x.registroVetos).length,
     (t, x) => `[Aviso del sistema, no del usuario] Tu respuesta nombra ${retiradasNombradas(t, x.registroVetos).map(r => `«${r.titulo}»`).join(', ')}, que choca con los disgustos del usuario y se retiró de los resultados. Rehaz la respuesta sin nombrarla, ni como candidata ni con aviso.`],
+
+  ['relacionNoVerificada', (t, x) => require('./asistente-vetos-salida').pendientesPresentadasComoBuenas(t, x.registroVetos, x.textoDelUsuario).length,
+    (t, x) => `[Aviso del sistema, no del usuario] Tu respuesta presenta como recomendable o compatible ${require('./asistente-vetos-salida').pendientesPresentadasComoBuenas(t, x.registroVetos, x.textoDelUsuario).map(r => `«${r.titulo}»`).join(', ')}, pero no está comprobada contra los disgustos del usuario (listado con etiquetas recortadas, relación sin clasificar o sin datos). Abre su ficha con abrir_ficha_web para leer las etiquetas completas, o dilo claramente: «sin comprobar». No la des por compatible.`],
   ['guardadoReal', (t, x) => require('./asistente-evidencia').guardadoSinEvidencia(t, x),
     (t, x) => '[Aviso del sistema, no del usuario] Dices que has guardado una nota o pistas, pero no hay una llamada correcta a ' + require('./asistente-evidencia').guardadoSinEvidencia(t, x) + '. Guarda lo pedido con esa herramienta antes de afirmarlo; si falla, dilo.'],
   ['premisaSinEvidencia', (t, x) => require('./asistente-sinopsis').afirmacionesSinEvidencia(t, x).length > 0,

@@ -4,8 +4,7 @@ const { crearProveedor } = require('./asistente-proveedor');
 const { crearTools } = require('./asistente-tools');
 const { leerHasta, validarPunto, antesOIgual } = require('./asistente-contexto');
 const { estaCompleta, capitulosNuevos } = require('./asistente-obra');
-const { aplanar } = require('./asistente-busqueda');
-const { contrastarCaso } = require('./asistente-rescate');
+const { crearEjecuciones, ACCIONES_DE_EJECUCION } = require('./asistente-ejecuciones');
 const { instrucciones } = require('./asistente-instrucciones');
 const { loQueSueleLeer } = require('./afinidad.js');
 const { esDeLaBiblioteca } = require('./origen.js');
@@ -95,6 +94,8 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
     const responder = async (texto, resumido = false) => {
 
       texto = require('./asistente-vetos-salida').sinNombrarRetiradas(texto, toolset.registroVetos);
+
+      texto = require('./asistente-vetos-salida').sinRecomendarPendientes(texto, toolset.registroVetos, redes.textoDelUsuario);
       texto = require('./asistente-sinopsis').rechazarVerificacionSinEvidencia(texto, { vistas, messages, textoDelUsuario: redes.textoDelUsuario });
       if (avance.limiteWeb && !resumido) texto = `${resumenLimite('investigación', { acciones: actions, vistas, pendientes, avance })}\n\n${texto}`;
       if (corregidas.has('guardadoReal') && require('./asistente-evidencia').guardadoSinEvidencia(texto, { actions })) {
@@ -317,6 +318,8 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
       return require('./asistente-investigacion-editar').accionDeInvestigacion(action, args, { state });
     }
 
+    if (ACCIONES_DE_EJECUCION.includes(action)) return ejecuciones.accion(action, args, { desdeElMovil });
+
     if (action === 'dismiss') return state.update(s => {
       if (!s.inbox.some(m => m.id === args.id)) throw new Error('Ese aviso ya no está.');
       s.inbox = s.inbox.filter(m => m.id !== args.id);
@@ -328,29 +331,7 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
     if (action === 'undoCall') return deshacer(args.id, { services, state });
     throw new Error('Acción no disponible.');
   }
-
-  function avisoDeHallazgos(job, cuantas) {
-    if (job.kind !== 'lost') return `${cuantas} candidatas nuevas para «${job.query}»`;
-    const encajan = (job.contrastadas || []).filter(c => c.veredicto === 'encaja').length;
-    return encajan
-      ? `${encajan} de ${job.findings.length} candidatas encajan con tus pistas sobre «${job.query}»`
-      : `Ninguna de las ${job.findings.length} candidatas de «${job.query}» encaja todavía con tus pistas`;
-  }
-
-  async function enInternet(consulta) {
-    if (!services.crearInvestigador) return { results: [], errors: [] };
-    const controller = new AbortController();
-    const tope = setTimeout(() => controller.abort(), 90000);
-    const web = services.crearInvestigador({ signal: controller.signal });
-    try {
-      const r = await web.buscarEnInternet({ consulta });
-      const results = (r?.resultados || []).filter(x => /^https?:/.test(x?.url || '')).slice(0, 8)
-        .map(x => ({ title: String(x.titulo || x.url).slice(0, 200), url: x.url, synopsis: String(x.extracto || '').slice(0, 300), fuente: 'Internet' }));
-      return { results, errors: results.length ? [] : (r?.errores || []).map(e => `Internet: ${e}`) };
-    } catch (e) {
-      return { results: [], errors: [`Internet: ${e.message}`] };
-    } finally { clearTimeout(tope); web.cerrar?.(); }
-  }
+  const ejecuciones = crearEjecuciones({ state, services, avisar: services.avisar });
 
   let ticking = false;
   async function tick() {
@@ -365,25 +346,8 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
         await state.update(next => { next.investigations.find(j => j.id === job.id).nextAt = Date.now() + job.intervalHours * 3600000; });
         try {
 
-          const result = aplanar(await services.search(job.query));
-
-          if (job.kind === 'lost') {
-            const web = await enInternet(job.query);
-            result.results.push(...web.results);
-            result.errors.push(...web.errors);
-          }
-          await state.update(next => {
-            const current = next.investigations.find(j => j.id === job.id);
-            if (!current || current.status !== 'active') return;
-            const added = result.results.filter(r => !current.findings.some(f => f.url === r.url) && !current.excluded.includes(r.url));
-            current.findings.push(...added); current.lastAt = Date.now(); current.errors = result.errors;
-
-            if (current.kind === 'lost') {
-              current.contrastadas = contrastarCaso(current.findings, current.pistas || []);
-            }
-
-            if (added.length) next.inbox.push({ id: randomUUID(), text: avisoDeHallazgos(current, added.length), investigationId: job.id, at: Date.now() });
-          });
+          const { ejecucion } = await ejecuciones.iniciar({ investigationId: job.id, origen: 'periodica' });
+          await ejecuciones.esperar(ejecucion.executionId);
         } catch (e) { await state.update(next => { next.investigations.find(j => j.id === job.id).errors = [e.message]; }); }
       }
       const works = await services.library();
@@ -403,6 +367,6 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
       });
     } finally { ticking = false; }
   }
-  return { state, chat, view, command, tick, contextFor };
+  return { state, chat, view, command, tick, contextFor, ejecuciones };
 }
 module.exports = { crearAsistente, conSuObra, MAX_RONDAS };

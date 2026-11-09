@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n/I18nContext';
 import { parsearImagenesComic } from './comic-parser.js';
 
 export default function CapituloComic({
@@ -7,6 +8,7 @@ export default function CapituloComic({
   lang,
   className = ''
 }) {
+  const { t } = useI18n();
   const parsed = parsearImagenesComic(content);
   const esComic = esComicProp || parsed.esComic;
 
@@ -20,7 +22,7 @@ export default function CapituloComic({
           <img
             key={img.indice ?? i}
             src={img.src}
-            alt={img.alt || `Viñeta ${i + 1}`}
+            alt={img.alt || t('comic.panel_title', { n: i + 1 })}
             width={img.ancho}
             height={img.alto}
             loading="lazy"

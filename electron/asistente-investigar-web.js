@@ -50,6 +50,9 @@ function coincide(obra, f) {
   });
 }
 
+const verificacionDeListado = (o) => ({ estado: 'listado_recortado', origen: 'listado', url: o.url, etiquetasCompletas: false,
+  motivo: 'Listado con las etiquetas recortadas: no basta para comprobar las relaciones; abre la ficha.' });
+
 function breve(o) {
   const medida = { AO3: 'kudos', 'FanFiction.net': 'favoritos', RoyalRoad: 'seguidores', Wattpad: 'votos' }[o.source] || 'popularidad';
   return { title: o.title, author: o.author, url: o.url, source: o.source,
@@ -58,7 +61,7 @@ function breve(o) {
     tags: [...(o.tags || [])].sort((a, b) => (b?.category === CATEGORIA) - (a?.category === CATEGORIA)).slice(0, 16),
     wordCount: o.wordCount, ...(o.source === 'RoyalRoad' && o.wordCount ? { palabrasEstimadas: true } : {}),
     totalChapters: o.totalChapters || o.chapters?.length || undefined,
-    kudos: o.kudos, medidaPopularidad: medida, completa: o.completa, autorUrl: o.autorUrl,
+    kudos: o.kudos, medidaPopularidad: medida, completa: o.completa, autorUrl: o.autorUrl, verificacionRelaciones: verificacionDeListado(o),
     ...(o.prioridadPareja ? { prioridadPareja: o.prioridadPareja, parejaPrincipal: o.prioridadPareja === 'alta' } : {}) };
 }
 
@@ -69,10 +72,16 @@ function fichaVerificada(o) {
   if (!tags.length) {
     avisos.push('La obra no publica etiquetas: la ausencia de etiquetas no confirma ausencia de contenido o relaciones.');
   }
+
+  const etiquetasCompletas = o.etiquetasCompletas === true && tags.length > 0;
+  const relaciones = require('./asistente-relaciones').relacionesDe(tags, { fandom: String(o.fandom || '') });
   return {
     title: o.title, author: o.author, url: o.url, source: o.source,
     synopsis: String(o.synopsis || ''),
     tags,
+    verificacionRelaciones: { estado: etiquetasCompletas ? 'etiquetas_completas' : (tags.length ? 'etiquetas_sin_acreditar' : 'sin_etiquetas'), origen: 'ficha', url: o.url, etiquetasCompletas,
+      relaciones: relaciones.map(r => ({ crudo: r.crudo, id: r.id, tipo: r.tipo, conocida: r.conocida?.id || null })),
+      motivo: etiquetasCompletas ? 'El extractor leyó las etiquetas publicadas de la ficha.' : (tags.length ? 'La extracción no acredita que sean todas las etiquetas publicadas.' : 'La obra no publica etiquetas.') },
     wordCount: o.wordCount, ...(o.source === 'RoyalRoad' && o.wordCount ? { palabrasEstimadas: true } : {}),
     totalChapters: o.totalChapters || o.chapters?.length || undefined,
     kudos: o.kudos, medidaPopularidad: medida, completa: o.completa, autorUrl: o.autorUrl,
@@ -272,6 +281,8 @@ function crearInvestigador({ signal, progreso = () => {}, origen, presupuestoMs,
     } else if (/wattpad\.com\/story\//.test(actual)) {
       obra = wattpad.fichaDeHtml(html, actual);
     } else throw new Error('La ficha no pertenece a un sitio admitido.');
+
+    if (/archiveofourown\.org\/works\//.test(actual)) obra = { ...obra, etiquetasCompletas: !!preliminar.querySelector('dl.work.meta.group') };
     if (!obra.title) throw new Error('La ficha no trajo un título verificable.');
     const doc = preliminar;
     const enlaces = [...doc.querySelectorAll('a[href]')].map(a => ({
@@ -346,7 +357,9 @@ function crearInvestigador({ signal, progreso = () => {}, origen, presupuestoMs,
   }
 
   let libre = null;
-  const web = () => (libre ||= require('./asistente-web-libre').crearWebLibre({ signal, progreso }));
+
+  const web = () => (libre ||= require('./asistente-web-libre').crearWebLibre({ signal, progreso,
+    retos: pendientes ? { ...pendientes, origen, env: process.env, plataforma: process.platform } : null }));
   return { buscar, ficha, pistas, investigar,
     leer: (url, opciones) => web().leer(url, opciones), buscarEnInternet: args => web().buscarEnInternet(args),
     cerrar: () => { navegador.cerrar(); libre?.cerrar(); }, get paginas() { return navegador.paginas + (libre?.paginas || 0); } };

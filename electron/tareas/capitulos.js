@@ -8,7 +8,8 @@ const { esDelDisco } = require('../epub-importar.js');
 async function comprobarCapitulos({ fanficId }) {
   const id = String(fanficId);
   const fanfic = await getFanficById(id);
-  if (fanfic?.needsChapterSelection) return;
+  if (!fanfic || fanfic.origen === 'descartada') return;
+  if (fanfic.needsChapterSelection) return;
 
   if (!fanfic?.url || esDelDisco(fanfic.url)) return;
 

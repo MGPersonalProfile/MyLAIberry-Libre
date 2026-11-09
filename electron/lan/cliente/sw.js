@@ -5,9 +5,10 @@ const PLAZO_MS = 4000, PLAZO_INSTALAR = 60000, PLAZO_PAGINA = 1500, PLAZO_LECTUR
 const ESENCIAL = ['/app/', '/manifest.webmanifest', '/icono-192.png', '/icono-512.png', '/puente.json'].map(r => BASE + r);
 const esNuestra = u => u.origin === self.location.origin && u.pathname.startsWith(BASE + '/');
 
-const LECTURAS = new Set(['asistente-ver', 'repeated-works', 'check-repeated-chapters', 'search-in-work', 'detect-site', 'estadisticas-lectura', 'recordar-lectura', 'leer-eleccion-idioma']);
+const LECTURAS = new Set(['asistente-ver', 'repeated-works', 'check-repeated-chapters', 'search-in-work', 'detect-site', 'estadisticas-lectura', 'recordar-lectura', 'leer-eleccion-idioma', 'obtener-catalogo-serie']);
 
-const EN_VIVO = new Set(['asistente-retos-pendientes', 'queue-status', 'lan-estado', 'estado-voces', 'avisos-disponibles', 'avisos-via', 'exportar-lectura']);
+const DE_EJECUCION = new Set(['startInvestigation', 'cancelInvestigation', 'retryInvestigation']), deEjecucion = (canal, args) => canal === 'asistente-accion' && Array.isArray(args) && args.some(a => a && DE_EJECUCION.has(a.action));
+const EN_VIVO = new Set(['asistente-retos-pendientes', 'asistente-ejecuciones', 'asistente-reto-remoto-estado', 'queue-status', 'lan-estado', 'estado-voces', 'avisos-disponibles', 'avisos-via', 'exportar-lectura']);
 const DEL_AUDIO = new Set(['audio-capitulo', 'audio-obra']), ESENCIALES = new Set(['get-library', 'get-settings', 'get-chapter-content', 'translate-chapter']);
 const pideAlgo = args => Array.isArray(args) && args.some(a => a && typeof a === 'object' && a.pedir === true);
 const DE_LEER = { has: (c, args) => /^(get|has|listar)-/.test(c) || ['translate-chapter', 'translate-synopsis'].includes(c)
@@ -130,7 +131,7 @@ async function primeroLaRed(peticion, trabajos) {
     return r;
   } catch {
     return await (await caches.open(cacheDe(peticion.url))).match(peticion)
-      || json({ error: 'Sin conexión con tu PC: esto no estaba guardado en el móvil.' }, 503);
+      || json({ error: 'Sin conexión con el servidor de la biblioteca: esto no estaba guardado en el móvil.', sinConexion: true, codigo: 'no-guardado' }, 503);
   }
 }
 async function llamarAlPC(canal, args, plazo = PLAZO_LECTURA) {
@@ -160,7 +161,7 @@ async function llamada(peticion, canal, trabajos) {
   }
   trabajos.push(mandarProgreso().catch(() => {}));
   const clave = await claveContextual(canal, args);
-  const techo = LARGAS.has(canal) ? TECHO_LARGO : (deLeer ? TECHO_LECTURA : TECHO_ACCION);
+  const techo = LARGAS.has(canal) && !deEjecucion(canal, args) ? TECHO_LARGO : (deLeer ? TECHO_LECTURA : TECHO_ACCION);
   const servida = { copia: false };
   const red = conPlazo(vigilar(fetch(peticion)), techo).then(async r => {
     const cuerpo = await r.clone().json().catch(() => null);
@@ -192,9 +193,9 @@ async function llamada(peticion, canal, trabajos) {
       try { return await mientrasElPCEste(red); } catch {  }
     }
     if (deLeer && !fallaSinCopia(canal)) return json({ valor: null });
-    return json({ error: deLeer
-      ? 'Sin conexión con tu PC: esto no estaba guardado en el móvil.'
-      : 'Sin conexión con tu PC: no se ha hecho. Prueba cuando vuelva.' }, 503);
+    return json(deLeer
+      ? { error: 'Sin conexión con el servidor de la biblioteca: esto no estaba guardado en el móvil.', sinConexion: true, codigo: 'no-guardado' }
+      : { error: 'Sin conexión con el servidor de la biblioteca: no se ha hecho. Prueba cuando vuelva.', sinConexion: true, codigo: 'no-hecho' }, 503);
   }
 }
 
@@ -203,6 +204,7 @@ async function avisarDeLoFresco(canal) {
 }
 async function trasLlamar(canal, args, cuerpo, clave) {
   if (DE_LEER.has(canal, args) && !sinCopia(canal)) await guardarLectura(canal, args, cuerpo, clave);
+  if (canal === 'get-discoveries' && Array.isArray(cuerpo.valor) && typeof guardarPropuestasOffline === 'function') await guardarPropuestasOffline(cuerpo.valor);
   if (canal === 'get-settings' || canal === 'update-settings') await recordarAjustes(canal === 'get-settings' ? cuerpo.valor : args[0]);
   if (canal === 'has-translation' && typeof args[2] === 'string') await (await caches.open(ESTADO)).put(`${BASE}/__idioma__`, json(args[2]));
   if (canal === 'translate-chapter' && typeof args[2] === 'string') await fijarTraduccionLeida(args, cuerpo.valor);
@@ -219,10 +221,7 @@ async function recordarAjustes(ajustes) {
   await cache.put(clave, json({ ...previo, ...ajustes }));
   if (ajustes.lang) await cache.put(`${BASE}/__idioma__`, json(ajustes.lang));
 }
-async function ajustesGuardados() {
-  const r = await (await caches.open(ESTADO)).match(`${BASE}/__ajustes__`);
-  return r ? r.json() : {};
-}
+const ajustesGuardados = async () => (await (await caches.open(ESTADO)).match(`${BASE}/__ajustes__`))?.json() || {};
 async function claveContextual(canal, args) {
   if (canal === 'recordar-lectura') return claveDe(canal, [...args, { c: await capituloDe(args[0]), rev: await revisionDe(args[0]) }]);
   if (!['get-chapter-titles', 'get-recap'].includes(canal)) return claveDe(canal, args);
@@ -330,6 +329,7 @@ async function enviarPendientes() {
       });
     }
   } catch {  }
+  if (typeof sincronizarDecisiones === 'function') await sincronizarDecisiones().catch(() => {});
   return contestadas;
 }
 function proyectar(canal, args, cuerpo, p, posicion) {
@@ -366,6 +366,7 @@ async function copia(canal, args, clave) {
   let hay = !!fijado || !!r || !!posicion;
   if (posicion) cuerpo.valor = (await posicion.clone().json()).valor;
   if (await conLoGuardado(canal, args, cuerpo)) hay = true;
+  if (typeof conPropuestasGuardadas === 'function' && await conPropuestasGuardadas(canal, args, cuerpo)) hay = true;
   if (await conPendientes(canal, args, cuerpo)) hay = true;
   if (canal === 'recordar-lectura' && !(await recordatorioAutorizado(args, cuerpo))) {
     if (r) await (await caches.open(CACHE)).delete(clave);
@@ -399,9 +400,11 @@ async function actualizarCopias(p) {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (!esNuestra(url)) return;
+
+  if (url.pathname.startsWith(BASE + '/reto-remoto/')) return;
   const api = url.pathname.startsWith(BASE + '/api/') && decodeURIComponent(url.pathname.slice(BASE.length + 5));
   if (!(e.request.method === 'POST' && api) && (e.request.method !== 'GET' || /\/eventos$/.test(url.pathname))) return;
-  const trabajos = [], respuesta = RUTA_IMAGEN.test(url.pathname) && e.request.method === 'GET' ? atenderImagenComic(e.request) : api === CANAL_SESIONES ? atenderSesion(e.request, trabajos) : api ? llamada(e.request, api, trabajos) : primeroLaRed(e.request, trabajos);
+  const trabajos = [], respuesta = RUTA_IMAGEN.test(url.pathname) && e.request.method === 'GET' ? atenderImagenComic(e.request) : typeof esDecisionPropuesta === 'function' && esDecisionPropuesta(api) ? atenderDecisionPropuesta(e.request, api, trabajos) : api === CANAL_SESIONES ? atenderSesion(e.request, trabajos) : api ? llamada(e.request, api, trabajos) : primeroLaRed(e.request, trabajos);
   e.respondWith(respuesta);
 
   e.waitUntil((async () => {
@@ -412,9 +415,7 @@ self.addEventListener('fetch', e => {
 async function adelantar(urls) {
   for (const u of urls) {
     const url = new URL(u, self.location.origin);
-    if (!esNuestra(url)) continue;
-    try { await guardar(url.href, await conPlazo(fetch(url.href), PLAZO_LECTURA), cacheDe(url.href)); }
-    catch { return; }
+    if (esNuestra(url)) try { await guardar(url.href, await conPlazo(fetch(url.href), PLAZO_LECTURA), cacheDe(url.href)); } catch { return; }
   }
 }
 self.addEventListener('message', e => {

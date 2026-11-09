@@ -123,6 +123,8 @@ function listaDeCapitulos(storyId, opciones, capitulosDeLaFicha) {
   return chapters;
 }
 
+const { extraerSeriesDeFicha: extraerSeriesFFN } = require('./series-ffn.js');
+
 function armarObra(storyId, ficha, meta, chapters) {
   const tags = [...meta.tags];
   if (ficha.fandom) tags.push({ name: ficha.fandom, category: FANDOM });
@@ -139,7 +141,8 @@ function armarObra(storyId, ficha, meta, chapters) {
     tags,
     wordCount: meta.words,
     kudos: meta.favs,
-    completa: meta.completa
+    completa: meta.completa,
+    series: Array.isArray(ficha.series) ? ficha.series : []
   };
 }
 
@@ -179,6 +182,13 @@ async function scrape(url, onProgress) {
 
   try {
     const ficha = await mientrasAvance(win, pedirFicha(win, storyId, onProgress), 'FanFiction.net');
+    try {
+      const html = await win.webContents.executeJavaScript('document.documentElement.outerHTML');
+      const { JSDOM } = require('jsdom');
+      ficha.series = extraerSeriesFFN(new JSDOM(html).window.document, `https://www.fanfiction.net/s/${storyId}`);
+    } catch {
+      ficha.series = [];
+    }
     const meta = parseMeta(ficha.metaCrudo);
     const chapters = listaDeCapitulos(storyId, ficha.opciones, meta.chapters);
 

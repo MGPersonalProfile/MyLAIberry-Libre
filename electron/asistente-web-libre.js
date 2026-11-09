@@ -1,7 +1,7 @@
 const dns = require('node:dns').promises;
 const net = require('node:net');
 const { cargarPagina, muestraDePagina } = require('./scrapers/navegar');
-const { detectarReto } = require('./asistente-reto');
+const { detectarReto, planDeReto, nombreDeSitio } = require('./asistente-reto');
 
 const MAX_PAGINAS = 64;
 const ESPERA_PAGINA = 30000;
@@ -9,6 +9,8 @@ const ESPERA_RETO = 25000;
 
 const ESPERA_RETO_VISIBLE = 120000;
 const LARGO_TEXTO = 15000;
+
+const ESPERA_DIRECTOR = 5 * 60 * 1000;
 
 const VEDADOS = [
   'accounts.google.com', 'myaccount.google.com', 'mail.google.com', 'drive.google.com', 'docs.google.com',
@@ -100,10 +102,16 @@ async function lecturaDeReto(w) {
 }
 
 function crearWebLibre({ signal, progreso = () => {}, maxPaginas = MAX_PAGINAS, crearVentana = ventanaReal, resolver,
-  esperaReto = ESPERA_RETO, esperaRetoVisible = ESPERA_RETO_VISIBLE, paso = 1000,
+  esperaReto = ESPERA_RETO, esperaRetoVisible = ESPERA_RETO_VISIBLE, paso = 1000, retos = null, mostrarVentana = true,
   capturar = (w) => require('./asistente-captura.js').guardarCaptura(w) } = {}) {
   let win = null, paginas = 0;
-  const cerrar = () => { if (win && !win.isDestroyed()) win.destroy(); win = null; };
+  const aparcados = new Set();
+  const cerrar = () => {
+    for (const id of aparcados) retos?.gestor.soltar?.(id);
+    aparcados.clear();
+    if (win && !win.isDestroyed()) win.destroy();
+    win = null;
+  };
   signal?.addEventListener('abort', cerrar, { once: true });
 
   function ventana() {
@@ -135,13 +143,39 @@ function crearWebLibre({ signal, progreso = () => {}, maxPaginas = MAX_PAGINAS, 
     return w;
   }
 
+  async function esperarAlDirector(w, hayReto) {
+    const direccion = w.webContents.getURL();
+    const sitio = nombreDeSitio(direccion);
+    const reto = retos.gestor.registrar({ requestId: retos.requestId, sitio, url: direccion, origen: retos.origen, ventana: () => w,
+      reanudar: () => comprobarAcceso(direccion) });
+    aparcados.add(reto.id);
+    progreso({ paginas, maxPaginas, url: direccion, estado: 'comprobacion',
+      mensaje: `${sitio} pide una comprobación humana: pásala desde la PWA del móvil y sigo con tu petición.` });
+    const fin = await retos.gestor.esperarDirector(reto.id, { hayReto, signal, hastaMs: retos.esperaDirectorMs ?? ESPERA_DIRECTOR, paso });
+    aparcados.delete(reto.id);
+    if (fin === 'resuelto') return;
+    if (fin === 'abortado') retos.gestor.cancelar(reto.id, { local: true });
+    else retos.gestor.soltar(reto.id);
+    const motivos = { cancelado: 'El director canceló la comprobación humana.', caducado: 'La comprobación humana caducó.', abortado: 'Petición cancelada.',
+      agotado: `${sitio} pide una comprobación humana y nadie la pasó a tiempo desde el móvil: queda pendiente para pasarla después.` };
+    throw Object.assign(new Error(motivos[fin] || motivos.agotado), { reto: true });
+  }
+
+  async function comprobarAcceso(direccion) {
+    const otro = crearWebLibre({ crearVentana, resolver, esperaReto: Math.min(esperaReto, 8000), esperaRetoVisible: 0, paso, mostrarVentana: false });
+    try { await otro.abrir(direccion); return { ok: true, paginas: otro.paginas }; }
+    catch (e) { if (e.reto) return { ok: false, motivo: 'comprobacion-humana' }; throw e; }
+    finally { otro.cerrar(); }
+  }
+
   async function pasarReto(w) {
 
     const hayReto = async () => detectarReto(await lecturaDeReto(w));
     for (let t = 0; t < esperaReto && await hayReto(); t += paso) await dormir(paso);
     if (!await hayReto()) return;
+    if (retos && !planDeReto({ origen: retos.origen, env: retos.env, plataforma: retos.plataforma }).puedeResolverReto) return esperarAlDirector(w, hayReto);
     const estaba = w.isVisible?.();
-    if (!estaba) { w.setTitle?.('MyLAIberry — comprobación del sitio'); w.showInactive?.(); }
+    if (!estaba && mostrarVentana) { w.setTitle?.('MyLAIberry — comprobación del sitio'); w.showInactive?.(); }
     progreso({ paginas, maxPaginas, url: w.webContents.getURL(), estado: 'comprobacion' });
     try {
       for (let t = 0; t < esperaRetoVisible && await hayReto(); t += paso) {

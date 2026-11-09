@@ -18,6 +18,7 @@ import RecordarLectura from '../RecordarLectura';
 import OtrosSitios from './OtrosSitios';
 import SeleccionCapitulos from './SeleccionCapitulos';
 import GuardarSinConexion from './GuardarSinConexion';
+import ObrasDeSerie from './ObrasDeSerie';
 
 function BloqueSinopsis({ obra, sinopsis, t }) {
   return (
@@ -128,6 +129,7 @@ export default function FichaObra(props) {
           <RevisarCapitulos obraId={obra.id} total={(obra.chapterList || []).length || obra.totalChapters || 0} />
         )}
         {esBiblioteca && <CopiasDeLaObra key={`copias-${obra.id}`} obraId={obra.id} />}
+        <ObrasDeSerie obra={obra} />
       </div>
       <PieDeFicha
         obra={obra}

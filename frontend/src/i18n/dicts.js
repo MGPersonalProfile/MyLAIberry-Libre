@@ -5,11 +5,12 @@ import { ASISTENTE } from './textos/asistente';
 import { AJUSTES } from './textos/ajustes';
 import { DESCUBRIR } from './textos/descubrir';
 import { SUBRAYADOS } from './textos/subrayados';
+import { EQUIPO } from './textos/equipo';
 
 export const LANGS = ['es', 'en'];
 export const DEFAULT_LANG = 'es';
 
-export const UI = { ...BIBLIOTECA, ...LECTOR, ...IMPORTAR, ...ASISTENTE, ...AJUSTES, ...DESCUBRIR, ...SUBRAYADOS };
+export const UI = { ...BIBLIOTECA, ...LECTOR, ...IMPORTAR, ...ASISTENTE, ...AJUSTES, ...DESCUBRIR, ...SUBRAYADOS, ...EQUIPO };
 
 function interpolate(text, params) {
   return text.replace(/\{(\w+):([^|}]*)\|([^}]*)\}/g, (match, name, uno, varios) =>

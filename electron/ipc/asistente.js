@@ -167,6 +167,8 @@ function obtenerBuzon() {
   return require('../buzon.js').crearBuzon(db.raizActual());
 }
 
+const ESPERA_DIRECTOR_MS = 5 * 60 * 1000;
+
 function obtener() {
   if (asistente) return asistente;
 
@@ -176,6 +178,8 @@ function obtener() {
     descargas: async () => ({ ...require('../asistente-obra.js').descargasDe(await cola.pendientes(), await db.getFanfics()), trabajandoAhora: cola.enCurso() }),
     search: buscarEnTodos,
 
+    avisar,
+
     proponer: (args) => require('../propuestas.js').proponer(args),
     primerCapitulo: (args) => require('../propuestas.js').primerCapitulo(args),
     investigarPropuesta: (args) => require('../investigar-propuesta.js').investigarPropuesta(args),
@@ -184,7 +188,7 @@ function obtener() {
       version: require('electron').app?.getVersion?.() }); if (r.marcar) await db.updateSettings({ ultimaNovedadVista: r.marcar }); return r; },
 
     crearInvestigador: ({ requestId, ...opciones } = {}) => require('../asistente-investigar-web').crearInvestigador(
-      { ...opciones, pendientes: requestId ? { gestor: require('./retos.js').gestor(), requestId } : null }),
+      { ...opciones, pendientes: requestId ? { gestor: require('./retos.js').gestor(), requestId, esperaDirectorMs: ESPERA_DIRECTOR_MS } : null }),
 
     recommendations: (consulta, subreddit) => require('../scrapers/reddit.js').recomendaciones({ consulta, subreddit }),
     leerAutor: (url) => require('../scrapers').leerAutor(url),
@@ -213,6 +217,8 @@ let latido = null;
 
 function arrancarLatido() {
   if (!latido) latido = crearLatido({ tick: () => obtener().tick() });
+
+  obtener().ejecuciones.recuperar().catch(e => console.error('[asistente] no se pudieron recuperar las ejecuciones:', e.message));
   latido.arrancar();
   return latido;
 }
@@ -272,6 +278,11 @@ function registrar({ obtenerAsistente = obtener } = {}) {
     } catch (e) {
       return { status: 'error', message: e.message };
     }
+  });
+
+  ipcMain.handle('asistente-ejecuciones', async (event, opciones) => {
+    try { return { status: 'ok', ...await obtenerAsistente().ejecuciones.ver(opciones || {}) }; }
+    catch (e) { return { status: 'error', message: e.message }; }
   });
 
   ipcMain.handle('asistente-accion', async (event, peticion) => {

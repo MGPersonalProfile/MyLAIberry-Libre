@@ -12,7 +12,11 @@ const SOLO_EN_EL_PC = new Set([
   'lan-apagar', 'lan-nuevo-codigo', 'instalar-actualizacion'
 ]);
 
-const CON_CODIGO_OBLIGATORIO = new Set(['asistente-retos-pendientes', 'asistente-reto-reanudar', 'asistente-reto-cancelar']);
+const CON_CODIGO_OBLIGATORIO = new Set(['asistente-retos-pendientes', 'asistente-reto-reanudar', 'asistente-reto-cancelar',
+
+  'asistente-reto-remoto-iniciar', 'asistente-reto-remoto-estado', 'asistente-reto-remoto-tocar', 'asistente-reto-remoto-finalizar',
+
+  'obtener-catalogo-serie', 'importar-obras-serie']);
 
 function leerPuente(fuente = fs.readFileSync(path.join(__dirname, '..', 'preload.js'), 'utf-8')) {
   const metodos = {};
@@ -29,10 +33,16 @@ function leerPuente(fuente = fs.readFileSync(path.join(__dirname, '..', 'preload
   return { metodos, avisos };
 }
 
-function puenteParaElMovil() {
-  const { metodos, avisos } = leerPuente();
-  const permitidos = Object.fromEntries(Object.entries(metodos).filter(([, c]) => !SOLO_EN_EL_PC.has(c)));
-  return { metodos: permitidos, avisos };
+function equipoQueSirve(env = process.env) {
+  return env.MYLAIBERRY_SIN_PANTALLA === '1'
+    ? { tipo: 'servidor', nombre: 'servidor', name: 'server' }
+    : { tipo: 'pc', nombre: 'PC', name: 'PC' };
 }
 
-module.exports = { leerPuente, puenteParaElMovil, SOLO_EN_EL_PC, CON_CODIGO_OBLIGATORIO };
+function puenteParaElMovil(env = process.env) {
+  const { metodos, avisos } = leerPuente();
+  const permitidos = Object.fromEntries(Object.entries(metodos).filter(([, c]) => !SOLO_EN_EL_PC.has(c)));
+  return { metodos: permitidos, avisos, equipo: equipoQueSirve(env) };
+}
+
+module.exports = { leerPuente, puenteParaElMovil, equipoQueSirve, SOLO_EN_EL_PC, CON_CODIGO_OBLIGATORIO };

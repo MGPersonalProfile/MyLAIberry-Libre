@@ -54,6 +54,7 @@ export default function PestanasDeApp({ app }) {
         onDetalle={verFicha}
         onGuardar={acciones.guardarDescubrimiento}
         onDescartar={acciones.descartarDescubrimiento}
+        onDescartarLote={acciones.descartarLote}
         alCambiar={bib.fetchDiscoveries}
       />
     );

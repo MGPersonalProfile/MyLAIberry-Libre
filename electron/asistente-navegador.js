@@ -58,7 +58,7 @@ function crearNavegador(opciones = {}) {
   powerMonitor = monitorElectron, pendientes = null, cargar = cargarPagina, crearVentana = opciones => new BrowserWindow(opciones) } = opciones;
 
   const robots = new Map();
-  let win = null, paginas = 0, anterior = 0, bloqueada = false, monitorActivo = false, presupuestoHasta = Infinity;
+  let win = null, paginas = 0, anterior = 0, bloqueada = false, monitorActivo = false, presupuestoHasta = Infinity, directorAusente = false;
   const alBloquear = () => { bloqueada = true; };
   const alDesbloquear = () => { bloqueada = false; };
   const activarMonitor = () => { if (monitorActivo || !powerMonitor?.on) return;
@@ -69,7 +69,8 @@ function crearNavegador(opciones = {}) {
   activarMonitor();
   signal?.addEventListener('abort', cerrar, { once: true });
 
-  const fechaLimite = hasta => typeof hasta === 'function' ? hasta() : hasta;
+  let prorroga = 0;
+  const fechaLimite = hasta => (typeof hasta === 'function' ? hasta() : hasta) + prorroga;
   const comprobarTiempo = hasta => { if (Date.now() >= fechaLimite(hasta)) throw Object.assign(
     new Error('Límite de tiempo de la investigación agotado.'), { tiempoAgotado: true, noConsultado: true }); };
 
@@ -92,11 +93,24 @@ function crearNavegador(opciones = {}) {
   function conPlazo(promesa, direccion, hasta = Infinity) {
     const sitio = nombreDeSitio(direccion);
     const avisar = datos => progreso({ paginas, maxPaginas, url: win && !win.isDestroyed() ? win.webContents.getURL() : direccion, ...datos });
-    return conPlazoDeReto({ promesa, ventana: () => win, plan: planActual, presupuestoHasta: hasta,
+    return conPlazoDeReto({ promesa, ventana: () => win, plan: planActual, presupuestoHasta: () => fechaLimite(hasta),
       sitio, progreso: avisar, mientrasAvance,
       cerrar: cerrarVentana, muestraDePagina, exigirQueNoSeaUnReto,
       alAbandonarReto: info => pendientes?.gestor.registrar({ requestId: pendientes.requestId, origen, ...info,
-        reanudar: () => comprobarAcceso(info.url) }) });
+        reanudar: () => comprobarAcceso(info.url) }),
+      ...(pendientes?.esperaDirectorMs > 0 ? { esperarDirector: esperarAlDirector, esperaDirectorMs: pendientes.esperaDirectorMs,
+        alTerminarEspera: ms => { prorroga += ms; } } : {}) });
+  }
+
+  async function esperarAlDirector({ win: ventana, sitio, url }) {
+    if (directorAusente) return 'ausente';
+    const g = pendientes.gestor;
+    const reto = g.registrar({ requestId: pendientes.requestId, sitio, url, origen, ventana: () => ventana, reanudar: () => comprobarAcceso(url) });
+    progreso({ paginas, maxPaginas, url, estado: 'comprobacion', mensaje: `${sitio} pide una comprobación humana: pásala desde la PWA del móvil.` });
+    const hayReto = async () => { if (ventana.isDestroyed()) throw new Error('ventana cerrada'); const m = await muestraDePagina(ventana); return detectarReto({ ...m, titulo: `${ventana.webContents.getTitle()} ${m.titulo || ''}` }); };
+    const fin = await g.esperarDirector(reto.id, { hayReto, signal, hastaMs: pendientes.esperaDirectorMs, paso: Math.max(200, Math.min(1000, pendientes.esperaDirectorMs / 20)) });
+    if (fin === 'agotado') { directorAusente = true; g.soltar?.(reto.id); }
+    return fin;
   }
 
   async function comprobarAcceso(direccion) {

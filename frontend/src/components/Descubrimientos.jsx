@@ -16,7 +16,7 @@ import { PageHeader } from './ui/Layout';
 import { IconButton, SecondaryButton } from './ui/Buttons';
 import { EmptyState } from './ui/Feedback';
 
-export default function Descubrimientos({ items = [], onAbrir, onDetalle, onDescartar, onGuardar, alCambiar }) {
+export default function Descubrimientos({ items = [], onAbrir, onDetalle, onDescartar, onDescartarLote, onGuardar, alCambiar }) {
   const { t } = useI18n();
   const [filtro, setFiltro] = useState(FILTRO_VACIO);
 
@@ -39,7 +39,7 @@ export default function Descubrimientos({ items = [], onAbrir, onDetalle, onDesc
     <main className={PAGINA}>
       <PageHeader title={t('carousel.discoveries')} subtitle={t('discover.subtitle')} />
       <Preferencias alCambiar={alCambiar} />
-      <PorDecidir items={items} onDetalle={onDetalle} onGuardar={onGuardar} onDescartar={onDescartar} />
+      <PorDecidir items={items} onDetalle={onDetalle} onGuardar={onGuardar} onDescartar={onDescartar} onDescartarLote={onDescartarLote} />
 
       <BarraDeFiltros
         filtro={filtro}

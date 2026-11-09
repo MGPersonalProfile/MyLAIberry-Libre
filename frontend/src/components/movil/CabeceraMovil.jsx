@@ -10,7 +10,7 @@ export default function CabeceraMovil({ scrolled, alIrA, alImportar }) {
       className={`fixed top-0 inset-x-0 z-50 transition-[background-color,backdrop-filter] duration-300 ${
         scrolled
           ? 'bg-background/55 backdrop-blur-xl backdrop-saturate-150'
-          : 'bg-gradient-to-b from-black/70 to-transparent'
+          : 'bg-gradient-to-b from-background/90 to-transparent'
       }`}
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >

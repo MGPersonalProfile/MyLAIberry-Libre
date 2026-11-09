@@ -162,14 +162,29 @@ function leerCuerpo(req, maximo = MAXIMO) {
 
 async function servirCapitulo(res, [id, n], llamar) {
   const indice = Number(n);
-  if (!/^[\w.-]{1,160}$/.test(id) || !Number.isInteger(indice) || indice < 0 || indice > 20000) {
+  if (!esIdValido(id) || !Number.isInteger(indice) || indice < 0 || indice > 20000) {
     return json(res, 400, { error: 'Capítulo no válido.' });
   }
+  trazarCapitulo(res, id, indice);
   try {
-    return json(res, 200, { valor: (await llamar('get-chapter-content', [id, indice])) ?? null });
+    const valor = await llamar('get-chapter-content', [id, indice]);
+
+    if (valor === null || valor === undefined || valor === '') return json(res, 404, { error: 'Ese capítulo no está en el PC.' });
+    return json(res, 200, { valor });
   } catch (e) {
     return json(res, 500, { error: String(e?.message || e) });
   }
+}
+
+function trazarCapitulo(res, id, indice) {
+  if (process.env.MYLAIBERRY_TRAZA_CAPITULOS !== '1') return;
+  const inicio = Date.now();
+  let acabada = false;
+  res.once('finish', () => {
+    acabada = true;
+    console.log(`[capitulo] ${new Date(inicio).toISOString()} ${id}/${indice} ${res.statusCode} ${res.getHeader('Content-Length') ?? '?'} B ${Date.now() - inicio} ms`);
+  });
+  res.once('close', () => { if (!acabada) console.log(`[capitulo] ${new Date(inicio).toISOString()} ${id}/${indice} cortada a los ${Date.now() - inicio} ms`); });
 }
 
 async function servirImagenComic(res, [id, n, i], comic) {
@@ -245,6 +260,10 @@ async function atenderApp(req, res, partes, url, ctx) {
   if (primero === 'app') { servirApp(res, resto); return true; }
   if (primero === 'puente.json' && !resto.length) { json(res, 200, puenteParaElMovil()); return true; }
   if (primero === 'eventos' && !resto.length) { eventos.suscribir(req, res); return true; }
+  if (primero === 'reto-remoto' && resto.length === 2 && resto[1] === 'fotograma') {
+    await require('./fotograma-reto.js').servirFotograma(req, res, resto[0], url, ctx, { json, drenar });
+    return true;
+  }
   if (primero === 'epub' && resto.length === 1) { await servirEpub(res, resto[0], url, ctx.epub); return true; }
   if (primero === 'capitulo' && resto.length === 2) { await servirCapitulo(res, resto, ctx.llamar); return true; }
   if (primero === 'imagen-capitulo' && resto.length === 3) { await servirImagenComic(res, resto, ctx.comic); return true; }

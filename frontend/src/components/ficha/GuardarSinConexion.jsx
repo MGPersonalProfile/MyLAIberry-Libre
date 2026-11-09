@@ -3,7 +3,8 @@ import { Download, Trash2 } from 'lucide-react';
 import { SecondaryButton } from '../ui/Buttons';
 import { Notice } from '../ui/Feedback';
 import { prepararAlmacenamiento } from './espacioViaje';
-import { encargarAlNavegador } from './fondoViaje';
+import { guardarConElNavegador } from './fondoViaje';
+import { textoDeViaje } from './textoViaje';
 import { llevarAnotacionesDeViaje } from './anotacionesDeViaje';
 import {
   textosConflicto,
@@ -134,16 +135,14 @@ export default function GuardarSinConexion({ obra }) {
 
     const ficha = JSON.parse(JSON.stringify(obra));
 
-    if (tipo === 'viaje-guardar' && await encargarAlNavegador(r, String(obra.id), estado?.guardados || 0, total)) {
-      r.active?.postMessage({ tipo: 'viaje-fondo', id: String(obra.id), total, ficha });
+    if (tipo === 'viaje-guardar') {
+      await guardarConElNavegador(r, navigator.serviceWorker, { id: String(obra.id), desde: estado?.guardados || 0, total, ficha });
       return;
     }
     r.active?.postMessage({ tipo, id: String(obra.id), total, ...(tipo === 'viaje-borrar' ? {} : { ficha }) });
   };
 
-  const guardados = estado?.guardados || 0;
   const completo = estado?.completa && estado.total === total;
-  const actualizar = estado?.completa && estado.total < total;
 
   return (
     <div className="mb-5 text-center space-y-2" aria-live="polite">
@@ -153,11 +152,9 @@ export default function GuardarSinConexion({ obra }) {
         disabled={activo || completo}
         className="w-full"
       >
-        {activo ? `Guardando en este móvil · ${guardados}/${total}`
-          : completo ? `${estado.idioma ? `Original y traducción (${estado.idioma})` : 'Original'} sin conexión · ${total} capítulos`
-            : actualizar ? `Actualizar copia · ${estado.total} → ${total} capítulos`
-              : guardados ? `Reanudar descarga · ${guardados}/${total}` : `Guardar ${total} capítulos en este móvil`}
+        {textoDeViaje(estado, total, activo)}
       </SecondaryButton>
+      {completo && estado.idioma && <p className="text-caption text-text-tertiary">Original y traducción ({estado.idioma})</p>}
       {estado?.error && <Notice variant="warning" compact>{estado.error}</Notice>}
       <AvisoConflictoIdioma conflicto={conflicto} onConservar={resolverMovil} onUsarPC={resolverPC} />
       {libres !== null && (

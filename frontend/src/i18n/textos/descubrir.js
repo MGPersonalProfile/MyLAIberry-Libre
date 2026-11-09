@@ -15,6 +15,8 @@ export const DESCUBRIR = {
   'pending.why': { es: 'Por qué: {motivo}', en: 'Why: {motivo}' },
   'pending.count': { es: '{n} {n:obra|obras} por decidir', en: '{n} {n:work|works} to decide' },
   'pending.batch_summary': { es: '{total} {total:historia encontrada|historias encontradas} · {revisar} por revisar', en: '{total} {total:story found|stories found} · {revisar} to review' },
+  'pending.batch_discarded': { es: '{n} {n:historia descartada|historias descartadas}', en: '{n} {n:story discarded|stories discarded}' },
+  'pending.batch_undo_done': { es: '{n} {n:historia recuperada|historias recuperadas}', en: '{n} {n:story recovered|stories recovered}' },
   'pending.keep_batch': { es: 'Guardar lote', en: 'Save batch' },
   'pending.keep_batch_aria': { es: 'Guardar las {n} historias de este lote', en: 'Save all {n} stories in this batch' },
   'pending.discard_batch': { es: 'Descartar lote', en: 'Discard batch' },

@@ -161,6 +161,8 @@ const GUION_FICHA = `
         })()
 `;
 
+const { extraerSeriesDeFicha: extraerSeriesSeq } = require('./series-sequential.js');
+
 async function leerFicha(win, base) {
   try {
     await cargar(win, base);
@@ -178,6 +180,15 @@ async function leerFicha(win, base) {
       if (Number.isFinite(n)) numeros.push(n);
     }
 
+    let series = [];
+    try {
+      const html = await win.webContents.executeJavaScript('document.documentElement.outerHTML');
+      const { JSDOM } = require('jsdom');
+      series = extraerSeriesSeq(new JSDOM(html).window.document, base);
+    } catch {
+      series = [];
+    }
+
     return {
       palabra,
       masAlto: numeros.length ? Math.max(...numeros) : 0,
@@ -188,7 +199,8 @@ async function leerFicha(win, base) {
         synopsis: limpiarSinopsis(info.synopsis),
         coverUrl: info.coverUrl,
         generos: info.generos || [],
-        completa: completaDeEtiquetas(info.estado || [])
+        completa: completaDeEtiquetas(info.estado || []),
+        series
       }
     };
   } catch {
@@ -260,7 +272,8 @@ async function scrape(url, onProgress) {
       ...(meta.completa !== undefined ? { completa: meta.completa } : {}),
       url: base,
       source: host,
-      chapters
+      chapters,
+      series: Array.isArray(meta.series) ? meta.series : []
     };
   } finally {
     if (!win.isDestroyed()) win.destroy();

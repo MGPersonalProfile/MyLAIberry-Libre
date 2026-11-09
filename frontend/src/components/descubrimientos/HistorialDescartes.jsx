@@ -41,10 +41,18 @@ export default function HistorialDescartes({ alCambiar }) {
 
   useEffect(() => {
     let vivo = true;
-    window.api?.getDescartesRecientes?.().then(res => {
-      if (vivo && Array.isArray(res)) setLista(res);
-    }).catch(() => {});
-    return () => { vivo = false; };
+    window.api?.getDescartesRecientes?.()
+      .then(res => { if (vivo) setLista(Array.isArray(res) ? res : []); })
+      .catch(() => { if (vivo) setLista([]); });
+    const cancelar = window.api?.onDiscoveriesUpdated?.(() => {
+      window.api?.getDescartesRecientes?.()
+        .then(res => { if (vivo) setLista(Array.isArray(res) ? res : []); })
+        .catch(() => { if (vivo) setLista([]); });
+    });
+    return () => {
+      vivo = false;
+      cancelar?.();
+    };
   }, []);
 
   const recuperar = async (obra) => {

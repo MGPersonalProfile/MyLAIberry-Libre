@@ -65,8 +65,17 @@ function fichaDeObra(f) {
     anadida: (f.enBibliotecaDesde || f.addedAt) ? new Date(f.enBibliotecaDesde || f.addedAt).toISOString().slice(0, 10) : 'no consta',
     url: f.url,
     serie: Array.isArray(f.series) && f.series.length
-      ? f.series.map(s => ({ ...(s.parte ? { parte: s.parte } : {}), nombre: s.nombre, url: s.url,
-        dicho: require('./scrapers/ao3-series.js').describirSerie(s) })) : undefined
+      ? f.series.map(s => ({
+        ...(s.parte !== undefined && s.parte !== null ? { parte: s.parte } : {}),
+        nombre: s.nombre,
+        url: s.url,
+        ...(s.id ? { id: String(s.id) } : {}),
+        ...(s.fuente ? { fuente: s.fuente } : {}),
+        ...(s.totalObras !== undefined && s.totalObras !== null ? { totalObras: s.totalObras } : {}),
+        ...(s.ordenConocido !== undefined ? { ordenConocido: s.ordenConocido } : {}),
+        ...(Array.isArray(s.obras) ? { obras: s.obras } : {}),
+        ...(s.parcial !== undefined ? { parcial: s.parcial } : {}),
+        dicho: require('./series/contrato.js').describirSerie(s) })) : undefined
   };
 }
 
