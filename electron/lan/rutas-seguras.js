@@ -40,4 +40,14 @@ function rutaSegura(base, ...segmentos) {
   return a.startsWith(b) ? destino : null;
 }
 
-module.exports = { rutaSegura, esIdValido, esIndiceValido, ID_VALIDO, INDICE_VALIDO, IDIOMA_VALIDO };
+function esRutaDeBiblioteca(filePath, raiz) {
+  try {
+    const res = path.resolve(String(filePath || ''));
+    const r = path.resolve(String(raiz || ''));
+    return rutaSegura(r, path.relative(r, res)) !== null;
+  } catch {
+    return false;
+  }
+}
+
+module.exports = { rutaSegura, esRutaDeBiblioteca, esIdValido, esIndiceValido, ID_VALIDO, INDICE_VALIDO, IDIOMA_VALIDO };

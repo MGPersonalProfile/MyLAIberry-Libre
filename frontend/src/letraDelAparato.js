@@ -1,4 +1,4 @@
-import { enElMovil } from './vistaGuardada';
+import { enElMovil } from './vistaGuardada.js';
 
 const CLAVE = 'mylaiberry.letra';
 export const LETRA_MOVIL_POR_DEFECTO = 18;

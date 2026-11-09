@@ -8,6 +8,7 @@ const { pertinencia } = require('./relevancia.js');
 const { JSDOM } = require('jsdom');
 const { CATEGORIA } = require('./etiquetas.js');
 const { sinVerificar } = require('./descubrimientos-explicacion.js');
+const { AUDITORIA_7_FUENTES, canonizarUrl } = require('./fuentes/auditoria');
 
 const MAX_PASOS = 64;
 
@@ -296,6 +297,25 @@ function crearInvestigador({ signal, progreso = () => {}, origen, presupuestoMs,
     return { ...fichaVerificada(obra), enlaces: unicos, paginasVisitadas: navegador.paginas };
   }
 
+  function pistasForosOReddit(actual, html, tipo, navegador) {
+    if (/reddit\.com/.test(actual)) {
+      const { extraerRecomendacionesReddit } = require('./scrapers/reddit-recomendaciones');
+      const recs = extraerRecomendacionesReddit({ url: actual, body: html, texto: html });
+      const lista = recs.recomendaciones || (Array.isArray(recs) ? recs : []);
+      const obras = lista.map(r => ({ title: r.obraMencionada || r.titulo || 'Recomendación Reddit', author: r.autorMencionado || r.autor || '', url: r.urlObra || r.urlOriginal || actual, source: 'Reddit', synopsis: r.textoRelevante || '' }));
+      return { tipo, obras: sinDuplicados(obras).slice(0, 25).map(breve), paginasVisitadas: navegador.paginas };
+    }
+    if (tipo === 'recomendaciones' || /spacebattles\.com|sufficientvelocity\.com|questionablequesting\.com|tvtropes\.org|fanlore\.org/.test(actual)) {
+      const { analizarPaginaRecomendaciones } = require('./fuentes/recomendaciones-foros');
+      const an = analizarPaginaRecomendaciones(html, actual);
+      const obras = (an.obras || []).map(o => ({ title: o.titulo, author: o.autor, url: o.url, source: actual.includes('tvtropes.org') ? 'TV Tropes' : 'Foro', synopsis: o.descripcion }));
+      if (obras.length || an.tipoPagina !== 'insuficiente') {
+        return { tipo, tipoPagina: an.tipoPagina, obras: sinDuplicados(obras).slice(0, 25).map(breve), paginasVisitadas: navegador.paginas };
+      }
+    }
+    return null;
+  }
+
   async function pistas({ url, tipo = 'autor' }) {
     paso();
     if (!['autor', 'serie', 'bookmarks', 'recomendaciones'].includes(tipo)) throw new Error('Tipo de pista no admitido.');
@@ -312,6 +332,8 @@ function crearInvestigador({ signal, progreso = () => {}, origen, presupuestoMs,
     const win = await navegador.abrir(url);
     const actual = win.webContents.getURL();
     const html = await navegador.ejecutar('document.documentElement.outerHTML');
+    const extra = pistasForosOReddit(actual, html, tipo, navegador);
+    if (extra) return extra;
     if (/archiveofourown\.org/.test(actual)) {
       const doc = new JSDOM(html).window.document;
       const filas = doc.querySelectorAll('ol.work.index.group > li, ol.bookmark.index.group > li');

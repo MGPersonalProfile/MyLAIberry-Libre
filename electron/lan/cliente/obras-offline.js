@@ -7,7 +7,7 @@ const viajeCancelado = new Set();
 
 function abrirViaje() {
   return new Promise((ok, mal) => {
-    const r = indexedDB.open(BD_VIAJE, 5);
+    const r = indexedDB.open(BD_VIAJE, 6);
 
     r.onupgradeneeded = (e) => {
       const antes = (e && e.oldVersion) || 0;
@@ -22,6 +22,7 @@ function abrirViaje() {
         r.result.createObjectStore('propuestas', { keyPath: 'id' });
         r.result.createObjectStore('decisiones_propuestas', { keyPath: 'id' });
       }
+      if (antes < 6) { r.result.createObjectStore('audios', { keyPath: ['obra', 'indice', 'idioma'] }); r.result.createObjectStore('audioDatos', { keyPath: ['obra', 'indice', 'idioma'] }); }
     };
     r.onsuccess = () => ok(r.result);
     r.onerror = () => mal(r.error);
@@ -86,13 +87,15 @@ async function atenderSesion(peticion, trabajos) {
 async function borrarViaje(id) {
   const bd = await abrirViaje();
   await new Promise((ok, mal) => {
-    const tx = bd.transaction(['obras', 'capitulos', 'traducciones', 'imagenes'], 'readwrite');
+    const tx = bd.transaction(['obras', 'capitulos', 'traducciones', 'imagenes', 'audios', 'audioDatos'], 'readwrite');
     tx.objectStore('obras').delete(id);
 
     tx.objectStore('capitulos').delete(IDBKeyRange.bound([id], [id, []]));
 
     tx.objectStore('traducciones').delete(IDBKeyRange.bound([id], [id, []]));
     tx.objectStore('imagenes').delete(IDBKeyRange.bound([id], [id, []]));
+    tx.objectStore('audios').delete(IDBKeyRange.bound([id], [id, []]));
+    tx.objectStore('audioDatos').delete(IDBKeyRange.bound([id], [id, []]));
     tx.oncomplete = () => { bd.close(); ok(); };
     tx.onerror = () => { bd.close(); mal(tx.error); };
     tx.onabort = () => { bd.close(); mal(tx.error || new Error('Borrado local interrumpido.')); };
@@ -229,6 +232,7 @@ async function fijadoDe(canal, args) {
     const t = await leerViaje('traducciones', [id, args[1], args[2]]).catch(() => null);
     return t ? { valor: canal === 'has-translation' ? true : t.html } : null;
   }
+  if (canal === 'audio-capitulo' && typeof fijadoDeAudio === 'function') return fijadoDeAudio(id, args[1], args[2]);
   return null;
 }
 
@@ -250,6 +254,7 @@ async function descargarTramoViaje(estado) {
       } else estado.faltantes.push(i);
     }
     if (estado.idioma) await traducirParaViaje(estado, i);
+    if (typeof bajarAudioParaViaje === 'function') await bajarAudioParaViaje(estado, i);
     estado.guardados = i + 1;
     await escribirViaje('obras', { ...estado });
     if (i % 5 === 4) await avisarViaje(estado.id, { ...estado, enCurso: true });

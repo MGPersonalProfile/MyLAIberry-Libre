@@ -97,6 +97,7 @@ function crearAsistente({ db, services, provider = crearProveedor(), topeHerrami
 
       texto = require('./asistente-vetos-salida').sinRecomendarPendientes(texto, toolset.registroVetos, redes.textoDelUsuario);
       texto = require('./asistente-sinopsis').rechazarVerificacionSinEvidencia(texto, { vistas, messages, textoDelUsuario: redes.textoDelUsuario });
+      texto = require('./asistente-afirmaciones').rechazarCertezaSinConfirmacion(texto, { vistas, historiasRecuperadas: vistas });
       if (avance.limiteWeb && !resumido) texto = `${resumenLimite('investigación', { acciones: actions, vistas, pendientes, avance })}\n\n${texto}`;
       if (corregidas.has('guardadoReal') && require('./asistente-evidencia').guardadoSinEvidencia(texto, { actions })) {
         texto = 'No he podido guardar ese encargo o esas pistas; no han quedado registrados. Puedes volver a pedírmelo.';

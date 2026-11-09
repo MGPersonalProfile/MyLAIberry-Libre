@@ -70,9 +70,11 @@ export function fraseEn(frases, t) {
 }
 
 export class LectorDeAudio {
-  constructor({ crearAudio = (src) => new Audio(src) } = {}) {
+  constructor({ crearAudio = (src) => new Audio(src), URLApi = (typeof URL !== 'undefined' ? URL : null) } = {}) {
     this.crearAudio = crearAudio;
+    this.URLApi = URLApi;
     this.audio = null;
+    this.src = null;
     this.marcas = [];
     this.frases = [];
     this.frase = -1;
@@ -95,12 +97,15 @@ export class LectorDeAudio {
     this.audio.preload = 'auto';
     this.audio.playbackRate = this.velocidad;
     this.audio.ontimeupdate = () => this._seguir();
-    this.audio.onended = () => { this.leyendo = false; this.alCambiar(); this.alAcabar(); };
+    this.audio.onended = () => {
+      if (this._muerto || !this.audio) return;
+      this.leyendo = false; this.alCambiar(); this.alAcabar();
+    };
     this.audio.onerror = () => { this.leyendo = false; this.alCambiar(); };
   }
 
   _seguir() {
-    const t = this.audio.currentTime;
+    const t = this.audio ? this.audio.currentTime : 0;
     const f = fraseEn(this.frases, t);
     const i = f >= 0 ? this.frases[f].parrafo : parrafoEn(this.marcas, t);
     if (i !== this.indice || f !== this.frase) { this.indice = i; this.frase = f; this.alCambiar(); }
@@ -108,7 +113,7 @@ export class LectorDeAudio {
 
   cargar(parrafos, desde = 0) {
     this.parrafos = parrafos;
-    this.indice = Math.min(Math.max(0, desde), Math.max(0, this.marcas.length - 1));
+    this.indice = Math.min(Math.max(0, desde), Math.max(0, (this.marcas?.length || 1) - 1));
     const inicio = inicioDe(this.marcas, this.indice);
     if (this.audio && inicio != null) this.audio.currentTime = inicio;
   }
@@ -155,7 +160,7 @@ export class LectorDeAudio {
   }
 
   irA(indice) {
-    this.indice = Math.min(Math.max(0, indice), Math.max(0, this.marcas.length - 1));
+    this.indice = Math.min(Math.max(0, indice), Math.max(0, (this.marcas?.length || 1) - 1));
     const inicio = inicioDe(this.marcas, this.indice);
     if (this.audio && inicio != null) this.audio.currentTime = inicio;
     this.alCambiar();
@@ -164,6 +169,10 @@ export class LectorDeAudio {
   saltar(cuantos) { this.irA(this.indice + cuantos); }
 
   soltar() {
+    if (this.src && typeof this.src === 'string' && this.src.startsWith('blob:') && this.URLApi?.revokeObjectURL) {
+      this.URLApi.revokeObjectURL(this.src);
+    }
+    this.src = null;
     if (!this.audio) return;
     this.audio.pause();
     this.audio.ontimeupdate = this.audio.onended = this.audio.onerror = null;

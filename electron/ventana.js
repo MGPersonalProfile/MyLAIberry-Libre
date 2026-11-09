@@ -3,6 +3,9 @@ const { app, BrowserWindow, protocol, net, session, shell } = require('electron'
 
 const avisos = require('./avisos.js');
 const enlaces = require('./enlaces.js');
+const { esRutaDeBiblioteca } = require('./lan/rutas-seguras.js');
+
+const { raizActual } = require('./db.js');
 
 let mainWindow = null;
 
@@ -134,6 +137,9 @@ function registrarProtocoloLocal() {
     const filePath = decodeURIComponent(
       request.url.replace(/^local-file:\/\/\/?/, '').replace(/\?.*$/, '')
     );
+    if (!esRutaDeBiblioteca(filePath, raizActual())) {
+      return new Response('Acceso no permitido', { status: 403 });
+    }
     return net.fetch('file:///' + filePath);
   });
 

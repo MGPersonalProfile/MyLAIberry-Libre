@@ -113,4 +113,29 @@ function rechazarVerificacionSinEvidencia(texto, ctxOCandidatos = [], premisa = 
   }).join('').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-module.exports = { obrasDeContexto, afirmacionesSinEvidencia, rechazarVerificacionSinEvidencia, claveDe, esReclamo };
+const AFIRMA_HISTORIA_CERTEZA = /\b(?:he|hemos)\s+(?:encontrado|localizado|hallado)\s+(?:tu|la)\s+(?:historia|obra)\b|\b(?:esta|este)\s+es\s+(?:la\s+obra|el\s+fic|la\s+historia)\s+que\s+(?:buscabas|quer[ií]as|ped[ií]as)\b|\bencontr[eé]\s+(?:tu|la)\s+(?:historia|obra)\b/i;
+
+function rechazarCertezaSinConfirmacion(texto, ctx = {}) {
+  if (!texto) return texto;
+  const t = String(texto);
+  if (!AFIRMA_HISTORIA_CERTEZA.test(t)) return t;
+
+  const lista = ctx.historiasRecuperadas || ctx.vistas || [];
+  const hayConfirmada = lista.some(o => o.estado === 'confirmado' || o.estadoVerificacion === 'confirmado' || o.estadoVerificacion === 'ficha_consultada');
+  if (hayConfirmada) return t;
+
+  return t
+    .replace(/[¡!]?he(?:mos)?\s+encontrado\s+tu\s+historia[.!¡]?/gi, 'He encontrado candidatas que podrían coincidir, pero ninguna está confirmada todavía sin comprobación:')
+    .replace(/(?:esta|este)\s+es\s+la\s+obra\s+que\s+buscabas:?/gi, 'candidata no confirmada que coincide con algunas pistas:')
+    .replace(/\bencontr[eé]\s+tu\s+historia\b/gi, 'encontré posibles candidatas no confirmadas');
+}
+
+module.exports = {
+  obrasDeContexto,
+  afirmacionesSinEvidencia,
+  rechazarVerificacionSinEvidencia,
+  rechazarCertezaSinConfirmacion,
+  AFIRMA_HISTORIA_CERTEZA,
+  claveDe,
+  esReclamo
+};

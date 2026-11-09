@@ -93,4 +93,19 @@ function pistasDelCaso({ pistas, clues }) {
     .map(text => normalizarPista({ text, certeza: 'dudosa', campo: 'texto', valor: text }));
 }
 
-module.exports = { COMO_DAR_UNA_PISTA, CERTEZAS, CAMPOS, comprobarPista, contrastar, contrastarCaso, normalizarPista, pistasDelCaso };
+const { evaluarRecuperacion, formatearResultadoRecuperacion, actualizarInvestigacionHistoria, CAMPOS_RECUPERACION } = require('./recuperar-historias');
+
+module.exports = {
+  COMO_DAR_UNA_PISTA,
+  CERTEZAS,
+  CAMPOS,
+  CAMPOS_RECUPERACION,
+  comprobarPista,
+  contrastar,
+  contrastarCaso,
+  normalizarPista,
+  pistasDelCaso,
+  evaluarRecuperacion,
+  formatearResultadoRecuperacion,
+  actualizarInvestigacionHistoria
+};

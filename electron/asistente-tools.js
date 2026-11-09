@@ -197,17 +197,25 @@ function herramientasComunes(add, { services, state, hilo, conAjustes }) {
 }
 
 function herramientasDeInvestigacion(add, { state, services }) {
+  const { CAMPOS_RECUPERACION, evaluarRecuperacion, formatearResultadoRecuperacion } = require('./recuperar-historias');
   add('investigar', 'Mantén una búsqueda o caso de historia perdida: repite buscar_obras con query en AO3, FanFiction.net, RoyalRoad, Project Gutenberg, WeTriedTLs y Webnovel cada 24 horas y avisa de obras nuevas; un caso de historia perdida busca además en internet entero (los hilos y foros que la describan), sin gastar llamadas del modelo. Se puede pausar desde Investigaciones. ' + COMO_DAR_UNA_PISTA,
     { query: str, clues: str, kind: { type: 'string', enum: ['search', 'lost'] },
       pistas: { type: 'array', maxItems: 20, items: { type: 'object', required: ['text', 'certeza'], properties: {
         text: str,
         certeza: { type: 'string', enum: ['segura', 'dudosa'] },
-        campo: { type: 'string', enum: ['capitulos', 'completa', 'etiqueta', 'autor', 'texto'] },
+        campo: { type: 'string', enum: [...new Set(['capitulos', 'completa', 'etiqueta', 'autor', 'texto', ...CAMPOS_RECUPERACION])] },
         op: { type: 'string', enum: ['min', 'max', 'aprox'] },
         valor: { type: 'string', minLength: 0, maxLength: 200 }
       } } } },
 
-    async args => require('./asistente-investigacion-editar').crearInvestigacion(args, { state }), ['query', 'kind']);
+    async args => {
+      const res = await require('./asistente-investigacion-editar').crearInvestigacion(args, { state });
+      if (args.kind === 'lost') {
+        const candidatas = args.candidatas || args.findings || [];
+        res.recuperadas = candidatas.map(c => formatearResultadoRecuperacion(evaluarRecuperacion(c, res.pistas || [])));
+      }
+      return res;
+    }, ['query', 'kind']);
 
   add('investigaciones', 'Las investigaciones (búsquedas mantenidas e historias perdidas) y las obras vigiladas por si vuelven a publicar o se terminan, con su estado.', {}, async () => {
     const s = await state.read();

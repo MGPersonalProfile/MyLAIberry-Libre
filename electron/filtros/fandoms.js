@@ -18,7 +18,15 @@ function resolverFandomFFN(pedido, tabla = fandoms) {
   if (exacto) return fila(exacto);
   const empieza = tabla.filter(f => buscados.some(b => b.length >= 4 && normal(f[0]).startsWith(b + ' ')));
   if (empieza.length) return fila(empieza.sort((a, b) => b[2] - a[2])[0]);
+  const porPalabras = tabla.filter(f => buscados.some(b => todasSusPalabras(b, normal(f[0]))));
+  if (porPalabras.length) return fila(porPalabras.sort((a, b) => b[2] - a[2])[0]);
   return null;
+}
+
+function todasSusPalabras(pedido, nombre) {
+  const palabras = pedido.split(' ').filter(p => p && p !== 'and');
+  const delNombre = new Set(nombre.split(' '));
+  return palabras.length >= 2 && palabras.every(p => delNombre.has(p));
 }
 
 module.exports = { resolverFandomFFN, normal };

@@ -1,5 +1,136 @@
 [
   {
+    "version": "2026.11.9-2",
+    "fecha": "2026-11-09",
+    "resumen": "Correcciones de seguridad en la interfaz de seguimiento sin spoilers (A40). Audio sin conexión en biblioteca de viaje y voces neuronales en escritorio (A50 10.3/10.4).",
+    "detalle": [
+      {
+        "que": "Auditoría y normalización de fuentes adicionales (Webnovel, WeTriedTLs, SpaceBattles, SufficientVelocity, Questionable Questing, ScribbleHub, NovelUpdates) distinguiendo resultados parciales de fichas verificadas, con protección comprobarDestino y gestión de bloqueos/retos (A50 / 2.5 parcial: Webnovel y WeTriedTLs en buscador, restantes auditadas).",
+        "porque": "Evita presentar resultados parciales o de caché como obras comprobadas y asegura que cualquier enlace externo pase por los filtros de red segura."
+      },
+      {
+        "que": "Extracción estructurada de recomendaciones en Reddit y foros/listas (TV Tropes, Fanlore) con asociación estructural estricta e informe explicativo ante errores 403 o 429 (A50 / 2.6-2.7).",
+        "porque": "Impide que menciones ambiguas o especulativas de usuarios se confundan con identificaciones confirmadas o que descripciones de obras contiguas se crucen."
+      },
+      {
+        "que": "Recuperación rigurosa de historias perdidas con contrato obligatorio de confirmado vs candidato, evaluación de 12 campos de evidencia, deduplicación idempotente y barrera de certeza en la respuesta final (A50 / 2.8).",
+        "porque": "Garantiza que ninguna obra se presente como la historia buscada si solo es una candidata o si contradice pistas seguras, sin cerrar prematuramente las investigaciones abiertas."
+      },
+      {
+        "que": "La PWA valida autónomamente los recordatorios guardados y no entrega ninguno posterior al progreso vigente al retroceder sin conexión.",
+        "porque": "La revisión adversaria de Echo detectó que el Service Worker devolvía la copia guardada sin comprobar si el usuario había retrocedido el progreso desconectado del PC."
+      },
+      {
+        "que": "El panel de recordar historia invalida cualquier petición previa si cambias de obra o retrocedes mientras carga.",
+        "porque": "La revisión adversaria de Echo identificó que en Inicio una respuesta tardía de una historia previa podía asignarse erróneamente a la obra que acababa de seleccionarse."
+      },
+      {
+        "que": "La interfaz rechaza cualquier respuesta que no declare explícitamente su límite de lectura o contenga capítulos fuera de autorización.",
+        "porque": "La revisión adversaria de Echo observó que una respuesta incompleta sin campo de límite era aceptada por el frontend."
+      },
+      {
+        "que": "El motor y el panel revalidan el progreso antes de entregar el texto narrativo si el lector retrocede mientras se genera el recordatorio.",
+        "porque": "La revisión adversaria de Echo identificó una ventana temporal de concurrencia donde un retroceso durante la generación podía mostrar spoilers."
+      },
+      {
+        "que": "La interfaz distingue con precisión entre falta de constancia de lectura, capítulos no descargados, errores de motor y desconexión de red.",
+        "porque": "La revisión de Echo detectó que cualquier fallo o falta de descarga se comunicaba al usuario engañosamente como «no sé por dónde vas»."
+      },
+      {
+        "que": "El panel de recordar historia es completamente accesible con aria-expanded, aria-controls y regiones aria-live.",
+        "porque": "La revisión de Echo identificó carencias de accesibilidad en los controles del panel para lectores de pantalla."
+      },
+      {
+        "que": "El recordatorio de lectura se ofrece tras 7 días de inactividad y cuando existen capítulos anteriores leídos para recapitular.",
+        "porque": "La revisión de Echo observó que se ofrecía recordar la historia inmediatamente tras leer y para obras sin capítulos previos terminados."
+      },
+      {
+        "que": "El motor y el panel soportan localización completa en inglés (ES/EN) para progreso, fechas y avisos de error.",
+        "porque": "La revisión de Echo detectó que las fechas y el texto de progreso se generaban siempre en español y con mensajes sin localizar."
+      },
+      {
+        "que": "En «Por decidir» (A51): deshacer descarte con aviso de 10 s y recuperación durante 7 días desde el historial; lotes de 10 por relevancia con guardar y descartar lote; y gestos táctiles en móvil para guardar y descartar sin descargas duplicadas.",
+        "porque": "Completa la experiencia de revisión previa de propuestas antes de incorporar obras a la biblioteca."
+      },
+      {
+        "que": "Los webcómics de Webtoon se pueden guardar en el móvil con todas sus viñetas y leer sin conexión. Cada capítulo se guarda entero o no se guarda: si falta una viñeta o se acaba el espacio, ese capítulo no entra y los anteriores se conservan. Antes de empezar, la app calcula cuánto ocupará la serie y avisa si no cabe (se respeta el límite de 1 GB y se deja libre un 10 % del espacio del móvil). Al borrar la copia de una obra también se borran sus viñetas. Está probado con un móvil simulado; falta probarlo en un teléfono real.",
+        "porque": "La copia sin conexión sólo sabía guardar texto: un capítulo de viñetas se quedaba en blanco al perder la conexión."
+      },
+      {
+        "que": "Guardar una obra para leer sin conexión aguanta mejor los cortes: si el navegador sólo trae una parte, se queda con todos los capítulos que llegaron (también los de después de un hueco) y luego baja sólo los que faltan.",
+        "porque": "Antes se paraba en el primer capítulo que faltaba y tiraba los siguientes aunque ya estuvieran bajados."
+      },
+      {
+        "que": "La ficha dice cuántos capítulos hay de verdad en el móvil: «24 de 56 capítulos guardados», y «Disponible sin conexión» sólo cuando está entera (y con sus traducciones, si las elegiste).",
+        "porque": "Contaba por dónde iba la descarga, no lo que había guardado."
+      },
+      {
+        "que": "Borrar la copia del móvil mientras el navegador entrega lo bajado la borra de verdad, sin dejar capítulos sueltos.",
+        "porque": "La obra borrada volvía a aparecer con lo que llegaba tarde."
+      },
+      {
+        "que": "Al desbloquear el móvil la app sigue sola con lo que quedó a medias, sin tener que abrir la ficha.",
+        "porque": "Nada lo reanudaba hasta tocar la obra o cambiar la conexión."
+      },
+      {
+        "que": "Al reanudar un webcómic, lo que ya ocupan sus viñetas sigue contando para el espacio del móvil.",
+        "porque": "Se olvidaba y la app creía que quedaba más sitio del que había."
+      },
+      {
+        "que": "En la PWA del móvil (A42 fase 11): las propuestas de descubrimiento y su investigación se conservan en IndexedDB para consultarse sin conexión, y las decisiones («guardar», «descartar» o «deshacer») hechas sin red se encolan y se sincronizan con el PC de forma idempotente al volver la conexión sin perderse si la app se cierra.",
+        "porque": "Las propuestas de descubrimiento y sus investigaciones sólo existían en la memoria o en la caché rotatoria del navegador: sin conexión no se podían consultar con detalle ni se podían tomar decisiones duraderas."
+      },
+      {
+        "que": "Con la interfaz en claro, Inicio mantiene su aspecto oscuro cinematográfico (antes el texto del hero y los títulos de los carruseles se perdían sobre el fondo claro) y la cabecera del móvil ya no deja una mancha negra sobre las pantallas claras.",
+        "porque": "Se vio al revisar las capturas en claro."
+      },
+      {
+        "que": "Cuando el móvil no llega a la biblioteca, el aviso ya no dice «tu PC»: nombra al equipo que de verdad la sirve («servidor» o «PC») y distingue «el móvil no tiene internet» de «no llego al servidor: si estás fuera de casa, mira que Tailscale esté activado en el móvil». Tampoco te manda a descargar nada «en el PC» si lo sirve el servidor.",
+        "porque": "El 7-11 el Tailscale del móvil estuvo caído y la aplicación decía «Sin conexión con tu PC»: parecía que dependía de que la ThinkPad estuviera encendida, y no depende."
+      },
+      {
+        "que": "Cuando el asistente topa con una comprobación humana (un reto de Cloudflare) que no se pasa sola, ya no se rinde: la página aparece en la PWA del móvil, tocas la casilla o aceptas las cookies tal como lo ves, y el asistente continúa solo con tu petición, sin que vuelvas a pedirla. Funciona con el PC apagado; las imágenes no se guardan y la sesión dura cinco minutos como mucho.",
+        "porque": "Antes había que pasar el reto en el PC, y desde el móvil la petición se perdía. Sólo se probó con una página local de prueba: con un reto real de Cloudflare falta que lo confirmes tú."
+      },
+      {
+        "que": "Los intentos fallidos con un token ajeno ya no dejan sin control remoto al dueño de la comprobación humana: tras cinco, los intentos con un token malo esperan un minuto y tu token bueno sigue funcionando sin enterarse.",
+        "porque": "Quien tuviera el código de la LAN podía dejarte sin poder pasar tu propio reto desde el móvil; ahora no."
+      },
+      {
+        "que": "El asistente comprueba las relaciones antes de recomendar obras cuando pueden chocar con tus disgustos. Si faltan etiquetas o no se puede clasificar una pareja, no da la obra por compatible. También distingue mejor las sinopsis comprobadas de lo que sólo sugieren las etiquetas.",
+        "porque": "Algunas parejas no estaban en su catálogo y algunas premisas podían parecer verificadas aunque sólo se hubieran deducido del título o las etiquetas."
+      },
+      {
+        "que": "Auditoría completa de todas las modalidades del lector (A36: paginado, continuo, móvil, escritorio, temas, tipografía, gestos, desplazamiento y ancla). Cada modalidad cuenta con banco focal (16 pruebas) y mutador estricto (8 mutaciones en rojo); se garantiza tipografía independiente entre móvil y PC sin pisarse, protección de gestos frente a scroll vertical y selección, restauración inmediata de posición al ocultar la app y recuperación aproximada explícita en traducciones.",
+        "porque": "Se auditó cada modalidad según el encargo cerrado de Echo (2026-11-08) asegurando que ninguna navegación accidental, cambio de tema, orientación o carga tardía degrade la lectura."
+      },
+      {
+        "que": "Buscar en FanFiction.net por fandom encuentra la sección aunque el nombre que se dé no sea exactamente el de FFN: «Miraculous Ladybug» va a «Miraculous: Tales of Ladybug & Cat Noir» (todas las palabras pedidas, dos o más, tienen que estar en el nombre; una suelta no elige fandom).",
+        "porque": "Lo pidió el asistente en el buzón (fb9761b6): con el nombre de siempre no encontraba la sección y la búsqueda caía a palabras clave, con obras de Harry Potter o Anatomía de Grey mezcladas."
+      },
+      {
+        "que": "Blindaje de seguridad y robustez en series (A50 / 4.12): mitigación estricta de SSRF contra redes privadas y loopback reutilizando comprobarDestino, conexión de adaptadores en scrapers de todas las fuentes, preservación de posición global en AO3 paginado, eliminación de posiciones inventadas, validación de IPC y canonización de obras en lote.",
+        "porque": "La revisión adversaria de DeepSeek identificó vulnerabilidad de SSRF y desajustes de coherencia en la importación y orden de series."
+      },
+      {
+        "que": "Soporte completo de series y sagas para fuentes más allá de AO3 (RoyalRoad, FanFiction.net, Webnovel y WeTriedTLs), con consulta de catálogo ordenado, enlaces originales, distinción de obras ya presentes en la biblioteca e importación individual o conjunta sin duplicados ni pérdida de progreso.",
+        "porque": "Cumple el objetivo 4.12 de ASISTENTE_TODOPODEROSO.md (A50): saber qué obra va antes o después en una saga e importar las que faltan sin depender del estado de AO3."
+      },
+      {
+        "que": "Robustez en «Por decidir» (A51) y webtoon sin conexión (A52): límite estricto de 7 días al recuperar descartes, renovación de propuestas caducadas, gestos táctiles inmunes al desplazamiento vertical, cálculo exacto de cuota restando capítulos previos, cerrojo de identificadores en LAN y localización de viñetas.",
+        "porque": "La revisión adversaria de A51 y A52 corrigió casos límite de seguridad, cuota en reconexión y usabilidad táctil."
+      },
+      {
+        "que": "Investigar ahora desde el móvil: la investigación corre en el servidor, se ve su progreso, se puede cancelar y reintentar, y se recupera tras cerrar la app o reiniciar el servidor",
+        "porque": "Antes una investigación solo avanzaba por el latido o dentro de una conversación abierta, sin forma de lanzarla ni pararla desde el teléfono con el PC apagado."
+      },
+      {
+        "que": "Audio sin conexión en la biblioteca de viaje (10.3) y soporte de voces neuronales en escritorio (10.4): almacén permanente en IndexedDB v6 para MP3 fijados de viaje sin rotación por caché temporal, descarga al preparar viaje y borrado en cascada con la obra; en escritorio reproducción directa de MP3 locales securizados con validación estricta de rutas de biblioteca en local-file://.",
+        "porque": "Permite escuchar obras completas con voces offline durante viajes en el móvil sin depender del servidor LAN, y en escritorio aprovecha audios locales existentes sin regenerar ni exponer el sistema de archivos."
+      }
+    ]
+  },
+  {
     "version": "2026.11.9",
     "fecha": "2026-11-09",
     "resumen": "Correcciones de seguridad en la interfaz de seguimiento sin spoilers (A40).",

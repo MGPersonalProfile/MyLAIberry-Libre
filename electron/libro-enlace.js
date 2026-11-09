@@ -22,11 +22,21 @@ function tipoLibro(buffer) {
   throw new Error('Ese fichero no es un EPUB, un PDF ni un HTML de AO3. MOBI y AZW3 no se admiten.');
 }
 
+function parsearIpv4MapeadaHex(v) {
+  const m = v.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
+  if (!m) return null;
+  const w = parseInt(m[1], 16);
+  const z = parseInt(m[2], 16);
+  return `${(w >> 8) & 0xff}.${w & 0xff}.${(z >> 8) & 0xff}.${z & 0xff}`;
+}
+
 function ipPrivada(ip) {
   if (net.isIPv6(ip)) {
     const v = ip.toLowerCase();
     const mapeada = v.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
     if (mapeada) return ipPrivada(mapeada[1]);
+    const hexIpv4 = parsearIpv4MapeadaHex(v);
+    if (hexIpv4) return ipPrivada(hexIpv4);
     return v === '::' || v === '::1' || /^f[cd]/.test(v) || /^fe[89ab]/.test(v);
   }
   const [a, b] = ip.split('.').map(Number);
