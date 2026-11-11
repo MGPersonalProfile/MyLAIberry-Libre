@@ -243,7 +243,7 @@ async function descargarTramoViaje(estado) {
     if (await espacioAgotado(estado.total, i)) {
       estado.error = 'No queda espacio para guardar esta obra en el móvil.';
       estado.continuar = false;
-      await escribirViaje('obras', { ...estado });
+      await escribirAvanceViaje(estado);
       break;
     }
     if (estado.revisionPendiente || !await leerViaje('capitulos', [estado.id, i])) {
@@ -256,7 +256,7 @@ async function descargarTramoViaje(estado) {
     if (estado.idioma) await traducirParaViaje(estado, i);
     if (typeof bajarAudioParaViaje === 'function') await bajarAudioParaViaje(estado, i);
     estado.guardados = i + 1;
-    await escribirViaje('obras', { ...estado });
+    await escribirAvanceViaje(estado);
     if (i % 5 === 4) await avisarViaje(estado.id, { ...estado, enCurso: true });
   }
   return cerrarTramo(estado);
@@ -271,8 +271,8 @@ async function cerrarTramo(estado) {
     estado.completa = true;
     estado.revisionPendiente = false;
   }
-  await escribirViaje('obras', { ...estado });
-  return estado;
+  const escrito = await escribirAvanceViaje(estado);
+  return escrito ? Object.assign(estado, escrito) : estado;
 }
 
 const idDeFondo = id => `viaje-${id}`;

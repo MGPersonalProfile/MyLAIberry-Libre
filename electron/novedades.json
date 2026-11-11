@@ -1,5 +1,132 @@
 [
   {
+    "version": "2026.11.10",
+    "fecha": "2026-11-09",
+    "resumen": "Guardar para leer sin conexión ya no se queda esperando al permiso de Chrome, y la ficha dice qué pulsar. La interfaz usa los mismos botones, filtros y avisos en más pantallas, sin cambiar el aspecto clásico. Control de cuota real y sincronización robusta de idioma en el móvil (A35), y recuperación de obras y cola tras restaurar una copia de seguridad (A44).",
+    "detalle": [
+      {
+        "que": "Al guardar una obra larga para leer sin conexión en el móvil, la ficha avisa de que Chrome preguntará si el sitio puede «descargar varios archivos» y de que hay que pulsar «Permitir» para que la copia siga con el móvil bloqueado; si está bloqueado, dice que la copia se parará a los pocos minutos de bloquear y dónde se activa. Y si nadie contesta al aviso, a los 20 s sigue bajando por tramos en vez de quedarse esperando.",
+        "porque": "Medido en el emulador el 9-11: con el aviso de Chrome sin contestar, «Guardar» se quedaba esperando y la obra sólo bajaba por tramos, que se paran a los ~3 min de bloquear (40 → 63 de 109). Con «Permitir», el navegador la bajó entera con la pantalla bloqueada."
+      },
+      {
+        "que": "Una obra guardada para leer sin conexión ya no vuelve atrás en su contador cuando la descarga del navegador y la de por tramos coinciden: si una ya la dejó completa, la otra no la pisa con un número viejo; y una obra borrada mientras bajaba no reaparece.",
+        "porque": "En el móvil hay dos caminos que escriben el estado de la misma obra (el navegador, con la pantalla bloqueada, y los tramos de la app) y el último que escribía mandaba aunque fuera el atrasado."
+      },
+      {
+        "que": "Descubrimientos usa los mismos botones, etiquetas de filtro, buscador, interruptores y avisos que el resto de la app. Todo funciona igual.",
+        "porque": "Iba con controles propios distintos a los de Biblioteca y Ajustes."
+      },
+      {
+        "que": "Explorar usa las mismas etiquetas de filtro, cabeceras, botón de quitar filtros y aviso de pantalla vacía que el resto. Los resultados no cambian.",
+        "porque": "Tenía botones y etiquetas propios."
+      },
+      {
+        "que": "Mi lista usa la cabecera, el estado vacío y el botón de quitar comunes.",
+        "porque": "Tenía su botón y su cartel propios."
+      },
+      {
+        "que": "Autores usa el botón de dejar de seguir, la cabecera y el estado vacío comunes.",
+        "porque": "Tenía estilos propios."
+      },
+      {
+        "que": "En Inicio, los botones y barras de progreso al pasar el ratón por una portada, y el botón de importar de la pantalla vacía, usan los componentes comunes. El hero y los carruseles no cambian.",
+        "porque": "Mantiene el aspecto clásico; sólo se unifican controles."
+      },
+      {
+        "que": "Los mandos del lector (barra superior e inferior en móvil y barra del escritorio) usan los botones y el indicador de progreso comunes. Mismo sitio y mismas acciones.",
+        "porque": "Cada barra tenía su propio botón."
+      },
+      {
+        "que": "Si cancelas desde el móvil una comprobación que ya está en marcha, el reto se queda cancelado aunque la comprobación termine después.",
+        "porque": "El resultado tardío lo volvía a poner como reanudado o pendiente."
+      },
+      {
+        "que": "Un reto que caduca mientras se está comprobando se queda caducado y no vuelve a aparecer en la lista del móvil.",
+        "porque": "Al terminar la comprobación reaparecía como pendiente."
+      },
+      {
+        "que": "El móvil ya no pierde un aviso de comprobación pendiente que llega justo mientras carga la lista inicial.",
+        "porque": "La lista inicial sustituía a los avisos recibidos antes que ella."
+      },
+      {
+        "que": "Los intentos fallidos con un token ajeno ya no inutilizan el reto de su dueño.",
+        "porque": "Cinco intentos erróneos revocaban el token para siempre y el reto sólo se podía pasar desde el PC."
+      },
+      {
+        "que": "Si la comprobación de un reto falla por un error pasajero, el móvil sigue mostrándolo y puedes volver a intentarlo.",
+        "porque": "Quedaba como no resuelto, desaparecía de la lista y no admitía reintento."
+      },
+      {
+        "que": "Los ajustes del lector (tema, tipografía, tamaño, velocidad), el buscador del índice, el MP3 del capítulo y de la obra, los mandos de la voz del móvil, el cuaderno y el panel del asistente usan los botones, selectores y avisos comunes, con la letra de interfaz y no la de lectura. Todo funciona igual.",
+        "porque": "Cada uno tenía sus botones y colores propios, y en el panel de ajustes el texto «Oscuro» se salía del botón."
+      },
+      {
+        "que": "El final de obra, el resumen «En el capítulo anterior», los avisos de carga y traducción, la navegación entre capítulos y la barra de progreso del lector usan las tarjetas, avisos y botones comunes. Sin controles nuevos permanentes.",
+        "porque": "Tenían botones subrayados y textos sueltos."
+      },
+      {
+        "que": "El asistente (pestañas, caja de escribir, selector de conversaciones, borrado con confirmación, estados vacíos y errores) y el índice de capítulos del lector usan los botones, avisos y selectores comunes. Los bloques de código del asistente ahora se ven como bloques.",
+        "porque": "Tenía controles propios y los bloques de código salían con las comillas sin formato."
+      },
+      {
+        "que": "Los paneles del asistente (investigaciones, pistas, estanterías, recuerdos, reglas, cola de trabajos, resultados web, confirmaciones y retos pendientes) usan las tarjetas, botones, selectores y avisos comunes. Mismas acciones.",
+        "porque": "Cada panel tenía sus botones y campos propios."
+      },
+      {
+        "que": "Los avisos de notificaciones, el calendario de lectura, las voces del lector, los avisos breves, de conflicto, de versión y de sin conexión usan los componentes comunes. En el móvil, el buscador de la biblioteca ya no se sale por la derecha.",
+        "porque": "Tenían botones y colores propios; el buscador se salía de la pantalla en el móvil."
+      },
+      {
+        "que": "Los avisos y botones dentro del texto del lector (resumen previo, errores de carga, navegación) mantienen su aspecto oscuro aunque la interfaz esté en claro.",
+        "porque": "Con la interfaz en claro salían tarjetas blancas sobre un lector oscuro."
+      },
+      {
+        "que": "Con la interfaz en claro, Inicio mantiene su aspecto oscuro cinematográfico (antes el texto del hero y los títulos de los carruseles se perdían sobre el fondo claro) y la cabecera del móvil ya no deja una mancha negra sobre las pantallas claras.",
+        "porque": "Se vio al revisar las capturas en claro."
+      },
+      {
+        "que": "El móvil comprueba el espacio real disponible con una reserva de seguridad del 10 % y aplica un límite de 5 MiB por traducción, evitando saturar el almacenamiento.",
+        "porque": "Antes una descarga grande podía agotar el espacio del dispositivo o fallar a mitad sin informar de la cuota real."
+      },
+      {
+        "que": "Al cambiar de idioma en una obra guardada sin conexión, las traducciones correspondientes se descargan automáticamente sin tener que pulsar «Revisar cambios».",
+        "porque": "Antes el cambio sólo afectaba a las lecturas posteriores y requería intervención manual para tener los capítulos en el idioma deseado."
+      },
+      {
+        "que": "Si el idioma de una obra se cambia en dos dispositivos distintos, la ficha de la obra avisa del conflicto y permite elegir explícitamente qué preferencia conservar.",
+        "porque": "Antes dos cambios simultáneos se sobreescribían silenciosamente sin que el lector supiera qué versión prevalecía."
+      },
+      {
+        "que": "Al restaurar una copia de seguridad antigua en el PC, las obras y descargas posteriores no se pierden: se genera un inventario y se pueden recuperar con un solo clic.",
+        "porque": "Antes, volver a una copia antigua dejaba las obras añadidas posteriormente fuera de la biblioteca aunque sus archivos siguieran en el disco."
+      },
+      {
+        "que": "Cuando el móvil no llega a la biblioteca, el aviso ya no dice «tu PC»: nombra al equipo que de verdad la sirve («servidor» o «PC») y distingue «el móvil no tiene internet» de «no llego al servidor: si estás fuera de casa, mira que Tailscale esté activado en el móvil». Tampoco te manda a descargar nada «en el PC» si lo sirve el servidor.",
+        "porque": "El 7-11 el Tailscale del móvil estuvo caído y la aplicación decía «Sin conexión con tu PC»: parecía que dependía de que la ThinkPad estuviera encendida, y no depende."
+      },
+      {
+        "que": "Cuando el asistente topa con una comprobación humana (un reto de Cloudflare) que no se pasa sola, ya no se rinde: la página aparece en la PWA del móvil, tocas la casilla o aceptas las cookies tal como lo ves, y el asistente continúa solo con tu petición, sin que vuelvas a pedirla. Funciona con el PC apagado; las imágenes no se guardan y la sesión dura cinco minutos como mucho.",
+        "porque": "Antes había que pasar el reto en el PC, y desde el móvil la petición se perdía. Sólo se probó con una página local de prueba: con un reto real de Cloudflare falta que lo confirmes tú."
+      },
+      {
+        "que": "Los intentos fallidos con un token ajeno ya no dejan sin control remoto al dueño de la comprobación humana: tras cinco, los intentos con un token malo esperan un minuto y tu token bueno sigue funcionando sin enterarse.",
+        "porque": "Quien tuviera el código de la LAN podía dejarte sin poder pasar tu propio reto desde el móvil; ahora no."
+      },
+      {
+        "que": "El asistente comprueba las relaciones antes de recomendar obras cuando pueden chocar con tus disgustos. Si faltan etiquetas o no se puede clasificar una pareja, no da la obra por compatible. También distingue mejor las sinopsis comprobadas de lo que sólo sugieren las etiquetas.",
+        "porque": "Algunas parejas no estaban en su catálogo y algunas premisas podían parecer verificadas aunque sólo se hubieran deducido del título o las etiquetas."
+      },
+      {
+        "que": "Investigar ahora desde el móvil: la investigación corre en el servidor, se ve su progreso, se puede cancelar y reintentar, y se recupera tras cerrar la app o reiniciar el servidor",
+        "porque": "Antes una investigación solo avanzaba por el latido o dentro de una conversación abierta, sin forma de lanzarla ni pararla desde el teléfono con el PC apagado."
+      },
+      {
+        "que": "Las traducciones de capítulos se auditan: se detectan cortes y fragmentos sin traducir aunque el servicio no diera error, el lector avisa con calma (completa / posibles fragmentos / incompleta) y cada traducción nueva guarda qué cliente de Google Translate la hizo de verdad",
+        "porque": "Antes solo se contaban los fragmentos que fallaban y un capítulo cortado en silencio se daba por bueno para siempre; y nada decía quién había traducido cada capítulo."
+      }
+    ]
+  },
+  {
     "version": "2026.11.9-2",
     "fecha": "2026-11-09",
     "resumen": "Correcciones de seguridad en la interfaz de seguimiento sin spoilers (A40). Audio sin conexión en biblioteca de viaje y voces neuronales en escritorio (A50 10.3/10.4).",

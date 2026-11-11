@@ -8,6 +8,7 @@ const IDIOMA = fs.readFileSync(path.join(__dirname, 'cliente', 'idioma-viaje-cli
 const EQUIPO = fs.readFileSync(path.join(__dirname, 'cliente', 'equipo-sw.js'), 'utf-8');
 const COMIC = fs.readFileSync(path.join(__dirname, 'cliente', 'comic-viaje.js'), 'utf-8');
 const PROPUESTAS = fs.readFileSync(path.join(__dirname, 'cliente', 'propuestas-offline.js'), 'utf-8');
+const AVANCE = fs.readFileSync(path.join(__dirname, 'cliente', 'avance-viaje.js'), 'utf-8');
 const VIAJE = fs.readFileSync(path.join(__dirname, 'cliente', 'obras-offline.js'), 'utf-8');
 const AUDIO = fs.readFileSync(path.join(__dirname, 'cliente', 'audio-offline.js'), 'utf-8');
 const APP = fs.readFileSync(path.join(__dirname, 'cliente', 'app.js'), 'utf-8');
@@ -15,7 +16,7 @@ const APP = fs.readFileSync(path.join(__dirname, 'cliente', 'app.js'), 'utf-8');
 function swConVersion() {
   const { precargaDeLaApp } = require('./app-web.js');
   const huella = require('crypto').createHash('sha256').update(precargaDeLaApp().join('\n')).digest('hex').slice(0, 16);
-  return `${CUOTA}\n${IDIOMA}\n${COMIC}\n${EQUIPO}\n${PROPUESTAS}\n${VIAJE}\n${AUDIO}\n${SW}\n${PUSH}\n// app: ${huella}\n`;
+  return `${CUOTA}\n${IDIOMA}\n${COMIC}\n${EQUIPO}\n${PROPUESTAS}\n${AVANCE}\n${VIAJE}\n${AUDIO}\n${SW}\n${PUSH}\n// app: ${huella}\n`;
 }
 
 const icono = (nombre) => fs.readFileSync(path.join(__dirname, 'cliente', nombre));

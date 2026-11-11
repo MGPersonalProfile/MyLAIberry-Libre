@@ -46,6 +46,7 @@ export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
   const [traduciendo, setTraduciendo] = useState(false);
   const [progresoTrad, setProgresoTrad] = useState(0);
   const [errorTrad, setErrorTrad] = useState(null);
+  const [infoTrad, setInfoTrad] = useState(null);
   const [contenidoTraducido, setContenidoTraducido] = useState(false);
   const [idiomaOriginal, setIdiomaOriginal] = useState(story.idiomaOriginal || 'en');
   const contentRef = useRef(null);
@@ -129,6 +130,7 @@ export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
         if (r.html) {
           lectorVozRef.current?.parar();
           setChapterContent(r.html);
+          setInfoTrad({ integridad: r.integridad, procedencia: r.procedencia, cacheado: r.cacheado });
           setContenidoTraducido(true);
         }
       } else {
@@ -182,6 +184,7 @@ export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
         if (!vigente()) return { abortada: true };
         if (r?.status === 'ok' && !r.mismoIdioma) {
           contenido = r.html;
+          setInfoTrad({ integridad: r.integridad, procedencia: r.procedencia, cacheado: r.cacheado });
           setContenidoTraducido(Boolean(contenido));
         }
       }
@@ -404,6 +407,7 @@ export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
             traducido={traducido}
             traduciendo={traduciendo}
             contenidoTraducido={contenidoTraducido}
+            infoTrad={infoTrad}
             alReintentarCarga={() => loadChapter(currentChapterIndex)}
             alReintentarTraduccion={() => pedirTraduccion(currentChapterIndex)}
           />

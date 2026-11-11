@@ -3,7 +3,7 @@ import { Download, Trash2 } from 'lucide-react';
 import { SecondaryButton } from '../ui/Buttons';
 import { Notice } from '../ui/Feedback';
 import { prepararAlmacenamiento } from './espacioViaje';
-import { guardarConElNavegador } from './fondoViaje';
+import { guardarConElNavegador, permisoDelNavegador } from './fondoViaje';
 import { textoDeViaje } from './textoViaje';
 import { llevarAnotacionesDeViaje } from './anotacionesDeViaje';
 import {
@@ -36,6 +36,23 @@ export function AvisoConflictoIdioma({ conflicto, onConservar, onUsarPC }) {
       </div>
     </div>
   );
+}
+
+export function AvisoPermisoDescargas({ completo }) {
+  const [permiso, setPermiso] = useState(null);
+  useEffect(() => {
+    let vivo = true;
+    permisoDelNavegador().then(p => { if (vivo) setPermiso(p); });
+    return () => { vivo = false; };
+  }, []);
+  if (completo) return null;
+  if (permiso === 'prompt') {
+    return <p className="text-caption text-text-tertiary">Si Chrome pregunta si este sitio puede descargar varios archivos, pulsa «Permitir»: así la copia sigue con el móvil bloqueado.</p>;
+  }
+  if (permiso === 'denied') {
+    return <Notice variant="warning" compact>Chrome tiene bloqueadas las descargas de este sitio: con el móvil bloqueado la copia se parará a los pocos minutos. Se activan en Chrome, en la configuración del sitio, «Descargas automáticas».</Notice>;
+  }
+  return null;
 }
 
 function useViajeObra(obraId, total, disponible, obra) {
@@ -163,6 +180,7 @@ export default function GuardarSinConexion({ obra }) {
         </p>
       )}
       {persistente === false && <p className="text-caption text-warning">El navegador podría borrar esta copia si necesita espacio.</p>}
+      <AvisoPermisoDescargas completo={completo} />
       <div className="flex flex-wrap items-center justify-center gap-3">
         {completo && !activo && (
           <button type="button" onClick={() => enviar('viaje-refrescar')} className="text-caption text-text-secondary underline underline-offset-2">

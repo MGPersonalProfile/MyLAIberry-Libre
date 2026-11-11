@@ -41,6 +41,7 @@ function ritmoLegible(r, c) {
 async function traduccionDicha(r, c) {
   const idioma = await c.idioma();
   return { traducido: true, yaEstaba: !!r?.cacheado, mismoIdioma: !!r?.mismoIdioma, idioma,
+    ...require('./traduccion-aviso.js').quienYComo(r),
     aviso: `Está en «${idioma}», el idioma de la app. A otro idioma no se traduce desde aquí: habría que cambiar el de la app en Ajustes > Idioma.` };
 }
 

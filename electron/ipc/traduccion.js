@@ -40,7 +40,12 @@ function registrar() {
         html: limpiarHtml(r.html),
         cacheado: r.cacheado,
         mismoIdioma: !!r.mismoIdioma,
-        idiomaOriginal: r.idiomaOriginal || null
+        idiomaOriginal: r.idiomaOriginal || null,
+
+        integridad: r.integridad || null,
+        procedencia: r.procedencia || null,
+        ...(r.rehecha ? { rehecha: true } : {}),
+        ...(r.aMedias ? { aMedias: true, errorDeReparacion: r.error } : {})
       };
     } catch (err) {
       console.error('[Traducción]', err.message);
@@ -116,6 +121,9 @@ function registrar() {
       if (nombre.endsWith(`.${idioma}.html`)) {
         fs.unlinkSync(path.join(dir, nombre));
         borradas++;
+      } else if (nombre.endsWith(`.${idioma}.traduccion.json`)) {
+
+        fs.unlinkSync(path.join(dir, nombre));
       }
     }
 
