@@ -6,7 +6,7 @@ const SOLO_EN_EL_PC = new Set([
 
   'importar-libro', 'choose-data-location', 'open-data-location', 'exportar-epub', 'guardar-audio-capitulo', 'guardar-audio-obra', 'instalar-voces',
 
-  'restaurar-copia', 'listar-recuperables', 'recuperar-obra', 'recuperar-trabajos', 'abrir-biblioteca-existente', 'reiniciar-app',
+  'restaurar-copia', 'listar-recuperables', 'recuperar-obra', 'recuperar-cambios-obra', 'recuperar-trabajos', 'abrir-biblioteca-existente', 'reiniciar-app',
   'abrir-en-navegador', 'iniciar-sesion-sitio', 'iniciar-sesion-web', 'mostrar-fichero', 'marcador-navegador',
 
   'lan-apagar', 'lan-nuevo-codigo', 'instalar-actualizacion'

@@ -135,7 +135,13 @@ async function obtenerCapituloTraducido(dirFanfic, indice, idioma, alProgresar, 
 }
 
 function tieneTraduccion(dirFanfic, indice, idioma) {
-  return fsSync.existsSync(rutaTraduccion(dirFanfic, indice, idioma));
+  const ruta = rutaTraduccion(dirFanfic, indice, idioma);
+  try {
+    const st = fsSync.statSync(ruta);
+    return st.isFile() && st.size > 0;
+  } catch {
+    return false;
+  }
 }
 
 async function traducirTitulos(titulos, destino, glosario = []) {

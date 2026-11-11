@@ -1,6 +1,6 @@
 const cola = require('../cola.js');
 const { getFanficById, updateChapterList, marcarRevisado, getSettings } = require('../db.js');
-const { scrapeStory, urlDeAutor } = require('../scrapers/index.js');
+const { scrapeStory, urlDeAutor, opcionesDeRelectura } = require('../scrapers/index.js');
 const avisos = require('../avisos.js');
 const { avisar } = require('../ventana.js');
 const { esDelDisco } = require('../epub-importar.js');
@@ -13,7 +13,7 @@ async function comprobarCapitulos({ fanficId }) {
 
   if (!fanfic?.url || esDelDisco(fanfic.url)) return;
 
-  const fresh = await scrapeStory(fanfic.url);
+  const fresh = await scrapeStory(fanfic.url, undefined, opcionesDeRelectura(fanfic));
   if (fresh.needsChapterSelection) return;
   if (!fresh.chapters || fresh.chapters.length === 0) return;
 

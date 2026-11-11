@@ -3,6 +3,7 @@ import { DialogSheet } from './ui/Layout';
 import { useI18n } from '../i18n/I18nContext';
 import FormularioImportar from './importar/FormularioImportar';
 import EstadoProgreso from './importar/EstadoProgreso';
+import SeleccionEpisodiosWebtoon from './importar/SeleccionEpisodiosWebtoon';
 
 const LIBRO = Symbol('libro');
 
@@ -70,6 +71,7 @@ export default function ImportModal({ isOpen, onClose, onImportSuccess, urlInici
   const [progressMsg, setProgressMsg] = useState('');
   const [details, setDetails] = useState('');
   const [detectedSite, setDetectedSite] = useDetectarSitio(url, t);
+  const [webtoonData, setWebtoonData] = useState(null);
 
   const alTerminarRef = useRef(onImportSuccess);
   const cerrarRef = useRef(null);
@@ -99,6 +101,7 @@ export default function ImportModal({ isOpen, onClose, onImportSuccess, urlInici
     setProgressMsg('');
     setDetails('');
     setDetectedSite(null);
+    setWebtoonData(null);
     onClose();
   }
 
@@ -122,10 +125,32 @@ export default function ImportModal({ isOpen, onClose, onImportSuccess, urlInici
     }
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     if (!url.trim()) return;
     if (!window.api) { setStatus('error'); setProgressMsg(t('import.error')); return; }
+    if ((detectedSite?.name === 'Webtoon' || /webtoons?\.com/i.test(url)) && window.api.obtenerEpisodiosWebtoon) {
+      iniciarAccion(url, t('import.starting'), async () => {
+        const r = await window.api.obtenerEpisodiosWebtoon(url.trim());
+        if (r?.status === 'success' && r.data?.chapters?.length) {
+          setWebtoonData(r.data);
+          setStatus('seleccion_webtoon');
+          return { status: 'ok' };
+        }
+        return r || { status: 'error', message: 'No se pudieron leer los episodios de Webtoon.' };
+      });
+      return;
+    }
     iniciarAccion(url, t('import.starting'), () => window.api.scrapeStory(url));
+  };
+
+  const handleConfirmarWebtoon = (episodios) => {
+    setWebtoonData(null);
+    iniciarAccion(url, t('import.starting'), () => window.api.scrapeStory(url, { episodios }));
+  };
+
+  const handleCancelarWebtoon = () => {
+    setWebtoonData(null);
+    setStatus('idle');
   };
 
   const handleImportarLibro = () => {
@@ -174,21 +199,29 @@ export default function ImportModal({ isOpen, onClose, onImportSuccess, urlInici
           onChange={(e) => handleSubirLibro(e.target.files?.[0])}
         />
       )}
-      <FormularioImportar
-        url={url}
-        setUrl={setUrl}
-        status={status}
-        detectedSite={detectedSite}
-        puedeDisco={puedeDisco}
-        puedeSubir={puedeSubir}
-        onImport={handleImport}
-        onImportarLibro={handleImportarLibro}
-        onPedirSubida={() => ficheroRef.current?.click()}
-        onImportSuccess={onImportSuccess}
-        onClose={handleClose}
-      >
-        <EstadoProgreso status={status} progressMsg={progressMsg} details={details} />
-      </FormularioImportar>
+      {status === 'seleccion_webtoon' && webtoonData ? (
+        <SeleccionEpisodiosWebtoon
+          webtoonData={webtoonData}
+          onConfirmar={handleConfirmarWebtoon}
+          onCancelar={handleCancelarWebtoon}
+        />
+      ) : (
+        <FormularioImportar
+          url={url}
+          setUrl={setUrl}
+          status={status}
+          detectedSite={detectedSite}
+          puedeDisco={puedeDisco}
+          puedeSubir={puedeSubir}
+          onImport={handleImport}
+          onImportarLibro={handleImportarLibro}
+          onPedirSubida={() => ficheroRef.current?.click()}
+          onImportSuccess={onImportSuccess}
+          onClose={handleClose}
+        >
+          <EstadoProgreso status={status} progressMsg={progressMsg} details={details} />
+        </FormularioImportar>
+      )}
     </DialogSheet>
   );
 }

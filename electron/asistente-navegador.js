@@ -1,6 +1,7 @@
 const { BrowserWindow, powerMonitor: monitorElectron } = require('electron');
 const { cargarPagina, mientrasAvance, ejecutarAunqueNavegue, muestraDePagina, exigirQueNoSeaUnReto } = require('./scrapers/navegar');
 const { conPlazo: conPlazoDeReto, planDeReto, nombreDeSitio, detectarReto } = require('./asistente-reto');
+const { esCaidoOLimitado, errorCaido, exigirDisponible } = require('./ao3-caido');
 
 const SITIOS = new Set(['archiveofourown.org', 'www.fanfiction.net', 'www.royalroad.com', 'www.wattpad.com']);
 const MAX_PAGINAS = 64;
@@ -78,10 +79,17 @@ function crearNavegador(opciones = {}) {
     if (!robots.has(u.origin)) {
       const respuesta = await fetchRobots(`${u.origin}/robots.txt`, { signal: AbortSignal.timeout(Math.max(1, Math.min(8000, fechaLimite(hasta) - Date.now()))), redirect: 'manual',
         headers: { 'user-agent': 'MyLAIberry/1.0' } });
-      if (!respuesta.ok && respuesta.status !== 404) throw new Error(`No se pudo consultar robots.txt de ${u.hostname}.`);
-      robots.set(u.origin, respuesta.status === 404 ? '' : await respuesta.text());
+
+      const texto = await respuesta.text().catch(() => '');
+
+      const paginaHtml = /<(?:!doctype|html|body)\b/i.test(texto);
+      const sinPagina = respuesta.status === 404 || (respuesta.ok && !paginaHtml);
+
+      if (respuesta.status === 418 || esCaidoOLimitado(0, sinPagina ? '' : texto)) throw errorCaido(u.origin, respuesta.status);
+      if (!respuesta.ok && respuesta.status !== 404) throw Object.assign(new Error(`No se pudo consultar robots.txt de ${u.hostname} (${respuesta.status}).`), { codigoHttp: respuesta.status, noConsultado: true, robotsNoConsultado: true });
+      robots.set(u.origin, respuesta.status === 404 ? '' : texto);
     }
-    if (!robotsPermite(robots.get(u.origin), u.pathname + u.search)) throw new Error(`robots.txt no permite visitar ${u.pathname}.`);
+    if (!robotsPermite(robots.get(u.origin), u.pathname + u.search)) throw Object.assign(new Error(`robots.txt no permite visitar ${u.pathname}.`), { robotsProhibe: true });
     const espera = Math.max(0, ...gruposAplicables(robots.get(u.origin)).map(g => g.pausa));
     if (espera > 30000) throw new Error('El ritmo exigido por robots.txt supera el límite de esta investigación.');
     return espera;
@@ -131,6 +139,7 @@ function crearNavegador(opciones = {}) {
     comprobarTiempo(hasta);
     if (signal?.aborted) throw new Error('Investigación cancelada.');
     const u = permitido(direccion, sitios);
+    exigirDisponible(u.href);
     if (paginas >= maxPaginas) throw new Error(`Investigación limitada a ${maxPaginas} páginas.`);
     const robotsPausa = await comprobarRobots(u, hasta);
     comprobarTiempo(hasta);

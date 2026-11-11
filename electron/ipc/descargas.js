@@ -8,7 +8,7 @@ const {
   saveCoverLocally, updateLocalCoverPath, getSettings, elegirCapitulos
 } = require('../db.js');
 const cola = require('../cola.js');
-const { scrapeStory, urlDeAutor } = require('../scrapers/index.js');
+const { scrapeStory, urlDeAutor, opcionesDeRelectura } = require('../scrapers/index.js');
 const traduccion = require('../traduccion-anticipada.js');
 const { avisar, ventana } = require('../ventana.js');
 const { dirDeFanfic } = require('../rutas.js');
@@ -48,12 +48,12 @@ function camposFrescos(fresh) {
 async function repararCapitulos(id, fresh, { conservarTraducciones = false, traduccionesDudosas = [] } = {}) {
   if (!Array.isArray(fresh.chapterContents) || fresh.chapterContents.length === 0) return 0;
 
-  const dir = dirDeFanfic(id);
   let reparados = 0;
 
   for (let i = 0; i < fresh.chapterContents.length; i++) {
     const nuevo = fresh.chapterContents[i];
     if (!nuevo || nuevo.length < 500) continue;
+    const dir = dirDeFanfic(id);
     const archivo = path.join(dir, `chapter_${i}.html`);
     const viejo = fs.existsSync(archivo) ? fs.readFileSync(archivo, 'utf-8') : '';
     if (viejo === nuevo) continue;
@@ -61,10 +61,13 @@ async function repararCapitulos(id, fresh, { conservarTraducciones = false, trad
     await saveChapterContent(id, i, nuevo);
 
     const sirve = conservarTraducciones && !traduccionesDudosas.includes(i);
-    for (const idioma of sirve ? [] : ['es', 'en']) {
-      const t = path.join(dir, `chapter_${i}.${idioma}.html`);
-      if (fs.existsSync(t)) fs.unlinkSync(t);
-    }
+
+    await conDisco(async () => {
+      for (const idioma of sirve ? [] : ['es', 'en']) {
+        const t = path.join(dirDeFanfic(id), `chapter_${i}.${idioma}.html`);
+        if (fs.existsSync(t)) fs.unlinkSync(t);
+      }
+    });
     reparados++;
   }
 
@@ -86,6 +89,12 @@ function resumenDeRefresco(nuevos, reparados, total) {
     : `Sin novedades: siguen siendo ${total}.`;
 }
 
+const TOPE_EPISODIOS = 5000;
+function opcionesDeImportacion(opciones) {
+  const episodios = Array.isArray(opciones?.episodios) ? opciones.episodios.filter(e => typeof e === 'string').slice(0, TOPE_EPISODIOS) : [];
+  return { respaldoFicHub: true, ...(episodios.length ? { episodios } : {}) };
+}
+
 function obraParaGuardar(storyData) {
   return {
     title: storyData.title,
@@ -100,6 +109,8 @@ function obraParaGuardar(storyData) {
     ...(storyData.urlOrigen ? { urlOrigen: storyData.urlOrigen } : {}),
     ...(storyData.language || storyData.idiomaOriginal ? { idiomaOriginal: storyData.language || storyData.idiomaOriginal } : {}),
     chapterList: storyData.chapters,
+    ...(storyData.esComic || storyData.tipo === 'comic' ? { esComic: true, tipo: 'comic' } : {}),
+    ...(Array.isArray(storyData.episodiosElegidos) && storyData.episodiosElegidos.length ? { episodiosElegidos: storyData.episodiosElegidos } : {}),
     ...(storyData.needsChapterSelection === true ? { needsChapterSelection: true } : {}),
     tags: storyData.tags || [],
     wordCount: storyData.wordCount || 0,
@@ -257,6 +268,38 @@ function registrar() {
       return { status: 'error', message: error.message };
     }
   });
+  ipcMain.handle('comic-estado', async (event, fanficId) => {
+    if (!fanficId || typeof fanficId !== 'string') return { status: 'error', message: 'ID de obra no válido' };
+    try {
+      const { estadoComicObra } = require('../db.js');
+      const data = await estadoComicObra(fanficId);
+      return { status: 'success', data };
+    } catch (error) {
+      return { status: 'error', message: error.message };
+    }
+  });
+  ipcMain.handle('obtener-episodios-webtoon', async (event, url) => {
+    if (!url || typeof url !== 'string' || !require('../scrapers/webtoon.js').esUrlDeWebtoon(url)) {
+      return { status: 'error', message: 'Dirección de Webtoon no válida.' };
+    }
+    try {
+      const { obtenerEpisodios } = require('../scrapers/webtoon.js');
+      const datos = await obtenerEpisodios(url.trim());
+      return {
+        status: 'success',
+        data: {
+          title: datos.title,
+          author: datos.author,
+          cover: datos.cover,
+          description: datos.description,
+          url: datos.url,
+          chapters: datos.chapters
+        }
+      };
+    } catch (e) {
+      return { status: 'error', message: e.message };
+    }
+  });
   ipcMain.handle('importar-libro', async (event, opciones = {}) => {
     const sendProgress = (data) => avisar('scrape-progress', data);
 
@@ -348,7 +391,7 @@ function registrar() {
 
     try {
       sendProgress({ step: 'refreshing', message: 'Releyendo el índice…' });
-      const fresh = await scrapeStory(fanfic.url, sendProgress);
+      const fresh = await scrapeStory(fanfic.url, sendProgress, opcionesDeRelectura(fanfic));
       if (fresh.needsChapterSelection) throw new Error('El índice es ambiguo; se conservan los capítulos elegidos');
 
       if (!fresh.chapters || fresh.chapters.length === 0) {
@@ -358,9 +401,9 @@ function registrar() {
 
       const res = await updateChapterList(id, fresh.chapters, camposFrescos(fresh));
 
-      const reparados = res.conservado ? 0 : await conDisco(() => repararCapitulos(id, fresh, {
+      const reparados = res.conservado ? 0 : await repararCapitulos(id, fresh, {
         conservarTraducciones: !!res.realineado?.porTitulo, traduccionesDudosas: res.realineado?.dudosas
-      }));
+      });
 
       const nuevos = res.nuevos;
 
@@ -378,7 +421,7 @@ function registrar() {
     }
   }
 
-  ipcMain.handle('scrape-story', async (event, url) => {
+  ipcMain.handle('scrape-story', async (event, url, opciones = {}) => {
     console.log(`[Backend] Iniciando extracción para: ${url}`);
 
     const sendProgress = (data) => {
@@ -389,7 +432,7 @@ function registrar() {
 
       if (require('../libro-enlace').esEnlaceLibro(url)) return await require('../libro-enlace').importarEnlace(url, sendProgress);
 
-      const storyData = await scrapeStory(url, sendProgress, { respaldoFicHub: true });
+      const storyData = await scrapeStory(url, sendProgress, opcionesDeImportacion(opciones));
 
       sendProgress({ step: 'saving_metadata', message: 'Guardando metadatos...' });
       const saved = await addFanfic(obraParaGuardar(storyData));
@@ -421,4 +464,4 @@ function registrar() {
 
 }
 
-module.exports = { registrar, importarLibro, importarTexto, obraParaGuardar, camposFrescos };
+module.exports = { registrar, importarLibro, importarTexto, obraParaGuardar, camposFrescos, repararCapitulos, opcionesDeImportacion };

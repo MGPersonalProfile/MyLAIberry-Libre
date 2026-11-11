@@ -20,8 +20,9 @@ async function estadoDelAudio(fanficId, indice, idioma, obraLeida = null) {
   const lectura = queLeer(obra, dir, indice, idioma);
   if (!fs.existsSync(lectura.fichero)) return { estado: 'error', motivo: 'Ese capítulo no está descargado.' };
   const ruta = vozMp3.rutaDelAudio(dir, indice, lectura.traducido);
-  if (fs.existsSync(ruta)) {
-    return { estado: 'listo', ruta, bytes: fs.statSync(ruta).size, traducido: Boolean(lectura.traducido),
+  const tamanoAudio = fs.existsSync(ruta) ? fs.statSync(ruta).size : 0;
+  if (tamanoAudio > 0) {
+    return { estado: 'listo', ruta, bytes: tamanoAudio, traducido: Boolean(lectura.traducido),
 
       marcas: vozMp3.leerMarcas(ruta),
 

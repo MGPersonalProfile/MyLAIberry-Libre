@@ -56,6 +56,22 @@ export default function CopiasDeSeguridad() {
     }
   };
 
+  const ejecutarRecuperarCambios = async (id) => {
+    setTrabajando(true);
+    try {
+      const r = await window.api.recuperarCambiosObra(id);
+      if (r?.status !== 'ok') throw new Error(r?.message || '');
+      setMensajeRecup(r.conflictos?.length
+        ? `Cambios recuperados, salvo ${r.conflictos.join(', ')}: se anotó algo después de restaurar y se ha respetado.`
+        : 'Cambios de la obra recuperados correctamente');
+      setVuelta(n => n + 1);
+    } catch (e) {
+      setError(`No se pudieron recuperar los cambios de la obra: ${e.message}`);
+    } finally {
+      setTrabajando(false);
+    }
+  };
+
   const ejecutarRecuperarTrabajos = async (ids) => {
     setTrabajando(true);
     try {
@@ -74,13 +90,27 @@ export default function CopiasDeSeguridad() {
 
   const pendientesObras = (recuperables?.obras || []).filter(o => !o.recuperada);
   const pendientesTrabajos = (recuperables?.trabajos || []).filter(t => !t.recuperado);
-  const hayRecuperables = pendientesObras.length > 0 || pendientesTrabajos.length > 0;
+  const pendientesCambios = (recuperables?.obrasModificadas || []).filter(o => !o.recuperada);
+  const hayRecuperables = pendientesObras.length > 0 || pendientesTrabajos.length > 0 || pendientesCambios.length > 0;
 
   return (
     <div className="mt-5 pt-4" data-copias>
       <Divider className="mb-4" />
       <h4 className="text-callout font-semibold text-text-primary mb-1">{t('backups.title')}</h4>
       <p className="text-footnote text-text-secondary mb-3">{t('backups.desc')}</p>
+
+      {recuperables?.incompleta && (
+        <p className="mb-4 p-3 rounded bg-surface-raised border border-warning/40 text-footnote text-warning font-medium" data-restauracion-a-medias>
+          Hay una restauración a medias (paso «{recuperables.estado}»): hasta que termine no se puede decir qué obras quedan por recuperar.
+        </p>
+      )}
+      {recuperables?.interrumpida && (
+        <p className="mb-4 text-footnote text-text-secondary" data-restauracion-interrumpida>
+          {recuperables.interrumpida.accion === 'completada'
+            ? 'Una restauración se cortó a medias y se ha terminado al arrancar.'
+            : 'Una restauración se cortó antes de cambiar la base: no se aplicó y la biblioteca sigue como estaba.'}
+        </p>
+      )}
 
       {hayRecuperables && (
         <div className="mb-4 p-3 rounded bg-surface-raised border border-warning/40" data-recuperables>
@@ -107,6 +137,22 @@ export default function CopiasDeSeguridad() {
               </button>
             )}
           </div>
+          {pendientesCambios.length > 0 && (
+            <ul className="space-y-1 mt-2 text-footnote pl-2 border-l border-border" data-cambios-posteriores>
+              {pendientesCambios.map(o => (
+                <li key={o.id} className="flex items-center justify-between gap-2">
+                  <span className="truncate">{o.title || o.id} <span className="text-text-tertiary">({(o.cambios || []).join(', ')})</span></span>
+                  <button
+                    disabled={trabajando}
+                    onClick={() => ejecutarRecuperarCambios(o.id)}
+                    className="text-accent hover:underline font-medium"
+                  >
+                    Recuperar cambios
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
           {verObras && pendientesObras.length > 0 && (
             <ul className="space-y-1 mt-2 text-footnote pl-2 border-l border-border">
               {pendientesObras.map(o => (

@@ -160,10 +160,10 @@ async function paginaDeSitio(navegador, sitio, comun, pagina, vence = Infinity) 
 }
 
 function resumenDeSitios(noConsultados, completada) {
-  const detalle = noConsultados.map(({ sitio, motivo, codigoHttp }) => motivo === 'comprobacion-humana'
+  const detalle = noConsultados.map(({ sitio, motivo, codigoHttp, mensaje, limitado }) => ((limitado || /no responde ahora/.test(mensaje || '')) ? mensaje : (motivo === 'comprobacion-humana'
     ? `${sitio} pidió una comprobación humana` : motivo === 'tiempo-agotado'
       ? `${sitio} quedó pendiente por límite de tiempo` : motivo === 'error-http'
-        ? `${sitio} devolvió HTTP ${codigoHttp}` : `${sitio} no se pudo consultar`).join('; ');
+        ? `${sitio} devolvió HTTP ${codigoHttp}` : `${sitio} no se pudo consultar`))).join('; ');
   return `${completada ? 'Búsqueda parcial' : 'La búsqueda no pudo completarse'}: ${detalle || 'ningún sitio se pudo consultar'}.`;
 }
 
@@ -187,8 +187,19 @@ function evaluarNoConsultados(fallidos, consultados, sitios, agotadoTiempo) {
     motivo: e.reto ? 'comprobacion-humana' : e.tiempoAgotado ? 'tiempo-agotado'
       : e.codigoHttp ? 'error-http' : 'error',
     mensaje: e.message,
+    ...(e.limitado ? { limitado: true } : {}),
     ...(e.codigoHttp ? { codigoHttp: e.codigoHttp } : {})
   }));
+}
+
+function enlacesDeFicha(doc, actual, autorUrl) {
+  const enlaces = [...doc.querySelectorAll('a[href]')].map(a => ({
+    texto: (a.textContent || '').trim().slice(0, 100), url: new URL(a.getAttribute('href'), actual).href
+  })).filter(a => /\/(series|users|u|bookmarks|collections)\//.test(a.url));
+  if (autorUrl && /archiveofourown\.org/.test(actual)) {
+    enlaces.push({ texto: 'Bookmarks públicos del autor', url: `${autorUrl.replace(/\/pseuds\/.*$/, '')}/bookmarks` });
+  }
+  return [...new Map(enlaces.map(e => [e.url, e])).values()].slice(0, 20);
 }
 
 function crearInvestigador({ signal, progreso = () => {}, origen, presupuestoMs, presupuestos = {}, pendientes = null,
@@ -258,11 +269,27 @@ function crearInvestigador({ signal, progreso = () => {}, origen, presupuestoMs,
 
   async function ficha(url) {
     paso();
-    const win = await navegador.abrir(url);
-    const actual = win.webContents.getURL();
-    const html = await navegador.ejecutar('document.documentElement.outerHTML');
+    let win, actual, html;
+    const esAO3 = /archiveofourown\.org\/works\/(\d+)/.test(url);
+    try {
+      win = await navegador.abrir(url);
+      actual = win.webContents.getURL();
+      html = await navegador.ejecutar('document.documentElement.outerHTML');
+    } catch (err) {
+      if (esAO3 && (err.limitado || err.caido || /no responde ahora|robots\.txt/i.test(err.message))) {
+        return require('./ao3-caido').fichaDesdeFicHub(url, err, navegador.paginas);
+      }
+      throw err;
+    }
     const preliminar = new JSDOM(html).window.document;
-    require('./scrapers/navegar').exigirQueNoSeaUnReto('La ficha', { titulo: preliminar.title,
+
+    const hayObra = !!preliminar.querySelector('#workskin, dl.work.meta');
+    if (esAO3 && !hayObra && require('./ao3-caido').esCaidoOLimitado(0, preliminar.title + ' ' + (preliminar.body?.textContent || ''))) {
+      const err = require('./ao3-caido').errorCaido(url, 418);
+      return require('./ao3-caido').fichaDesdeFicHub(url, err, navegador.paginas);
+    }
+
+    if (!hayObra) require('./scrapers/navegar').exigirQueNoSeaUnReto('La ficha', { titulo: preliminar.title,
       texto: preliminar.body?.textContent, documento: preliminar, url: actual });
     let obra;
     if (/archiveofourown\.org\/works\/(\d+)/.test(actual)) {
@@ -285,15 +312,7 @@ function crearInvestigador({ signal, progreso = () => {}, origen, presupuestoMs,
 
     if (/archiveofourown\.org\/works\//.test(actual)) obra = { ...obra, etiquetasCompletas: !!preliminar.querySelector('dl.work.meta.group') };
     if (!obra.title) throw new Error('La ficha no trajo un título verificable.');
-    const doc = preliminar;
-    const enlaces = [...doc.querySelectorAll('a[href]')].map(a => ({
-      texto: (a.textContent || '').trim().slice(0, 100), url: new URL(a.getAttribute('href'), actual).href
-    })).filter(a => /\/(series|users|u|bookmarks|collections)\//.test(a.url));
-    if (obra.autorUrl && /archiveofourown\.org/.test(actual)) {
-      enlaces.push({ texto: 'Bookmarks públicos del autor',
-        url: `${obra.autorUrl.replace(/\/pseuds\/.*$/, '')}/bookmarks` });
-    }
-    const unicos = [...new Map(enlaces.map(e => [e.url, e])).values()].slice(0, 20);
+    const unicos = enlacesDeFicha(preliminar, actual, obra.autorUrl);
     return { ...fichaVerificada(obra), enlaces: unicos, paginasVisitadas: navegador.paginas };
   }
 
@@ -369,12 +388,15 @@ function crearInvestigador({ signal, progreso = () => {}, origen, presupuestoMs,
       if (pasos >= MAX_PASOS || navegador.paginas >= tope) break;
       const r = await buscarHasta({ ...filtros, consulta, paginas: Math.min(filtros.paginas || 2, 2) }, tope);
       lotes.push(...r.obras.map(o => ({ ...o, motivo: `Apareció al buscar «${consulta}»; popularidad publicada: ${o.kudos || 0} ${o.medidaPopularidad} en ${o.source}.` })));
-      errores.push(...r.errores);
+      for (const err of r.errores) {
+        if (!errores.some(viejo => viejo === err || (/no responde ahora/.test(err) && viejo.includes(err.split(':')[0])))) errores.push(err);
+      }
       noConsultados.push(...r.noConsultados.filter(n => !noConsultados.some(v => v.sitio === n.sitio)));
       completada ||= r.completada;
     }
     return { obras: ordenar(sinDuplicados(lotes), filtros.orden).slice(0, 20),
       paginasVisitadas: navegador.paginas, pasos, errores, noConsultados, completada,
+      ...(noConsultados.length ? { aviso: resumenDeSitios(noConsultados, completada) } : {}),
       agotado: pasos >= MAX_PASOS || navegador.paginas >= tope };
   }
 

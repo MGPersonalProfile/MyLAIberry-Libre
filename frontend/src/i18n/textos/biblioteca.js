@@ -181,6 +181,8 @@ export const BIBLIOTECA = {
 
   'detail.chapters_count':  { es: '{n} capítulos', en: '{n} chapters' },
   'detail.current_chapter': { es: 'Capítulo {n} actual', en: 'On chapter {n}' },
+  'detail.comic_panels_size': { es: '{tamano} en viñetas', en: '{tamano} in panels' },
+  'detail.comic_incomplete_episodes': { es: 'Episodios incompletos: {episodios}', en: 'Incomplete episodes: {episodios}' },
   'detail.progress':        { es: 'Progreso', en: 'Progress' },
   'detail.downloaded':      { es: 'Descargado', en: 'Downloaded' },
   'detail.synopsis':        { es: 'Sinopsis', en: 'Synopsis' },

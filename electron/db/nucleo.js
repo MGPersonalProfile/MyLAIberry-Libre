@@ -66,8 +66,10 @@ async function setDataLocation(nuevaRuta) {
 
   const defecto = (app && typeof app.getPath === 'function') ? app.getPath('userData') : '';
   try {
-    await fs.mkdir(defecto, { recursive: true });
-    await escribirEntero(path.join(defecto, 'location.json'), JSON.stringify({ dataPath: destino, movedAt: Date.now() }, null, 2));
+    if (defecto) {
+      await fs.mkdir(defecto, { recursive: true });
+      await escribirEntero(path.join(defecto, 'location.json'), JSON.stringify({ dataPath: destino, movedAt: Date.now() }, null, 2));
+    }
   } catch (e) {
     await apartar(destino, ACTIVOS).catch(() => {});
     throw e;
@@ -79,7 +81,7 @@ async function setDataLocation(nuevaRuta) {
     await initDB();
   } catch (e) {
 
-    await escribirEntero(path.join(defecto, 'location.json'), JSON.stringify({ dataPath: origen, movedAt: Date.now() }, null, 2)).catch(() => {});
+    if (defecto) await escribirEntero(path.join(defecto, 'location.json'), JSON.stringify({ dataPath: origen, movedAt: Date.now() }, null, 2)).catch(() => {});
     db = null;
     userDataPath = origen;
     await initDB().catch(() => {});
@@ -111,6 +113,7 @@ async function initDB() {
 
   const { JSONFile, Low } = await import('lowdb');
 
+  await require('./copias.js').resolverRestauracionIncompleta(userDataPath).catch(e => console.error('Restauración a medias:', e));
   await require('./copias.js').copiaDelDia(userDataPath);
   db = new Low(new JSONFile(path.join(userDataPath, 'mylaiberry-db.json')));
   await db.read();

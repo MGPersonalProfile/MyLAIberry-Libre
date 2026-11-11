@@ -3,6 +3,7 @@ const { leer, releerSiAbierta, writeDB, carpetaDeObra } = require('./nucleo.js')
 const { planDeRealineado, moverFicheros, remapearDatos, claveDeCapitulo } = require('../realinear-capitulos.js');
 const { mismaObra } = require('../misma-obra.js');
 const { escribirEntero } = require('../escritura-entera.js');
+const { conDisco } = require('../barrera-disco.js');
 const { updateProgress, saveScrollPosition, guardarProgresoRemoto,
   getScrollPosition } = require('./lectura.js');
 
@@ -56,12 +57,14 @@ async function marcarRevisado(id, nuevos) {
 }
 
 async function saveChapterContent(fanficId, chapterIndex, content) {
-  const fanficDir = carpetaDeObra(fanficId);
-  await fs.mkdir(fanficDir, { recursive: true }).catch(() => {});
+  return conDisco(async () => {
+    const fanficDir = carpetaDeObra(fanficId);
+    await fs.mkdir(fanficDir, { recursive: true }).catch(() => {});
 
-  const { paraGuardar } = require('../capitulo-valido.js');
+    const { paraGuardar } = require('../capitulo-valido.js');
 
-  await escribirEntero(path.join(fanficDir, `chapter_${chapterIndex}.html`), paraGuardar(content));
+    await escribirEntero(path.join(fanficDir, `chapter_${chapterIndex}.html`), paraGuardar(content));
+  });
 }
 
 async function getChapterContent(fanficId, chapterIndex) {

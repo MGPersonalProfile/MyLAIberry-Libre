@@ -8,6 +8,13 @@ function idDeObra(url) {
   return m ? m[1] : null;
 }
 
+function esUrlDeWebtoon(url) {
+  try {
+    const u = new URL(String(url).trim());
+    return /^https?:$/.test(u.protocol) && /^(?:[a-z0-9-]+\.)*webtoons?\.com$/i.test(u.hostname);
+  } catch { return false; }
+}
+
 function urlCanonica(url) {
   const tid = idDeObra(url);
   if (!tid) return url;
@@ -15,7 +22,10 @@ function urlCanonica(url) {
     const u = new URL(url);
     const m = u.pathname.match(/^(\/[a-z]{2}\/[^/]+\/[^/]+)/i);
     const base = m ? m[1] : '/en/comic';
-    return `https://www.webtoons.com${base}/list?title_no=${tid}`;
+
+    const deLaPrueba = process.env.MYLAIBERRY_WEBTOON_LOCAL === '1' && (u.hostname === '127.0.0.1' || u.hostname === 'localhost');
+    const origin = deLaPrueba ? u.origin : 'https://www.webtoons.com';
+    return `${origin}${base}/list?title_no=${tid}`;
   } catch {
     return `https://www.webtoons.com/en/comic/list?title_no=${tid}`;
   }
@@ -37,7 +47,7 @@ function extraerEpisodios(html) {
   }).filter(e => e.episodeNo && e.url);
 }
 
-function paginasDeSerie(html) {
+function paginasDeSerie(html, base = 'https://www.webtoons.com') {
   const dom = new JSDOM(html);
   const doc = dom.window.document;
   const links = Array.from(doc.querySelectorAll('.paginate a, .paginate_area a'));
@@ -45,7 +55,7 @@ function paginasDeSerie(html) {
   for (const a of links) {
     const href = a.getAttribute('href');
     if (href && href !== '#' && !href.startsWith('javascript:')) {
-      urls.push(href.startsWith('http') ? href : `https://www.webtoons.com${href}`);
+      urls.push(href.startsWith('http') ? href : `${base}${href.startsWith('/') ? '' : '/'}${href}`);
     }
   }
   return [...new Set(urls)];
@@ -87,7 +97,7 @@ function extraerMetadatosSerie(doc) {
   return { title, author, cover, description };
 }
 
-async function scrape(url, onProgress) {
+async function scrape(url, onProgress, opciones = {}) {
   const avisar = (msg, step = 'loading') => onProgress && onProgress({ step, message: msg });
   avisar('Leyendo la serie de Webtoon...');
 
@@ -99,7 +109,8 @@ async function scrape(url, onProgress) {
   const meta = extraerMetadatosSerie(dom.window.document);
 
   let episodios = extraerEpisodios(html);
-  const paginas = paginasDeSerie(html);
+  const uBase = (() => { try { return new URL(canon).origin; } catch { return 'https://www.webtoons.com'; } })();
+  const paginas = paginasDeSerie(html, uBase);
 
   for (const pagUrl of paginas) {
     avisar(`Leyendo página adicional de episodios: ${pagUrl}`);
@@ -121,12 +132,23 @@ async function scrape(url, onProgress) {
     }
   }
 
-  const capitulosOrdenados = ordenarEpisodios(unicos).map((ep, idx) => ({
+  let capitulosOrdenados = ordenarEpisodios(unicos).map((ep, idx) => ({
     title: ep.title,
     url: ep.url,
     index: idx,
     episodeNo: ep.episodeNo
   }));
+
+  let episodiosElegidos;
+  if (Array.isArray(opciones?.episodios) && opciones.episodios.length > 0) {
+    const permitidos = new Set(opciones.episodios.map(String));
+    const sonIndices = opciones.episodios.every(x => typeof x === 'number');
+    capitulosOrdenados = capitulosOrdenados.filter((ep, idx) =>
+      permitidos.has(String(ep.episodeNo)) || (sonIndices && permitidos.has(String(idx)))
+    );
+
+    episodiosElegidos = capitulosOrdenados.map(ep => ep.episodeNo);
+  }
 
   return {
     ...meta,
@@ -135,7 +157,8 @@ async function scrape(url, onProgress) {
     tipo: 'comic',
     esComic: true,
     chapters: capitulosOrdenados,
-    totalChapters: capitulosOrdenados.length
+    totalChapters: capitulosOrdenados.length,
+    ...(episodiosElegidos ? { episodiosElegidos } : {})
   };
 }
 
@@ -183,7 +206,12 @@ async function downloadChapters(chapters, fanficId, onProgress, saveContentFn, d
   }
 }
 
+async function obtenerEpisodios(url, onProgress) {
+  return await scrape(url, onProgress);
+}
+
 module.exports = {
+  esUrlDeWebtoon,
   idDeObra,
   urlCanonica,
   extraerEpisodios,
@@ -191,5 +219,6 @@ module.exports = {
   ordenarEpisodios,
   extraerVinhetas,
   scrape,
-  downloadChapters
+  downloadChapters,
+  obtenerEpisodios
 };

@@ -44,6 +44,11 @@ function detectScraper(url) {
   return { scraper: universal, name: 'Sitio genérico', tier: 3 };
 }
 
+function opcionesDeRelectura(fanfic) {
+  const elegidos = fanfic?.episodiosElegidos;
+  return Array.isArray(elegidos) && elegidos.length ? { episodios: elegidos } : undefined;
+}
+
 async function scrapeStory(url, onProgress, opciones) {
   const { scraper, name, tier } = detectScraper(url);
 
@@ -88,6 +93,7 @@ function urlDeAutor(url) {
 module.exports = {
   detectScraper,
   scrapeStory,
+  opcionesDeRelectura,
   leerAutor,
   admiteAutores,
   urlDeAutor,

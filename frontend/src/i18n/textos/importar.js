@@ -33,4 +33,7 @@ export const IMPORTAR = {
   'import.mode_all':       { es: 'Todo', en: 'All' },
   'import.mode_link':      { es: 'Enlace', en: 'Link' },
   'import.mode_file':      { es: 'Archivo / Web', en: 'File / Web' },
+  'import.webtoon_select_episodes': { es: 'Elegir episodios de Webtoon', en: 'Select Webtoon episodes' },
+  'import.webtoon_select_hint': { es: 'Elige qué episodios quieres descargar en tu biblioteca.', en: 'Choose which episodes you want to download to your library.' },
+  'import.webtoon_import_selected': { es: 'Descargar {n} episodios', en: 'Download {n} episodes' },
 };

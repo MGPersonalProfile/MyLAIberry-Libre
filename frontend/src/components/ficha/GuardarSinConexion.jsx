@@ -160,6 +160,7 @@ export default function GuardarSinConexion({ obra }) {
   };
 
   const completo = estado?.completa && estado.total === total;
+  const bytesVinetasMovil = Object.values(estado?.bytesComic || {}).reduce((s, b) => s + b, 0);
 
   return (
     <div className="mb-5 text-center space-y-2" aria-live="polite">
@@ -172,6 +173,16 @@ export default function GuardarSinConexion({ obra }) {
         {textoDeViaje(estado, total, activo)}
       </SecondaryButton>
       {completo && estado.idioma && <p className="text-caption text-text-tertiary">Original y traducción ({estado.idioma})</p>}
+      {bytesVinetasMovil > 0 && (
+        <p className="text-caption text-text-secondary">
+          {Math.max(1, Math.round(bytesVinetasMovil / 1048576))} MB en viñetas guardadas en el móvil
+        </p>
+      )}
+      {estado?.huecos?.length > 0 && (
+        <Notice variant="warning" compact>
+          Episodios incompletos en el móvil: {estado.huecos.map(i => i + 1).join(', ')}
+        </Notice>
+      )}
       {estado?.error && <Notice variant="warning" compact>{estado.error}</Notice>}
       <AvisoConflictoIdioma conflicto={conflicto} onConservar={resolverMovil} onUsarPC={resolverPC} />
       {libres !== null && (

@@ -105,10 +105,57 @@ async function guardarCapituloComic(fanficId, chapterIndex, datos) {
   }
 }
 
+async function estadoComicObra(fanficId) {
+  const carpetaComic = path.join(carpetaDeObra(fanficId), 'comic');
+  let bytesTotal = 0;
+  const capitulosIncompletos = [];
+  const encontrados = new Set();
+
+  try {
+    const entradas = await fsp.readdir(carpetaComic, { withFileTypes: true });
+    for (const ent of entradas) {
+      if (!ent.isDirectory()) continue;
+      const m = ent.name.match(/^chapter_(\d+)$/);
+      if (!m) continue;
+      const indice = Number(m[1]);
+      encontrados.add(indice);
+      const man = await leerManifiesto(fanficId, indice);
+      if (!man) {
+        capitulosIncompletos.push({ indice, episodio: String(indice + 1), motivo: 'sin-manifiesto' });
+        continue;
+      }
+      for (const img of (man.imagenes || [])) {
+        bytesTotal += Number(img.bytes) || 0;
+      }
+      if (man.completo !== true) {
+        capitulosIncompletos.push({
+          indice,
+          episodio: String(man.episodio || indice + 1),
+          motivo: 'incompleto',
+          descargadas: (man.imagenes || []).length,
+          totalEsperadas: man.totalEsperadas || (man.imagenes || []).length
+        });
+      }
+    }
+  } catch {
+
+  }
+
+  capitulosIncompletos.sort((a, b) => a.indice - b.indice);
+
+  return {
+    esComic: bytesTotal > 0 || capitulosIncompletos.length > 0 || encontrados.size > 0,
+    bytesTotal,
+    capitulosIncompletos,
+    totalCapitulosDescargados: encontrados.size
+  };
+}
+
 module.exports = {
   carpetaComicCapitulo,
   leerManifiesto,
   esCapituloCompleto,
   guardarCapituloComic,
-  generarHtmlCapituloComic
+  generarHtmlCapituloComic,
+  estadoComicObra
 };

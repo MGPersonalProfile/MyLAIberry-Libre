@@ -201,6 +201,7 @@ contextBridge.exposeInMainWorld('api', {
   listarCopias: () => ipcRenderer.invoke('listar-copias'),
   listarRecuperables: () => ipcRenderer.invoke('listar-recuperables'),
   recuperarObra: (id) => ipcRenderer.invoke('recuperar-obra', id),
+  recuperarCambiosObra: (id) => ipcRenderer.invoke('recuperar-cambios-obra', id),
   recuperarTrabajos: (seleccion) => ipcRenderer.invoke('recuperar-trabajos', seleccion),
   restaurarCopia: (archivo) => ipcRenderer.invoke('restaurar-copia', archivo),
   abrirBibliotecaExistente: () => ipcRenderer.invoke('abrir-biblioteca-existente'),
@@ -209,8 +210,10 @@ contextBridge.exposeInMainWorld('api', {
 
   detectSite: (url) => ipcRenderer.invoke('detect-site', url),
 
-  scrapeStory: (url) => ipcRenderer.invoke('scrape-story', url),
+  scrapeStory: (url, opciones) => ipcRenderer.invoke('scrape-story', url, opciones),
+  obtenerEpisodiosWebtoon: (url) => ipcRenderer.invoke('obtener-episodios-webtoon', url),
   elegirCapitulos: (fanficId, indices) => ipcRenderer.invoke('elegir-capitulos', fanficId, indices),
+  estadoComic: (fanficId) => ipcRenderer.invoke('comic-estado', fanficId),
 
   importarLibro: () => ipcRenderer.invoke('importar-libro'),
   importarEnlaceLibro: (url) => ipcRenderer.invoke('importar-enlace-libro', url),

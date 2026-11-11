@@ -5,7 +5,7 @@ const PLAZO_MS = 4000, PLAZO_INSTALAR = 60000, PLAZO_PAGINA = 1500, PLAZO_LECTUR
 const ESENCIAL = ['/app/', '/manifest.webmanifest', '/icono-192.png', '/icono-512.png', '/puente.json'].map(r => BASE + r);
 const esNuestra = u => u.origin === self.location.origin && u.pathname.startsWith(BASE + '/');
 
-const LECTURAS = new Set(['asistente-ver', 'repeated-works', 'check-repeated-chapters', 'search-in-work', 'detect-site', 'estadisticas-lectura', 'recordar-lectura', 'leer-eleccion-idioma', 'obtener-catalogo-serie']);
+const LECTURAS = new Set(['asistente-ver', 'repeated-works', 'check-repeated-chapters', 'search-in-work', 'detect-site', 'estadisticas-lectura', 'recordar-lectura', 'leer-eleccion-idioma', 'obtener-catalogo-serie', 'comic-estado']);
 
 const DE_EJECUCION = new Set(['startInvestigation', 'cancelInvestigation', 'retryInvestigation']), deEjecucion = (canal, args) => canal === 'asistente-accion' && Array.isArray(args) && args.some(a => a && DE_EJECUCION.has(a.action));
 const EN_VIVO = new Set(['asistente-retos-pendientes', 'asistente-ejecuciones', 'asistente-reto-remoto-estado', 'queue-status', 'lan-estado', 'estado-voces', 'avisos-disponibles', 'avisos-via', 'exportar-lectura']);

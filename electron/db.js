@@ -37,6 +37,11 @@ module.exports = {
     await nucleo.releerSiAbierta();
     return r;
   },
+  recuperarCambiosObra: async (id) => {
+    const r = await require('./db/recuperacion-restauracion.js').recuperarCambiosObra(nucleo.raizActual(), id);
+    await nucleo.releerSiAbierta();
+    return r;
+  },
   recuperarTrabajos: async (seleccion) => {
     const r = await require('./db/recuperacion-restauracion.js').recuperarTrabajos(nucleo.raizActual(), seleccion);
     await nucleo.releerSiAbierta();
@@ -55,7 +60,9 @@ const fueraDelCerrojo = new Set([
 
   'listarCopias',
 
-  'carpetaComicCapitulo', 'leerManifiesto', 'esCapituloCompleto', 'generarHtmlCapituloComic', 'guardarCapituloComic',
+  'saveChapterContent',
+
+  'carpetaComicCapitulo', 'leerManifiesto', 'esCapituloCompleto', 'generarHtmlCapituloComic', 'guardarCapituloComic', 'estadoComicObra',
 
   'apuntarABibliotecaExistente'
 ]);

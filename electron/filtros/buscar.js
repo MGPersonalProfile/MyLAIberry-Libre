@@ -21,6 +21,8 @@ async function buscarFFN(plan, f, { pagina }) {
 }
 
 async function buscarAO3(plan, f) {
+  const { exigirDisponible } = require('../ao3-caido');
+  exigirDisponible(plan.url);
   const { pedirHTMLConNavegador } = require('../scrapers/ao3-pedir.js');
   return { obras: require('../scrapers/ao3.js').resultadosDeHtml(await pedirHTMLConNavegador(plan.url), f.sinCrossovers === true), peticionesWeb: 1 };
 }

@@ -193,6 +193,10 @@ function registrar() {
     try { return { status: 'ok', ...await require('../db.js').recuperarObra(id) }; }
     catch (e) { return { status: 'error', message: e.message }; }
   });
+  ipcMain.handle('recuperar-cambios-obra', async (_e, id) => {
+    try { return { status: 'ok', ...await require('../db.js').recuperarCambiosObra(id) }; }
+    catch (e) { return { status: 'error', message: e.message }; }
+  });
   ipcMain.handle('recuperar-trabajos', async (_e, seleccion) => {
     try { return { status: 'ok', ...await require('../db.js').recuperarTrabajos(seleccion) }; }
     catch (e) { return { status: 'error', message: e.message }; }
