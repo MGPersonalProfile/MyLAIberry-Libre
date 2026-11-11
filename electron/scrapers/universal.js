@@ -1,4 +1,4 @@
-const { BrowserWindow } = require('electron');
+const { crearVentana } = require('../user-agent.js');
 const fs = require('fs');
 const { cargarPagina, PACIENCIA, mientrasAvance } = require('./navegar.js');
 const { exigirAlgoGuardado } = require('./guardado.js');
@@ -207,7 +207,7 @@ function obraLeida(url, contenido) {
 async function scrape(url, onProgress) {
   if (onProgress) onProgress({ step: 'init', message: 'Iniciando extractor universal...' });
 
-  const win = new BrowserWindow({
+  const win = crearVentana({
     width: 800, height: 600, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });
@@ -258,7 +258,7 @@ async function scrape(url, onProgress) {
 async function downloadChapters(chapters, fanficId, onProgress, saveContentFn) {
 
   let guardados = 0;
-  let win = new BrowserWindow({
+  let win = crearVentana({
     width: 800, height: 600, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });

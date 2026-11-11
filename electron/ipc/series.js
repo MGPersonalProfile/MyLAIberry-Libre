@@ -1,11 +1,11 @@
-const { ipcMain, net } = require('electron');
+const { ipcMain } = require('electron');
 const { CatalogoSeries } = require('../series/catalogo.js');
 const { clasificarObrasDeSerie, importarObrasSerie } = require('../series/importacion.js');
 const { getFanfics, addFanfic } = require('../db.js');
 const { esDeLaBiblioteca } = require('../origen.js');
 const { comprobarDestino } = require('../asistente-web-libre.js');
 
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+const { fetchElectron } = require('../user-agent.js');
 const MAX_BYTES_SERIE = 2 * 1024 * 1024;
 
 async function leerTextoConTope(res, maxBytes = MAX_BYTES_SERIE) {
@@ -32,11 +32,7 @@ async function leerTextoConTope(res, maxBytes = MAX_BYTES_SERIE) {
 
 async function fetchSerie(url) {
   await comprobarDestino(url);
-  const fetchFn = (typeof net !== 'undefined' && net?.fetch) ? net.fetch : fetch;
-  const res = await fetchFn(url, {
-    headers: { 'User-Agent': USER_AGENT },
-    signal: AbortSignal.timeout(20000)
-  });
+  const res = await fetchElectron(url, { signal: AbortSignal.timeout(20000) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return await leerTextoConTope(res);
 }

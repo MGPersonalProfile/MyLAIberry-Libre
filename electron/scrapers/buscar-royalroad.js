@@ -1,4 +1,4 @@
-const { BrowserWindow } = require('electron');
+const { crearVentana } = require('../user-agent.js');
 const { FANDOM, GENERO } = require('../etiquetas.js');
 const { cargarPagina, exigirQueNoSeaUnReto, muestraDePagina, PACIENCIA } = require('./navegar.js');
 
@@ -85,7 +85,7 @@ const { numero, dato: datoEtiquetado } = require('./numeros.js');
 async function buscar({ consulta, orden, pagina, url }) {
   if (!url && !String(consulta || '').trim()) return [];
 
-  const win = new BrowserWindow({
+  const win = crearVentana({
     width: 1200, height: 900, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });

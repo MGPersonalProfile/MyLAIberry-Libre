@@ -3,6 +3,7 @@ const { leer, releerSiAbierta, writeDB, carpetaDeObra } = require('./nucleo.js')
 const { planDeRealineado, moverFicheros, remapearDatos, claveDeCapitulo } = require('../realinear-capitulos.js');
 const { mismaObra } = require('../misma-obra.js');
 const { escribirEntero } = require('../escritura-entera.js');
+const { fetchWeb } = require('../user-agent.js');
 const { conDisco } = require('../barrera-disco.js');
 const { updateProgress, saveScrollPosition, guardarProgresoRemoto,
   getScrollPosition } = require('./lectura.js');
@@ -143,7 +144,7 @@ async function saveCoverLocally(fanficId, coverUrl) {
   try {
     const url = new URL(coverUrl);
     if (!['http:', 'https:'].includes(url.protocol)) return null;
-    const response = await fetch(url, { signal: AbortSignal.timeout(20000) });
+    const response = await fetchWeb(url, { signal: AbortSignal.timeout(20000) });
     const maximo = 10 * 1024 * 1024;
     const tipo = (response.headers.get('content-type') || '').split(';')[0].trim();
     if (response.status !== 200 || !/^(image\/|(?:application|binary)\/octet-stream$|$)/i.test(tipo)

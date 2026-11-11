@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { BrowserWindow, session, dialog } = require('electron');
+const { session, dialog } = require('electron');
 const { TECHO_DEL_FICHERO } = require('./epub');
 const { direccionWeb, tipoLibro } = require('./libro-enlace');
 let ventana = null;
@@ -49,7 +49,7 @@ function abrirImportador(url = 'https://www.gutenberg.org/') {
 
   sesion.setPermissionRequestHandler((_wc, _permiso, responder) => responder(false));
   sesion.setPermissionCheckHandler(() => false);
-  const win = ventana = new BrowserWindow({ width: 1100, height: 800, title: 'Elige un EPUB, PDF o HTML de AO3: se añadirá a MyLAIberry',
+  const win = ventana = require('./user-agent.js').crearVentana({ width: 1100, height: 800, title: 'Elige un EPUB, PDF o HTML de AO3: se añadirá a MyLAIberry',
     autoHideMenuBar: true, webPreferences: { session: sesion, nodeIntegration: false, contextIsolation: true, sandbox: true } });
   const permitidas = new Set([win.webContents.id]);
   const preparar = w => {

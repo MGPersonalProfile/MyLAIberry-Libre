@@ -1,5 +1,35 @@
 [
   {
+    "version": "2026.11.11-3",
+    "fecha": "2026-11-11",
+    "resumen": "Reddit y Wattpad dan resultados de fiar al asistente (A46).",
+    "detalle": [
+      {
+        "que": "Cuando Reddit bloquea su JSON, el asistente lee los hilos por RSS y dice que vienen de ahí, sin inventar votos; un 429 al pedir comentarios deja de parecer «no hay nada»: se conserva lo leído y se apunta el límite, y Reddit se enfría en vez de seguir pidiendo.",
+        "porque": "Antes un bloqueo o un límite de Reddit se tragaba como una lista vacía, y el asistente decía que no había recomendaciones cuando no las había podido leer."
+      },
+      {
+        "que": "Las búsquedas e investigaciones en Wattpad dejan fuera lo que no tiene que ver con lo pedido aunque tenga muchos votos.",
+        "porque": "Wattpad devolvía obras populares que no casaban con la premisa y se colaban por sus votos."
+      },
+      {
+        "que": "Buscar por pareja en AO3 usa el nombre canónico de la relación y distingue si la pareja es la principal, secundaria o no está clara (se notará cuando AO3 vuelva).",
+        "porque": "Una pareja escrita de otra forma no casaba con la etiqueta de AO3."
+      }
+    ]
+  },
+  {
+    "version": "2026.11.11-2",
+    "fecha": "2026-11-11",
+    "resumen": "Un solo User-Agent para todas las conexiones de la app (A50 (1)).",
+    "detalle": [
+      {
+        "que": "Un solo User-Agent para todas las conexiones web: el de Chrome con la versión del Chromium real de la app, sin «Electron/» ni «MyLAIberry/», en el login, el importador web, el navegador y la investigación del asistente, los scrapers (cola y comprobación de capítulos incluidas), AO3, FicHub, Webtoon, Reddit, Gutenberg y las portadas (A50 (1)).",
+        "porque": "Cada parte se anunciaba como quería y Cloudflare ata su autorización al agente con el que se pasó el reto: lo pasado en el login o en la investigación no valía para la cola. Si algún sitio vuelve a pedir el reto, pásalo una vez más desde «Tus cuentas»; no se ha borrado ninguna sesión."
+      }
+    ]
+  },
+  {
     "version": "2026.11.11",
     "fecha": "2026-11-11",
     "resumen": "Correcciones de seguridad en la interfaz de seguimiento sin spoilers (A40).",

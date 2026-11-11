@@ -1,3 +1,5 @@
+const { cabeceras } = require('./user-agent.js');
+
 const CLIENTES = [
   {
     id: 'dict-chrome-ex',
@@ -42,7 +44,7 @@ async function traducirTextoConProcedencia(texto, destino, origen = 'auto') {
     let respuesta;
     try {
       respuesta = await fetch(cliente.url(texto, origen, destino), {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+        headers: cabeceras(),
         signal: AbortSignal.timeout(20000)
       });
     } catch (err) {
@@ -103,7 +105,7 @@ async function detectarIdioma(muestra) {
       + `?client=${cliente}&sl=auto&tl=en&dt=t&q=${texto}`;
     try {
       const r = await fetch(url, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+        headers: cabeceras(),
         signal: AbortSignal.timeout(15000)
       });
       if (!r.ok) continue;

@@ -1,4 +1,4 @@
-const { BrowserWindow, powerMonitor: monitorElectron } = require('electron');
+const { powerMonitor: monitorElectron } = require('electron');
 const { cargarPagina, mientrasAvance, ejecutarAunqueNavegue, muestraDePagina, exigirQueNoSeaUnReto } = require('./scrapers/navegar');
 const { conPlazo: conPlazoDeReto, planDeReto, nombreDeSitio, detectarReto } = require('./asistente-reto');
 const { esCaidoOLimitado, errorCaido, exigirDisponible } = require('./ao3-caido');
@@ -56,7 +56,7 @@ function robotsPermite(texto, ruta) {
 function crearNavegador(opciones = {}) {
   const { signal, progreso = () => {}, sitios = SITIOS, maxPaginas = MAX_PAGINAS,
   fetchRobots = fetch, pausa = PAUSA, origen, entorno = process.env, plataforma = process.platform, plazos = {},
-  powerMonitor = monitorElectron, pendientes = null, cargar = cargarPagina, crearVentana = opciones => new BrowserWindow(opciones) } = opciones;
+  powerMonitor = monitorElectron, pendientes = null, cargar = cargarPagina, crearVentana = opciones => require('./user-agent.js').crearVentana(opciones) } = opciones;
 
   const robots = new Map();
   let win = null, paginas = 0, anterior = 0, bloqueada = false, monitorActivo = false, presupuestoHasta = Infinity, directorAusente = false;
@@ -78,7 +78,7 @@ function crearNavegador(opciones = {}) {
   async function comprobarRobots(u, hasta) {
     if (!robots.has(u.origin)) {
       const respuesta = await fetchRobots(`${u.origin}/robots.txt`, { signal: AbortSignal.timeout(Math.max(1, Math.min(8000, fechaLimite(hasta) - Date.now()))), redirect: 'manual',
-        headers: { 'user-agent': 'MyLAIberry/1.0' } });
+        headers: { 'user-agent': require('./user-agent.js').AGENTE_ROBOTS } });
 
       const texto = await respuesta.text().catch(() => '');
 

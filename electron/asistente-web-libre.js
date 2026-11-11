@@ -245,8 +245,7 @@ function crearWebLibre({ signal, progreso = () => {}, maxPaginas = MAX_PAGINAS, 
 }
 
 function ventanaReal() {
-  const { BrowserWindow } = require('electron');
-  return new BrowserWindow({ width: 1280, height: 900, show: false,
+  return require('./user-agent.js').crearVentana({ width: 1280, height: 900, show: false,
     webPreferences: { sandbox: true, nodeIntegration: false, contextIsolation: true, webSecurity: true } });
 }
 

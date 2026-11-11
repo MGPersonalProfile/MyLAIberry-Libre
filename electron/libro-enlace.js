@@ -5,6 +5,7 @@ const dns = require('node:dns');
 const { conRitmo, sitioDe } = require('./scrapers/navegar');
 const net = require('node:net');
 const { TECHO_DEL_FICHERO } = require('./epub');
+const { fetchWeb } = require('./user-agent.js');
 
 const MAX_REDIRECCIONES = 5;
 const SILENCIO_MS = 60000;
@@ -104,7 +105,7 @@ async function leerDescarga(respuesta) {
 
 async function importarEnlace(url, progreso, { pedir, importar, resolver } = {}) {
   const direccion = direccionWeb(url);
-  const fetchLibro = pedir || ((u, o) => fetch(u, o));
+  const fetchLibro = pedir || fetchWeb;
   const guardar = importar || require('./ipc/descargas').importarLibro;
   progreso?.({ step: 'fetching', message: 'Descargando el libro…' });
   const ctrl = new AbortController();

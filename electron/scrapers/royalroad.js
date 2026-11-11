@@ -1,4 +1,4 @@
-const { BrowserWindow } = require('electron');
+const { crearVentana } = require('../user-agent.js');
 const { GENERO, completaDeEtiquetas } = require('../etiquetas.js');
 const { cargarPagina, PACIENCIA, mientrasAvance, ejecutarAunqueNavegue } = require('./navegar.js');
 const { exigirAlgoGuardado } = require('./guardado.js');
@@ -247,7 +247,7 @@ async function leerFicha(win, onProgress) {
 
 async function scrapeRoyalRoad(url, onProgress) {
   if (onProgress) onProgress({ step: 'init', message: 'Iniciando motor de extracción...' });
-  const win = new BrowserWindow({
+  const win = crearVentana({
     width: 800, height: 600, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });
@@ -283,7 +283,7 @@ async function downloadChapters(chapters, fanficId, onProgress, saveContentFn) {
 
   let guardados = 0;
 
-  const win = new BrowserWindow({
+  const win = crearVentana({
     width: 800,
     height: 600,
     show: false,

@@ -1,9 +1,9 @@
 const https = require('https');
 const { leerCapitulos, lectoresJsdom, TECHO_DEL_FICHERO } = require('../epub.js');
 const { exigirAlgoGuardado } = require('./guardado.js');
+const { cabeceras } = require('../user-agent.js');
 
 const FICHUB_API = 'https://fichub.net/api/v0';
-const USER_AGENT = 'MyLAIberry/1.0 (lector de codigo abierto)';
 
 const TOPE_MS = 45_000;
 
@@ -11,10 +11,7 @@ function apiGet(endpoint) {
   return new Promise((resolve, reject) => {
     const url = `${FICHUB_API}${endpoint}`;
     const peticion = https.get(url, {
-      headers: {
-        'User-Agent': USER_AGENT,
-        'Accept': 'application/json'
-      }
+      headers: cabeceras({ 'Accept': 'application/json' })
     }, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
@@ -39,7 +36,7 @@ function downloadFile(url, { techo = TECHO_DEL_FICHERO, saltos = 5 } = {}) {
   return new Promise((resolve, reject) => {
     const proto = url.startsWith('https') ? https : require('http');
     const peticion = proto.get(url, {
-      headers: { 'User-Agent': USER_AGENT }
+      headers: cabeceras()
     }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         res.resume();
@@ -214,4 +211,4 @@ async function downloadChapters(chapters, fanficId, onProgress, saveContentFn) {
   exigirAlgoGuardado(guardados, chapters.length, 'FicHub');
 }
 
-module.exports = { scrape, downloadChapters, admiteHuecos: true, downloadFile, copiaDeAO3 };
+module.exports = { scrape, downloadChapters, admiteHuecos: true, downloadFile, copiaDeAO3, apiGet };

@@ -1,12 +1,10 @@
 const { conRitmo } = require('./navegar.js');
 
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+const { cabeceras } = require('../user-agent.js');
 
 async function descargarImagen(url, opciones = {}) {
   const referer = opciones.referer !== undefined ? opciones.referer : 'https://www.webtoons.com/';
-  const headers = {
-    'User-Agent': USER_AGENT
-  };
+  const headers = cabeceras();
   if (referer) {
     headers['Referer'] = referer;
   }
@@ -29,6 +27,5 @@ async function descargarImagen(url, opciones = {}) {
 }
 
 module.exports = {
-  descargarImagen,
-  USER_AGENT
+  descargarImagen
 };

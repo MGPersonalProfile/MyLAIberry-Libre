@@ -1,6 +1,5 @@
 const { limpiarNombreFandom } = require('./etiquetas.js');
-
-const AGENTE = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 MyLAIberry/1.0';
+const { fetchWeb, crearVentana } = require('./user-agent.js');
 
 const ANCHO_MINIMO = 1200;
 const PROPORCION_MINIMA = 1.6;
@@ -65,7 +64,7 @@ function valeDeFondo(medida) {
 
 async function traerYMedir(url, fuente) {
   try {
-    const r = await fetch(url, { headers: { 'User-Agent': AGENTE }, signal: AbortSignal.timeout(25000) });
+    const r = await fetchWeb(url, { signal: AbortSignal.timeout(25000) });
     if (!r.ok) return null;
 
     const buf = Buffer.from(await r.arrayBuffer());
@@ -90,7 +89,7 @@ query ($busqueda: String) {
 
 async function buscarEnAniList(fandom) {
   try {
-    const r = await fetch('https://graphql.anilist.co', {
+    const r = await fetchWeb('https://graphql.anilist.co', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ query: CONSULTA_ANILIST, variables: { busqueda: fandom } }),
@@ -116,7 +115,7 @@ async function buscarEnWiki(fandom) {
     + '&gimlimit=30&prop=imageinfo&iiprop=url|size&format=json';
 
   try {
-    const r = await fetch(api, { headers: { 'User-Agent': AGENTE }, signal: AbortSignal.timeout(20000) });
+    const r = await fetchWeb(api, { signal: AbortSignal.timeout(20000) });
     if (!r.ok) return [];
 
     const datos = await r.json();
@@ -177,11 +176,10 @@ function pareceDelFandom(fandom, resultado) {
 }
 
 async function buscarEnImagenes(fandom, motores = MOTORES_DE_IMAGENES) {
-  const { BrowserWindow } = require('electron');
   const urls = [];
 
   for (const motor of motores) {
-    const win = new BrowserWindow({
+    const win = crearVentana({
       width: 1400, height: 900, show: false,
       webPreferences: { nodeIntegration: false, contextIsolation: true }
     });
@@ -251,6 +249,7 @@ module.exports = {
   buscarEnAniList,
   buscarEnWiki,
   buscarEnImagenes,
+  traerYMedir,
   pareceDelFandom,
   MOTORES_DE_IMAGENES,
   ANCHO_MINIMO,

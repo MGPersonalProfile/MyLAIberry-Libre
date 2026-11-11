@@ -37,9 +37,9 @@ function fichaDeHtml(html, url) {
 
 async function buscar({ consulta, url } = {}) {
   if (!url && !String(consulta || '').trim()) return [];
-  const { BrowserWindow } = require('electron');
+  const { crearVentana } = require('../user-agent.js');
   const { cargarPagina } = require('./navegar');
-  const win = new BrowserWindow({ show: false, width: 1200, height: 900, webPreferences: { nodeIntegration: false, contextIsolation: true } });
+  const win = crearVentana({ show: false, width: 1200, height: 900, webPreferences: { nodeIntegration: false, contextIsolation: true } });
   try {
     await cargarPagina(win, url || urlDeBusqueda({ consulta }));
     await new Promise(r => setTimeout(r, 3000));

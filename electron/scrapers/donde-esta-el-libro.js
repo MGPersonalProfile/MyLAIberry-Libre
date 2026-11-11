@@ -1,13 +1,13 @@
 const { JSDOM } = require('jsdom');
+const { cabeceras } = require('../user-agent.js');
 
 const IDIOMAS = { spa: 'es', eng: 'en', fre: 'fr', fra: 'fr', ger: 'de', deu: 'de', ita: 'it', por: 'pt', cat: 'ca', rus: 'ru', jpn: 'ja' };
 const ACCESO = { public: 'se lee gratis', borrowable: 'se puede tomar prestado gratis', printdisabled: 'sólo para personas con discapacidad lectora', no_ebook: 'no hay libro electrónico' };
-const AGENTE = { 'user-agent': 'MyLAIberry/1.0 (lector personal)' };
 
 async function deOpenLibrary(consulta, { pedir = fetch } = {}) {
   const campos = 'key,title,author_name,first_publish_year,language,ebook_access,ia,edition_count';
   const r = await pedir(`https://openlibrary.org/search.json?${new URLSearchParams({ q: consulta, limit: '6', fields: campos })}`,
-    { headers: AGENTE, signal: AbortSignal.timeout(20000) });
+    { headers: cabeceras(), signal: AbortSignal.timeout(20000) });
   if (!r.ok) throw new Error(`Open Library respondió ${r.status}`);
   return ((await r.json()).docs || []).map(d => ({
     titulo: d.title, autor: (d.author_name || []).slice(0, 2).join(', '), anio: d.first_publish_year, ediciones: d.edition_count,
@@ -20,7 +20,7 @@ async function deOpenLibrary(consulta, { pedir = fetch } = {}) {
 
 async function deStandardEbooks(consulta, { pedir = fetch } = {}) {
   const r = await pedir(`https://standardebooks.org/ebooks?${new URLSearchParams({ query: consulta })}`,
-    { headers: AGENTE, signal: AbortSignal.timeout(20000) });
+    { headers: cabeceras(), signal: AbortSignal.timeout(20000) });
   if (!r.ok) throw new Error(`Standard Ebooks respondió ${r.status}`);
   return librosDeStandardEbooks(await r.text());
 }

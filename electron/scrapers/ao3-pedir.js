@@ -1,11 +1,10 @@
 const { cargarPagina, conRitmo, exigirQueNoEnfrie, limitado } = require('./navegar.js');
-
-const AGENTE = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 MyLAIberry/1.0';
+const { cabeceras, crearVentana } = require('../user-agent.js');
 
 async function pedirHTML(url, msTope = 45000) {
   return conRitmo(url, async () => {
     const r = await fetch(url, {
-      headers: { 'User-Agent': AGENTE, 'Accept': 'text/html,application/xhtml+xml' },
+      headers: cabeceras({ 'Accept': 'text/html,application/xhtml+xml' }),
       redirect: 'follow',
       signal: AbortSignal.timeout(msTope)
     });
@@ -23,8 +22,7 @@ async function pedirHTML(url, msTope = 45000) {
 async function pedirHTMLConNavegador(url, msEspera = 6000) {
 
   exigirQueNoEnfrie(url);
-  const { BrowserWindow } = require('electron');
-  const win = new BrowserWindow({
+  const win = crearVentana({
     width: 1280, height: 900, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });

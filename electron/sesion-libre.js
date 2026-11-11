@@ -22,13 +22,10 @@ const esDelDominio = (c, dominio) => {
 
 function abrirLoginLibre(direccion, { particion = null } = {}) {
   const { url, dominio } = sitioDe(direccion);
-  const { BrowserWindow } = require('electron');
-  const { sinMarcaDeElectron } = require('./sesiones.js');
+  const { crearVentana } = require('./user-agent.js');
   return new Promise((resolve) => {
-    const win = new BrowserWindow({ width: 1000, height: 820, autoHideMenuBar: true, title: `Iniciar sesión — ${dominio}`,
+    const win = crearVentana({ width: 1000, height: 820, autoHideMenuBar: true, title: `Iniciar sesión — ${dominio}`,
       webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, ...(particion ? { partition: particion } : {}) } });
-
-    win.webContents.setUserAgent(sinMarcaDeElectron(win.webContents.getUserAgent()));
 
     win.webContents.on('page-title-updated', (e) => { e.preventDefault(); win.setTitle(`Iniciar sesión — ${new URL(win.webContents.getURL()).hostname}`); });
     win.webContents.setWindowOpenHandler(({ url: emergente }) => {

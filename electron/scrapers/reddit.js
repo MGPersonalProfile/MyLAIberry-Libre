@@ -1,3 +1,5 @@
+const { crearVentana, fetchWeb } = require('../user-agent.js');
+
 const HILOS_LEIDOS = 3;
 const COMENTARIOS_POR_HILO = 10;
 
@@ -85,9 +87,20 @@ function comentariosDeRss(xml) {
     .slice(0, COMENTARIOS_POR_HILO).map(e => ({ texto: recortar(e.texto, 400), enlaces: enlacesDe(e.texto) }));
 }
 
+const ENFRIAR = true;
+const ENFRIAMIENTO_MS = 120000;
+const MENSAJE_429 = 'Reddit está limitando las peticiones (429): vuelve a probar en unos minutos.';
+let rssEnfriadoHasta = 0;
+const reiniciarEnfriamiento = () => { rssEnfriadoHasta = 0; };
+
 async function pedirRss(url) {
-  const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36' } });
-  if (r.status === 429) throw new Error('Reddit está limitando las peticiones (429): vuelve a probar en unos minutos.');
+  if (ENFRIAR && Date.now() < rssEnfriadoHasta) throw Object.assign(new Error(MENSAJE_429), { limitado: true });
+  const r = await fetchWeb(url);
+  if (r.status === 429) {
+    const espera = Number(r.headers?.get?.('retry-after')) * 1000;
+    rssEnfriadoHasta = Date.now() + (espera > 0 ? Math.min(espera, 600000) : ENFRIAMIENTO_MS);
+    throw Object.assign(new Error(MENSAJE_429), { limitado: true });
+  }
   if (!r.ok) throw new Error(`Reddit no devolvió el RSS (HTTP ${r.status}).`);
   return r.text();
 }
@@ -99,11 +112,8 @@ function elegirHilos(hilos) {
 
 async function recomendaciones({ consulta, subreddit }) {
   if (!String(consulta || '').trim()) return [];
-  const { BrowserWindow } = require('electron');
-  const win = new BrowserWindow({ width: 1200, height: 900, show: false,
+  const win = crearVentana({ width: 1200, height: 900, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true } });
-
-  win.webContents.setUserAgent(win.webContents.getUserAgent().replace(/\s*Electron\/\S+/, ''));
   try {
     let hilos, porRss = false;
     try {
@@ -114,13 +124,16 @@ async function recomendaciones({ consulta, subreddit }) {
       porRss = true;
     }
     const aLeer = elegirHilos(hilos);
+    let limitado = false;
     for (const hilo of aLeer) {
+      if (limitado) { hilo.errorComentarios = MENSAJE_429.replace('vuelve', 'no se insistió; vuelve'); continue; }
       try {
         hilo.comentarios = porRss
           ? comentariosDeRss(await pedirRss(`${hilo.url.replace(/\/?$/, '/')}.rss?sort=top&depth=1&limit=25`))
           : comentariosDeHilo(await pedirJson(win, `https://www.reddit.com/comments/${hilo.id}.json?sort=top&limit=25&depth=1`));
       } catch (e) {
         hilo.errorComentarios = e.message;
+        if (e.limitado && ENFRIAR) limitado = true;
       }
     }
 
@@ -133,7 +146,8 @@ async function recomendaciones({ consulta, subreddit }) {
   }
 }
 
-module.exports = { recomendaciones, urlDeBusqueda, hilosDeListado, comentariosDeHilo, elegirHilos, enlacesDe, hilosDeRss, comentariosDeRss };
+module.exports = { recomendaciones, urlDeBusqueda, hilosDeListado, comentariosDeHilo, elegirHilos, enlacesDe, hilosDeRss, comentariosDeRss, reiniciarEnfriamiento, pedirRss };
+
 async function entrarPorLaPortada(win) {
   const { cargarPagina } = require('./navegar.js');
   await cargarPagina(win, 'https://www.reddit.com/');
@@ -156,4 +170,4 @@ async function pedirJson(win, url) {
   throw new Error(`Reddit no devolvió datos (${recortar(texto, 80) || 'página vacía'}).`);
 }
 
-module.exports = { recomendaciones, urlDeBusqueda, hilosDeListado, comentariosDeHilo, elegirHilos, enlacesDe, hilosDeRss, comentariosDeRss };
+module.exports = { recomendaciones, urlDeBusqueda, hilosDeListado, comentariosDeHilo, elegirHilos, enlacesDe, hilosDeRss, comentariosDeRss, reiniciarEnfriamiento, pedirRss };

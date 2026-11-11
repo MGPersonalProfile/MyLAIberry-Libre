@@ -1,4 +1,4 @@
-const { BrowserWindow } = require('electron');
+const { crearVentana } = require('../user-agent.js');
 const { cargarPagina } = require('./navegar.js');
 const { completaDelTitulo } = require('../etiquetas.js');
 const { ordenarIndice } = require('./webnovel-indice.js');
@@ -29,7 +29,7 @@ function limpiarAutor(crudo) {
 }
 
 function nueva() {
-  return new BrowserWindow({
+  return crearVentana({
     show: false,
     width: 1280,
     height: 900,

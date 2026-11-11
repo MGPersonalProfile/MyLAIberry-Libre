@@ -1,4 +1,4 @@
-const { BrowserWindow } = require('electron');
+const { crearVentana } = require('../user-agent.js');
 const { GENERO, completaDeEtiquetas } = require('../etiquetas.js');
 const universal = require('./universal');
 const { cargarPagina, mientrasAvance } = require('./navegar.js');
@@ -239,7 +239,7 @@ async function scrape(url, onProgress) {
 
   const palabraDeLaUrl = CHAPTER_RE.test(url) ? palabraDeCapitulo(url) : null;
 
-  const win = new BrowserWindow({
+  const win = crearVentana({
     width: 900, height: 700, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });
@@ -281,7 +281,7 @@ async function scrape(url, onProgress) {
 }
 
 async function downloadChapters(chapters, fanficId, onProgress, saveContentFn) {
-  const win = new BrowserWindow({
+  const win = crearVentana({
     width: 900, height: 700, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });

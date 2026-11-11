@@ -1,4 +1,4 @@
-const { BrowserWindow } = require('electron');
+const { crearVentana } = require('../user-agent.js');
 const { GENERO, IDIOMA, FANDOM, CLASIFICACION } = require('../etiquetas.js');
 const { cargarPagina, PACIENCIA, mientrasAvance, ejecutarAunqueNavegue } = require('./navegar.js');
 const { numero: leerNumero } = require('./numeros.js');
@@ -173,7 +173,7 @@ async function scrape(url, onProgress) {
 
   if (onProgress) onProgress({ step: 'init', message: 'Iniciando extracción de FanFiction.net...' });
 
-  const win = new BrowserWindow({
+  const win = crearVentana({
     width: 1200, height: 800, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });
@@ -261,7 +261,7 @@ async function leerAutor(autorUrl) {
   const m = String(autorUrl || '').match(/\/u\/(\d+)/);
   if (!m) throw new Error('URL de autor de FanFiction.net no válida');
 
-  const win = new BrowserWindow({
+  const win = crearVentana({
     width: 1200, height: 900, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });
@@ -321,7 +321,7 @@ async function downloadChapters(chapters, fanficId, onProgress, saveContentFn) {
 
   let guardados = 0;
 
-  const win = new BrowserWindow({
+  const win = crearVentana({
     width: 1200, height: 800, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });

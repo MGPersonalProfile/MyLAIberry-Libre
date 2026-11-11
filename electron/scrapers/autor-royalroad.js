@@ -1,4 +1,4 @@
-const { BrowserWindow } = require('electron');
+const { crearVentana } = require('../user-agent.js');
 const { JSDOM } = require('jsdom');
 const { cargarPagina, PACIENCIA, mientrasAvance, ejecutarAunqueNavegue } = require('./navegar.js');
 const { numero } = require('./numeros.js');
@@ -140,7 +140,7 @@ async function leerAutor(autorUrl) {
   if (!m) throw new Error('URL de autor de RoyalRoad no válida');
   const autorId = m[1];
 
-  const win = new BrowserWindow({
+  const win = crearVentana({
     width: 1200, height: 900, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });

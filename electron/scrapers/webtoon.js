@@ -1,6 +1,7 @@
 const { JSDOM } = require('jsdom');
 const { conRitmo } = require('./navegar.js');
-const { descargarImagen, USER_AGENT } = require('./webtoon-imagenes.js');
+const { descargarImagen } = require('./webtoon-imagenes.js');
+const { cabeceras } = require('../user-agent.js');
 const { guardarCapituloComic, generarHtmlCapituloComic } = require('../db.js');
 
 function idDeObra(url) {
@@ -102,7 +103,7 @@ async function scrape(url, onProgress, opciones = {}) {
   avisar('Leyendo la serie de Webtoon...');
 
   const canon = urlCanonica(url);
-  const res = await conRitmo(canon, () => fetch(canon, { headers: { 'User-Agent': USER_AGENT } }));
+  const res = await conRitmo(canon, () => fetch(canon, { headers: cabeceras() }));
   const html = await res.text();
 
   const dom = new JSDOM(html);
@@ -115,7 +116,7 @@ async function scrape(url, onProgress, opciones = {}) {
   for (const pagUrl of paginas) {
     avisar(`Leyendo página adicional de episodios: ${pagUrl}`);
     try {
-      const pRes = await conRitmo(pagUrl, () => fetch(pagUrl, { headers: { 'User-Agent': USER_AGENT } }));
+      const pRes = await conRitmo(pagUrl, () => fetch(pagUrl, { headers: cabeceras() }));
       const pHtml = await pRes.text();
       episodios = episodios.concat(extraerEpisodios(pHtml));
     } catch {
@@ -176,7 +177,7 @@ async function downloadChapters(chapters, fanficId, onProgress, saveContentFn, d
     });
 
     const res = await conRitmo(ch.url, () =>
-      fetch(ch.url, { headers: { 'User-Agent': USER_AGENT, 'Referer': 'https://www.webtoons.com/' } })
+      fetch(ch.url, { headers: cabeceras({ 'Referer': 'https://www.webtoons.com/' }) })
     );
     const html = await res.text();
     const vinhetas = extraerVinhetas(html);

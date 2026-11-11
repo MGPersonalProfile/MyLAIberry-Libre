@@ -1,5 +1,7 @@
 const { app, BrowserWindow, nativeTheme } = require('electron');
 
+require('./user-agent.js').iniciar(app);
+
 require('./consola-segura.js').protegerConsola();
 
 app.setName('mylaiberry-libre');

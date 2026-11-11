@@ -48,7 +48,7 @@ function traducirRoyalRoad(pedido, { pagina = 1 } = {}) {
 }
 
 const DE_TEXTO = {
-  Wattpad: { url: (t) => `https://www.wattpad.com/search/stories?query=${encodeURIComponent(t)}`, campo: 'query' },
+  Wattpad: { url: (t) => `https://www.wattpad.com/search/stories?query=${encodeURIComponent(t)}`, campo: 'query', pertinente: true },
   Webnovel: { url: (t, pagina) => `https://www.webnovel.com/search?${new URLSearchParams({ keywords: t, ...(pagina > 1 ? { pageIndex: String(pagina) } : {}) })}`, campo: 'keywords' },
   'Project Gutenberg': { url: (t) => `https://www.gutenberg.org/ebooks/search.opds/?${new URLSearchParams({ query: t })}`, campo: 'query' },
   WeTriedTLs: {
@@ -64,6 +64,8 @@ function traducirDeTexto(fuente, pedido, { pagina = 1 } = {}) {
   const texto = [f.consulta, f.fandom].filter(Boolean).join(' ');
   if (texto) p.url = sitio.url(texto, pagina, f);
   if (f.consulta) p.enWeb('consulta', sitio.campo);
+
+  if (f.consulta && sitio.pertinente) p.enMemoria('consulta');
   if (f.fandom) { p.enWeb('fandom', `en ${sitio.campo}, junto a la consulta`); p.enMemoria('fandom'); }
   if (f.orden && sitio.orden?.[f.orden]) p.enWeb('orden', sitio.orden[f.orden]);
   else if (f.orden && ['popularidad', 'palabras'].includes(f.orden)) p.enMemoria('orden');

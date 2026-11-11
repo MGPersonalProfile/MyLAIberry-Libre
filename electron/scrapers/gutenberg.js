@@ -13,8 +13,7 @@ function numeroDeLibro(url) {
 const direccionDe = (n) => `https://www.gutenberg.org/ebooks/${n}`;
 
 function pedir(url, opciones) {
-  const net = require('electron').net;
-  return net?.fetch ? net.fetch(url, opciones) : fetch(url, opciones);
+  return require('../user-agent.js').fetchElectron(url, opciones);
 }
 
 async function bajarEpub(url) {

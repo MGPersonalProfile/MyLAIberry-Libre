@@ -1,4 +1,4 @@
-const { BrowserWindow, session, shell } = require('electron');
+const { session, shell } = require('electron');
 
 const SITIOS = {
   ao3: {
@@ -131,7 +131,7 @@ async function mirarDeVerdad(id) {
     return descripcion(id);
   }
 
-  const win = new BrowserWindow({
+  const win = crearVentana({
     show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });
@@ -153,7 +153,7 @@ async function comprobarTodos() {
   return listar();
 }
 
-const sinMarcaDeElectron = (ua) => String(ua).replace(/\s*(Electron|mylaiberry|MyLAIberry)\/\S+/g, '');
+const { sinMarcaDeElectron, crearVentana } = require('./user-agent.js');
 
 const IDENTIDAD = ['accounts.google.com', 'login.microsoftonline.com', 'login.live.com', 'www.facebook.com', 'facebook.com',
   'api.twitter.com', 'twitter.com', 'x.com', 'appleid.apple.com', 'discord.com', 'www.patreon.com', 'patreon.com'];
@@ -176,7 +176,7 @@ function repartirEmergentes(win, s) {
   });
 
   win.webContents.on('did-create-window', (hija) => {
-    hija.webContents.setUserAgent(sinMarcaDeElectron(hija.webContents.getUserAgent()));
+
     repartirEmergentes(hija, s);
   });
 }
@@ -188,11 +188,10 @@ function abrirLogin(id, { particion = null } = {}) {
   const ses = particion ? session.fromPartition(particion) : session.defaultSession;
 
   return new Promise((resolve) => {
-    const win = new BrowserWindow({
+    const win = crearVentana({
       width: 1000, height: 800, title: `Iniciar sesión — ${s.nombre}`, autoHideMenuBar: true,
       webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, ...(particion ? { partition: particion } : {}) }
     });
-    win.webContents.setUserAgent(sinMarcaDeElectron(win.webContents.getUserAgent()));
     repartirEmergentes(win, s);
 
     let resuelto = false;
