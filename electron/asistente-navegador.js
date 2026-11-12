@@ -2,6 +2,7 @@ const { powerMonitor: monitorElectron } = require('electron');
 const { cargarPagina, mientrasAvance, ejecutarAunqueNavegue, muestraDePagina, exigirQueNoSeaUnReto } = require('./scrapers/navegar');
 const { conPlazo: conPlazoDeReto, planDeReto, nombreDeSitio, detectarReto } = require('./asistente-reto');
 const { esCaidoOLimitado, errorCaido, exigirDisponible } = require('./ao3-caido');
+const { operacionDe } = require('./asistente-retos-reanudadores.js');
 
 const SITIOS = new Set(['archiveofourown.org', 'www.fanfiction.net', 'www.royalroad.com', 'www.wattpad.com']);
 const MAX_PAGINAS = 64;
@@ -101,19 +102,21 @@ function crearNavegador(opciones = {}) {
   function conPlazo(promesa, direccion, hasta = Infinity) {
     const sitio = nombreDeSitio(direccion);
     const avisar = datos => progreso({ paginas, maxPaginas, url: win && !win.isDestroyed() ? win.webContents.getURL() : direccion, ...datos });
+
+    const operacion = pendientes ? operacionDe('investigacion.leer.v1', { requestId: pendientes.requestId, url: direccion }) : undefined;
     return conPlazoDeReto({ promesa, ventana: () => win, plan: planActual, presupuestoHasta: () => fechaLimite(hasta),
       sitio, progreso: avisar, mientrasAvance,
       cerrar: cerrarVentana, muestraDePagina, exigirQueNoSeaUnReto,
-      alAbandonarReto: info => pendientes?.gestor.registrar({ requestId: pendientes.requestId, origen, ...info,
+      alAbandonarReto: info => pendientes?.gestor.registrar({ requestId: pendientes.requestId, origen, ...info, operacion,
         reanudar: () => comprobarAcceso(info.url) }),
-      ...(pendientes?.esperaDirectorMs > 0 ? { esperarDirector: esperarAlDirector, esperaDirectorMs: pendientes.esperaDirectorMs,
+      ...(pendientes?.esperaDirectorMs > 0 ? { esperarDirector: info => esperarAlDirector({ ...info, operacion }), esperaDirectorMs: pendientes.esperaDirectorMs,
         alTerminarEspera: ms => { prorroga += ms; } } : {}) });
   }
 
-  async function esperarAlDirector({ win: ventana, sitio, url }) {
+  async function esperarAlDirector({ win: ventana, sitio, url, operacion }) {
     if (directorAusente) return 'ausente';
     const g = pendientes.gestor;
-    const reto = g.registrar({ requestId: pendientes.requestId, sitio, url, origen, ventana: () => ventana, reanudar: () => comprobarAcceso(url) });
+    const reto = g.registrar({ requestId: pendientes.requestId, sitio, url, origen, ventana: () => ventana, reanudar: () => comprobarAcceso(url), operacion });
     progreso({ paginas, maxPaginas, url, estado: 'comprobacion', mensaje: `${sitio} pide una comprobación humana: pásala desde la PWA del móvil.` });
     const hayReto = async () => { if (ventana.isDestroyed()) throw new Error('ventana cerrada'); const m = await muestraDePagina(ventana); return detectarReto({ ...m, titulo: `${ventana.webContents.getTitle()} ${m.titulo || ''}` }); };
     const fin = await g.esperarDirector(reto.id, { hayReto, signal, hastaMs: pendientes.esperaDirectorMs, paso: Math.max(200, Math.min(1000, pendientes.esperaDirectorMs / 20)) });

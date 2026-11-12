@@ -1,5 +1,27 @@
 [
   {
+    "version": "2026.11.12-2",
+    "fecha": "2026-11-12",
+    "resumen": "Las comprobaciones humanas de las webs (Cloudflare) sobreviven a un reinicio de la aplicación.",
+    "detalle": [
+      {
+        "que": "Una comprobación humana de una web que nadie pasó ya no se pierde si la aplicación se reinicia: vuelve a salir en el móvil, se puede reabrir y, al pasarla, la página que el asistente quería leer se lee y queda guardada para verla.",
+        "porque": "Hasta ahora esas comprobaciones vivían sólo en la memoria de la aplicación: un reinicio del servidor o del PC las borraba junto con lo que el asistente estaba haciendo."
+      }
+    ]
+  },
+  {
+    "version": "2026.11.12",
+    "fecha": "2026-11-12",
+    "resumen": "Al guardar una obra en el móvil, el botón dice cuándo ya están todos los capítulos y sólo faltan las traducciones.",
+    "detalle": [
+      {
+        "que": "Con todos los capítulos ya en el móvil, mientras se guardan las traducciones del idioma elegido el botón dice «Guardando traducciones» en vez de «Reanudando · 109 de 109 capítulos guardados».",
+        "porque": "Las traducciones se guardan una por capítulo después de los capítulos, y con la conexión lenta eso dura minutos: parecía que la copia se había quedado atascada con todo ya guardado."
+      }
+    ]
+  },
+  {
     "version": "2026.11.11-5",
     "fecha": "2026-11-11",
     "resumen": "Guardar una obra en el móvil para leer sin conexión ya no se queda a medias cuando el navegador termina de bajarla.",

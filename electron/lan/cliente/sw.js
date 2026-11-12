@@ -8,7 +8,8 @@ const esNuestra = u => u.origin === self.location.origin && u.pathname.startsWit
 const LECTURAS = new Set(['asistente-ver', 'repeated-works', 'check-repeated-chapters', 'search-in-work', 'detect-site', 'estadisticas-lectura', 'recordar-lectura', 'leer-eleccion-idioma', 'obtener-catalogo-serie', 'comic-estado']);
 
 const DE_EJECUCION = new Set(['startInvestigation', 'cancelInvestigation', 'retryInvestigation']), deEjecucion = (canal, args) => canal === 'asistente-accion' && Array.isArray(args) && args.some(a => a && DE_EJECUCION.has(a.action));
-const EN_VIVO = new Set(['asistente-retos-pendientes', 'asistente-ejecuciones', 'asistente-reto-remoto-estado', 'queue-status', 'lan-estado', 'estado-voces', 'avisos-disponibles', 'avisos-via', 'exportar-lectura']);
+
+const EN_VIVO = new Set(['asistente-retos-pendientes', 'asistente-reto-resultado', 'asistente-ejecuciones', 'asistente-reto-remoto-estado', 'queue-status', 'lan-estado', 'estado-voces', 'avisos-disponibles', 'avisos-via', 'exportar-lectura']);
 const DEL_AUDIO = new Set(['audio-capitulo', 'audio-obra']), ESENCIALES = new Set(['get-library', 'get-settings', 'get-chapter-content', 'translate-chapter']);
 const pideAlgo = args => Array.isArray(args) && args.some(a => a && typeof a === 'object' && a.pedir === true);
 const DE_LEER = { has: (c, args) => /^(get|has|listar)-/.test(c) || ['translate-chapter', 'translate-synopsis'].includes(c)

@@ -14,6 +14,8 @@ const SOLO_EN_EL_PC = new Set([
 
 const CON_CODIGO_OBLIGATORIO = new Set(['asistente-retos-pendientes', 'asistente-reto-reanudar', 'asistente-reto-cancelar',
 
+  'asistente-reto-reabrir', 'asistente-reto-resultado',
+
   'asistente-reto-remoto-iniciar', 'asistente-reto-remoto-estado', 'asistente-reto-remoto-tocar', 'asistente-reto-remoto-finalizar',
 
   'obtener-catalogo-serie', 'importar-obras-serie']);

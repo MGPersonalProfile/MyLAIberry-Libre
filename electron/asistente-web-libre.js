@@ -2,6 +2,7 @@ const dns = require('node:dns').promises;
 const net = require('node:net');
 const { cargarPagina, muestraDePagina } = require('./scrapers/navegar');
 const { detectarReto, planDeReto, nombreDeSitio } = require('./asistente-reto');
+const { operacionDe } = require('./asistente-retos-reanudadores.js');
 
 const MAX_PAGINAS = 64;
 const ESPERA_PAGINA = 30000;
@@ -148,16 +149,18 @@ function crearWebLibre({ signal, progreso = () => {}, maxPaginas = MAX_PAGINAS, 
     try { await Promise.race([cargarPagina(w, u.toString()), plazo]); } catch (e) {
       if (/no respondió/.test(e.message) || !w.webContents.getURL()) throw e;
     } finally { clearTimeout(reloj); }
-    await pasarReto(w);
+    await pasarReto(w, u.toString());
     comprobarForma(w.webContents.getURL());
     return w;
   }
 
-  async function esperarAlDirector(w, hayReto) {
+  async function esperarAlDirector(w, hayReto, pedida) {
     const direccion = w.webContents.getURL();
     const sitio = nombreDeSitio(direccion);
+
+    const operacion = operacionDe('web.leer.v1', { requestId: retos.requestId, url: pedida || direccion });
     const reto = retos.gestor.registrar({ requestId: retos.requestId, sitio, url: direccion, origen: retos.origen, ventana: () => w,
-      reanudar: () => comprobarAcceso(direccion) });
+      reanudar: () => comprobarAcceso(direccion), operacion });
     aparcados.add(reto.id);
     progreso({ paginas, maxPaginas, url: direccion, estado: 'comprobacion',
       mensaje: `${sitio} pide una comprobación humana: pásala desde la PWA del móvil y sigo con tu petición.` });
@@ -178,12 +181,12 @@ function crearWebLibre({ signal, progreso = () => {}, maxPaginas = MAX_PAGINAS, 
     finally { otro.cerrar(); }
   }
 
-  async function pasarReto(w) {
+  async function pasarReto(w, pedida) {
 
     const hayReto = async () => detectarReto(await lecturaDeReto(w));
     for (let t = 0; t < esperaReto && await hayReto(); t += paso) await dormir(paso);
     if (!await hayReto()) return;
-    if (retos && !planDeReto({ origen: retos.origen, env: retos.env, plataforma: retos.plataforma }).puedeResolverReto) return esperarAlDirector(w, hayReto);
+    if (retos && !planDeReto({ origen: retos.origen, env: retos.env, plataforma: retos.plataforma }).puedeResolverReto) return esperarAlDirector(w, hayReto, pedida);
     const estaba = w.isVisible?.();
     if (!estaba && mostrarVentana) { w.setTitle?.('MyLAIberry — comprobación del sitio'); w.showInactive?.(); }
     progreso({ paginas, maxPaginas, url: w.webContents.getURL(), estado: 'comprobacion' });

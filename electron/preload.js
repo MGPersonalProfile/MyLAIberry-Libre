@@ -255,6 +255,8 @@ contextBridge.exposeInMainWorld('api', {
   asistenteRetoRemotoFinalizar: (id, token) => ipcRenderer.invoke('asistente-reto-remoto-finalizar', id, token),
   asistenteRetoReanudar: (id, token) => ipcRenderer.invoke('asistente-reto-reanudar', id, token),
   asistenteRetoCancelar: (id, token) => ipcRenderer.invoke('asistente-reto-cancelar', id, token),
+  asistenteRetoReabrir: (id, token) => ipcRenderer.invoke('asistente-reto-reabrir', id, token),
+  asistenteRetoResultado: (id, token) => ipcRenderer.invoke('asistente-reto-resultado', id, token),
   onAsistenteRetoPendiente: (callback) => {
     const oyente = (_event, data) => callback(data);
     ipcRenderer.on('asistente-reto-pendiente', oyente);
