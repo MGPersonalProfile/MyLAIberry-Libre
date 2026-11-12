@@ -31,7 +31,7 @@ npm ci
 npm ci --prefix frontend
 npm run avisos
 npm run build:frontend
-npx electron-builder --win nsis --publish never --config.publish.provider=generic --config.publish.url=https://example.invalid --config.nsis.artifactName='MyLAIberry-Setup-${version}.exe'
+npx electron-builder --win nsis --publish never --config.publish.provider=generic --config.publish.url=https://example.invalid --config.publish.channel=latest --config.nsis.artifactName='MyLAIberry-Setup-${version}.exe'
 ```
 
 `build:frontend` runs `scripts/preparar-modelo.js`, which downloads the model the app uses. The installer and `latest.yml` end up in `dist/`. The `--publish never` option prevents publishing from your PC; the `example.invalid` address only serves so that electron-builder generates the update metadata file. Building it yourself lets you inspect and run the code you downloaded, although its SHA-256 will probably differ from the Release's because of variations in the NSIS build.

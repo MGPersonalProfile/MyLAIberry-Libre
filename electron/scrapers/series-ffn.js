@@ -8,7 +8,7 @@ function extraerSeriesDeFicha(doc, urlObra) {
   const vistos = new Set();
   const urlActualNorm = sanitizarUrl(urlObra, BASE);
 
-  const top = doc.querySelector('#profile_top, .xcontrast_txt');
+  const top = doc.querySelector('#profile_top');
   if (!top) return [];
 
   const enlaces = top.querySelectorAll('a[href*="/s/"]');

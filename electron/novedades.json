@@ -1,5 +1,43 @@
 [
   {
+    "version": "2026.11.11-5",
+    "fecha": "2026-11-11",
+    "resumen": "Guardar una obra en el móvil para leer sin conexión ya no se queda a medias cuando el navegador termina de bajarla.",
+    "detalle": [
+      {
+        "que": "Si Chrome del móvil acaba de bajar una obra con huecos (por ejemplo, porque la red se cortó un minuto), la app sigue sola con lo que falta en vez de quedarse en «Reanudando · 109 de 109» hasta volver a abrirla.",
+        "porque": "Chrome deja a la vista la descarga ya terminada mientras se guarda, y la app la tomaba por una descarga todavía en marcha y no pedía el resto."
+      },
+      {
+        "que": "Pedir que se vuelva a descargar una obra mientras el móvil guarda lo que trajo el navegador ya no se pierde: se hace en cuanto acaba de guardar.",
+        "porque": "Esa petición se apuntaba como un simple «seguir» y se olvidaba que era para bajarla de nuevo."
+      },
+      {
+        "que": "Las obras de FanFiction.net vuelven a reconocer sus series.",
+        "porque": "La ficha de la obra se buscaba con un selector que devolvía antes la miga de pan de la página, y nunca se encontraba nada."
+      },
+      {
+        "que": "La edición libre vuelve a publicar su instalador con cada versión, y una publicación que se corte a medias se puede repetir.",
+        "porque": "Desde el 8 de noviembre las versiones salían sin el .exe: el fichero de actualizaciones salía con otro nombre y la publicación se paraba si la página de la versión ya existía."
+      }
+    ]
+  },
+  {
+    "version": "2026.11.11-4",
+    "fecha": "2026-11-11",
+    "resumen": "Las obras de RoyalRoad ya no salen como «De la serie» de sus propios capítulos.",
+    "detalle": [
+      {
+        "que": "La ficha de las obras de RoyalRoad deja de decir «De la serie «Saga: …»» una vez por capítulo: los capítulos de la propia obra ya no se toman por una saga, y las obras que ya lo tenían guardado dejan de enseñarlo.",
+        "porque": "Al buscar secuelas se cogían todos los enlaces de la página, incluida la tabla de capítulos, y cada capítulo salía como una serie (en una obra de 109 capítulos, 109 veces)."
+      },
+      {
+        "que": "Dos obras que entran a la vez en la biblioteca (por ejemplo, varias propuestas de Descubrimientos seguidas) ya no comparten número de obra: descartar o borrar una no toca la otra.",
+        "porque": "El número de cada obra salía del reloj, y dos altas en el mismo milisegundo recibían el mismo."
+      }
+    ]
+  },
+  {
     "version": "2026.11.11-3",
     "fecha": "2026-11-11",
     "resumen": "Reddit y Wattpad dan resultados de fiar al asistente (A46).",

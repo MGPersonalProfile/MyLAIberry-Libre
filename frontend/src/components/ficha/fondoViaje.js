@@ -10,7 +10,9 @@ export async function encargarObraAlNavegador(registro, id, desde, total, espera
   const urls = [];
   for (let i = desde; i < total; i++) urls.push(`${base}/capitulo/${encodeURIComponent(id)}/${i}`);
   try {
-    if (await fondo.get(`viaje-${id}`)) return 'existente';
+
+    const previo = await fondo.get(`viaje-${id}`);
+    if (previo && !previo.result) return 'existente';
     const encargo = fondo.fetch(`viaje-${id}`, urls, { title: 'Guardando capítulos para leer sin conexión' }).then(() => 'aceptada');
     let reloj;
     const sinRespuesta = new Promise(ok => { reloj = setTimeout(() => ok('sin-respuesta'), esperaPermisoMs); });

@@ -21,6 +21,12 @@ on:
 
 permissions: {}
 
+# Una sola ejecución por tag a la vez: dos compilaciones del mismo tag se pisaban al subir (revisión de Echo de la
+# gen29, hallazgo 2). Un push del tag y un workflow_dispatch con ese tag dan el mismo grupo.
+concurrency:
+  group: compilar-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
   compilar:
     runs-on: windows-latest
@@ -84,10 +90,13 @@ jobs:
       # publish never impide que electron-builder publique por su cuenta. Se
       # configura un destino genérico ficticio para que produzca latest.yml;
       # la publicación efectiva se hace sólo en el trabajo siguiente, con gh.
+      # El canal va fijo en latest: sin él, una versión como 2026.11.11-3 toma
+      # el canal «3» (app-builder-lib, PublishManager) y escribe 3.yml, y el
+      # actualizador (electron/actualizar.js) busca latest.yml (11-11-2026).
       - name: Construir el instalador NSIS y su ficha
         shell: pwsh
         run: |
-          npx electron-builder --win nsis --publish never --config.publish.provider=generic --config.publish.url=https://example.invalid --config.nsis.artifactName='MyLAIberry-Setup-${version}.exe'
+          npx electron-builder --win nsis --publish never --config.publish.provider=generic --config.publish.url=https://example.invalid --config.publish.channel=latest --config.nsis.artifactName='MyLAIberry-Setup-${version}.exe'
           if ($LASTEXITCODE -ne 0) { throw 'Falló electron-builder' }
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           $nombre = "MyLAIberry-Setup-$version.exe"
@@ -148,16 +157,36 @@ jobs:
         with:
           subject-path: salida/MyLAIberry-Setup-*.exe
 
-      # Si una Release de ese tag ya existe, se para: no se sustituyen assets
-      # que alguien pudiera haber descargado y verificado antes.
+      # Si una Release de ese tag ya tiene sus cuatro ficheros, no se toca: no se
+      # sustituyen assets que alguien pudiera haber descargado y verificado antes.
+      # Si no existe se crea sin ficheros, y si existe sin el instalador (creada a
+      # mano con sus notas al subir el tag, o con una subida anterior cortada) se le
+      # suben los cuatro: hasta el 11-11-2026 salía «ya existe» y las Releases se
+      # quedaban sin instalador. El .exe va el ÚLTIMO y aparte: si la subida se
+      # corta, nunca queda un instalador sin sus datos, y la ejecución siguiente
+      # vuelve a subir los datos con --clobber (eran de una compilación que no llegó
+      # a publicar su .exe). Con el .exe ya subido y faltando datos, se para:
+      # mezclar ficheros de dos compilaciones rompe la actualización (revisiones de
+      # Echo de la gen29: hallazgos 1 y 2, y la del paso nuevo).
       - name: Publicar la Release y los cuatro ficheros
         shell: bash
         run: |
           set -euo pipefail
-          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-            echo "La Release $RELEASE_TAG ya existe" >&2
+          nombre="MyLAIberry-Setup-${RELEASE_TAG#v}.exe"
+          datos=(salida/latest.yml "salida/$nombre.blockmap" salida/SHA256SUMS.txt)
+          if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$RELEASE_TAG" --generate-notes
+          fi
+          subidos=$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')
+          if grep -qxF "$nombre" <<< "$subidos"; then
+            faltan=0
+            for f in "${datos[@]}"; do grep -qxF "$(basename "$f")" <<< "$subidos" || faltan=$((faltan + 1)); done
+            if [ "$faltan" = "0" ]; then
+              echo "La Release $RELEASE_TAG ya tiene sus cuatro ficheros: no se sustituyen"
+              exit 0
+            fi
+            echo "La Release $RELEASE_TAG tiene el instalador pero le faltan $faltan ficheros: no se mezclan dos compilaciones" >&2
             exit 1
           fi
-          nombre="MyLAIberry-Setup-${RELEASE_TAG#v}.exe"
-          gh release create "$RELEASE_TAG" "salida/$nombre" salida/latest.yml "salida/$nombre.blockmap" salida/SHA256SUMS.txt \
-            --repo "$GITHUB_REPOSITORY" --verify-tag --title "$RELEASE_TAG" --generate-notes
+          gh release upload "$RELEASE_TAG" "${datos[@]}" --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload "$RELEASE_TAG" "salida/$nombre" --repo "$GITHUB_REPOSITORY"

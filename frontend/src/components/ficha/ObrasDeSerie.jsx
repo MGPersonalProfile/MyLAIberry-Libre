@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useI18n } from '../../i18n/I18nContext';
 import { SecondaryButton } from '../ui/Buttons';
+import { seriesPropias } from './seriesPropias';
 
 export default function ObrasDeSerie({ obra }) {
   const { t } = useI18n();
-  const series = Array.isArray(obra?.series) ? obra.series.filter(s => s && s.nombre) : [];
+  const series = seriesPropias(obra);
   const primeraSerie = series[0];
   const urlSerie = primeraSerie?.url;
 

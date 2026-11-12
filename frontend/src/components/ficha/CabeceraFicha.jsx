@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import Cover from '../Cover';
 import { urlDePortada } from '../../portada';
 import { useI18n } from '../../i18n/I18nContext';
+import { seriesPropias } from './seriesPropias';
 
 export default function CabeceraFicha({ obra, movil, alCerrar }) {
   if (movil) {
@@ -40,7 +41,7 @@ export default function CabeceraFicha({ obra, movil, alCerrar }) {
 
 function LineaDeSerie({ obra, className }) {
   const { t } = useI18n();
-  const series = Array.isArray(obra.series) ? obra.series.filter(s => s && s.nombre) : [];
+  const series = seriesPropias(obra);
   if (!series.length) return null;
   return (
     <p className={className}>

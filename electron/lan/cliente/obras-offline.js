@@ -278,6 +278,8 @@ async function cerrarTramo(estado) {
 const idDeFondo = id => `viaje-${id}`;
 const fondoDe = async id => (await self.registration.backgroundFetch?.get(idDeFondo(id)).catch(() => null)) || null;
 
+const bajandoEnFondo = async id => { const r = await fondoDe(id); return r && !r.result ? r : null; };
+
 async function traducirLoGuardado(estado) {
   if (!estado.idioma || estado.guardados < estado.total) return null;
   for (let i = 0; i < estado.total; i++) {
@@ -286,7 +288,7 @@ async function traducirLoGuardado(estado) {
   return null;
 }
 
-const recogiendo = new Set();
+const recogiendo = new Set(), seguirTrasRecoger = new Map();
 const sigueApuntada = async id => !viajeCancelado.has(id) && !!await leerViaje('obras', id).catch(() => null);
 
 async function guardarDelFondo(estado, porIndice) {
@@ -328,14 +330,24 @@ async function recogerFondo(registro) {
     await cerrarTramo(estado);
     if (fallo) await escribirViaje('obras', Object.assign(estado, { completa: false, continuar: true, error: fallo, reintentarAlConectar: true }));
     return avisarViaje(id, { ...estado, enCurso: false, terminada: !!estado.completa });
-  } finally { recogiendo.delete(id); }
+
+  } finally { recogiendo.delete(id); await trasRecoger(id); }
 }
+
+const apuntarTrasRecoger = (id, pedido, antes = seguirTrasRecoger.get(id)) => pedido ? seguirTrasRecoger.set(id, { ...pedido,
+  forzar: pedido.forzar || !!antes?.forzar, ficha: pedido.ficha || antes?.ficha || null }) : seguirTrasRecoger.has(id) || seguirTrasRecoger.set(id, null);
+const trasRecoger = (id, p = seguirTrasRecoger.get(id)) => seguirTrasRecoger.delete(id) && (p ? descargarViaje(id, p.total, p.forzar, p.ficha) : seguirViaje(id));
+const avisarEnFondo = async id => { const g = await leerViaje('obras', id).catch(() => null); return avisarViaje(id, g && { ...g, enCurso: true, enFondo: true }); };
+
+const seguirViaje = id => leerViaje('obras', id).catch(() => null).then(e => pendienteDeViaje(e, true) ? descargarViaje(id, e.total) : undefined);
 
 for (const tipo of ['backgroundfetchsuccess', 'backgroundfetchfail', 'backgroundfetchabort'])
   self.addEventListener(tipo, e => e.waitUntil(recogerFondo(e.registration)));
 self.addEventListener('backgroundfetchclick', e => e.waitUntil(self.clients.openWindow?.(`${BASE}/app/`)));
 
-async function descargarViaje(id, total, forzar = false, ficha = null) {
+async function descargarViaje(id, total, forzar = false, ficha = null, dePagina = false) {
+
+  if (recogiendo.has(id)) { apuntarTrasRecoger(id, dePagina && { total, forzar, ficha }); return avisarEnFondo(id); }
   if (viajeEnCurso) {
 
     if (viajeEnCurso !== id) await prepararViaje(id, total, forzar, ficha).catch(() => {});
@@ -345,15 +357,14 @@ async function descargarViaje(id, total, forzar = false, ficha = null) {
   }
   viajeEnCurso = id;
 
-  if (await fondoDe(id)) {
+  if (await bajandoEnFondo(id)) {
     viajeEnCurso = null;
     if (viajeCancelado.delete(id)) {
       await (await fondoDe(id))?.abort().catch(() => {});
       await borrarViaje(id).catch(() => {});
       return avisarViaje(id, null);
     }
-    const guardado = await leerViaje('obras', id).catch(() => null);
-    return avisarViaje(id, guardado && { ...guardado, enCurso: true, enFondo: true });
+    return avisarEnFondo(id);
   }
   let salida;
 
@@ -411,11 +422,7 @@ async function mensajeViaje(d) {
     const estado = await leerViaje('obras', id);
     return avisarViaje(id, estado && { ...estado, enCurso: viajeEnCurso === id });
   }
-
-  if (d.tipo === 'viaje-seguir') {
-    const estado = await leerViaje('obras', id).catch(() => null);
-    return pendienteDeViaje(estado, true) ? descargarViaje(id, estado.total) : undefined;
-  }
+  if (d.tipo === 'viaje-seguir') return seguirViaje(id);
   if (d.tipo === 'viaje-borrar') {
     if (viajeEnCurso === id || recogiendo.has(id)) {
       viajeCancelado.add(id);
@@ -440,5 +447,5 @@ async function mensajeViaje(d) {
   }
   if (['viaje-guardar', 'viaje-refrescar'].includes(d.tipo)
     && Number.isInteger(d.total) && d.total > 0 && d.total <= 20000)
-    return descargarViaje(id, d.total, d.tipo === 'viaje-refrescar', ficha);
+    return descargarViaje(id, d.total, d.tipo === 'viaje-refrescar', ficha, true);
 }

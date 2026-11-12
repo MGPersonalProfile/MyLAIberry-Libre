@@ -18,7 +18,13 @@ async function addFanfic(fanfic) {
 
   const exists = datos.fanfics.find(f => mismaObra(f.url, fanfic.url));
   if (!exists) {
-    if (!fanfic.id) fanfic.id = Date.now().toString();
+
+    if (!fanfic.id) {
+      const usados = new Set(datos.fanfics.map(f => String(f.id)));
+      let id = Date.now();
+      while (usados.has(String(id))) id++;
+      fanfic.id = String(id);
+    }
     fanfic.downloadedChapters = 0;
     fanfic.scrollPositions = {};
     fanfic.addedAt = Date.now();

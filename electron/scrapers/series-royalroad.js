@@ -29,14 +29,15 @@ function extraerSeriesDeFicha(doc, urlObra) {
   }
 
   if (!series.length) {
-    const enlacesRel = doc.querySelectorAll('.related-fictions a[href*="/fiction/"], .portlet-body a[href*="/fiction/"]');
+    const propia = (String(urlObra || '').match(/\/fiction\/(\d+)/i) || [])[1];
+    const enlacesRel = doc.querySelectorAll('.related-fictions a[href*="/fiction/"]');
     for (const a of enlacesRel) {
       const url = sanitizarUrl(a.getAttribute('href'), BASE);
-      if (!url || vistos.has(url) || url === sanitizarUrl(urlObra, BASE)) continue;
-      vistos.add(url);
+      const idMatch = url && url.match(/\/fiction\/(\d+)/i);
+      if (!url || !idMatch || idMatch[1] === propia || url.toLowerCase().includes('/chapter/') || vistos.has(idMatch[1])) continue;
+      vistos.add(idMatch[1]);
       const nombre = (a.textContent || '').replace(/\s+/g, ' ').trim() || 'Obra Relacionada';
-      const idMatch = url.match(/\/fiction\/(\d+)/i);
-      const id = idMatch ? `rr_${idMatch[1]}` : url;
+      const id = `rr_${idMatch[1]}`;
       series.push({ id, fuente: 'RoyalRoad', nombre: `Saga: ${nombre}`, url, parte: null, ordenConocido: false });
     }
   }
