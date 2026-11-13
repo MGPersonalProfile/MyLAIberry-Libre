@@ -1,5 +1,16 @@
 [
   {
+    "version": "2026.11.13",
+    "fecha": "2026-11-13",
+    "resumen": "Seguridad: dependencias al día",
+    "detalle": [
+      {
+        "que": "Se han actualizado las dependencias de la aplicación, el lector y el control de pruebas para incorporar las correcciones disponibles dentro de las versiones compatibles.",
+        "porque": "Reduce los avisos de seguridad sin cambiar el funcionamiento previsto de la lectura ni del clasificador."
+      }
+    ]
+  },
+  {
     "version": "2026.11.12-2",
     "fecha": "2026-11-12",
     "resumen": "Las comprobaciones humanas de las webs (Cloudflare) sobreviven a un reinicio de la aplicación.",
