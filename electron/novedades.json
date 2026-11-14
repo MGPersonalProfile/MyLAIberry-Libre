@@ -1,5 +1,20 @@
 [
   {
+    "version": "2026.11.14-2",
+    "fecha": "2026-11-14",
+    "resumen": "El control de pruebas y las capturas, más prudentes",
+    "detalle": [
+      {
+        "que": "Al abrir la app desde el control de pruebas cerrando la copia anterior, sólo se cierra un MyLAIberry.exe que sea la app instalada o una compilación suya, no cualquier programa que se llame igual; y si no puede ver qué hay abierto, lo dice en vez de seguir como si nada.",
+        "porque": "Antes bastaba el nombre, y si PowerShell fallaba la copia vieja se quedaba abierta sin avisar."
+      },
+      {
+        "que": "La captura de una página que hace el asistente (y la del reto que se pasa desde el móvil) ya no pide otra encima mientras la anterior siga sin terminar, y sólo reintenta los fallos pasajeros que se han medido.",
+        "porque": "El plazo de 5 s no cancelaba la captura de verdad: podían acumularse en la misma ventana."
+      }
+    ]
+  },
+  {
     "version": "2026.11.14",
     "fecha": "2026-11-14",
     "resumen": "Seguridad: Electron 42, traducciones que ya no salen incompletas por error y menos trabajo de fondo inútil",
