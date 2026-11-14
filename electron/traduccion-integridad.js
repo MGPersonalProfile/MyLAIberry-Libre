@@ -13,12 +13,21 @@ const gravedad = (estado) => ({ completa: 0, sospechosa: 1, no_verificable: 1, i
 
 const motivo = (nivel, codigo, prueba, detalle, extra = {}) => ({ nivel, codigo, gravedad: prueba ? 'prueba' : 'senal', detalle, ...extra });
 
+const raiz = (f) => String(f).toLowerCase().replace(/['’]s?$/u, '');
+
+const FRASES = /(?<=[.!?…:;]["”»’)\]]*)\s+|\s*["“”«»]\s*/u;
+
 function protegidas(original, glosario) {
   const prot = new Set();
   for (const g of glosario || []) for (const f of fichas(`${g.termino} ${g.valor || ''}`)) prot.add(f.toLowerCase());
+
   for (const p of original) {
-    const t = fichas(p);
-    t.forEach((f, i) => { if (i > 0 && /^\p{Lu}/u.test(f) && f.length >= 3 && !/^\p{Lu}+$/u.test(f)) prot.add(f.toLowerCase()); });
+    for (const frase of String(p).split(FRASES)) {
+      fichas(frase).forEach((f, i) => {
+
+        if (i > 0 && /^\p{Lu}/u.test(f) && f.length >= 3 && !/^\p{Lu}+$/u.test(f) && !/['’]/u.test(raiz(f))) { prot.add(f.toLowerCase()); prot.add(raiz(f)); }
+      });
+    }
   }
   return prot;
 }
@@ -62,11 +71,11 @@ function sinTraducirTramos(a, b, prot, evidencia) {
 }
 
 function anclasDe(parrafo, prot) {
-  return [...new Set(fichas(parrafo).filter(f => /^\d+$/.test(f) || (prot.has(f.toLowerCase()) && f.length >= 3)).map(f => f.toLowerCase()))];
+  return [...new Set(fichas(parrafo).filter(f => /^\d+$/.test(f) || (prot.has(raiz(f)) && f.length >= 3)).map(raiz))];
 }
 
 function tramosPerdidos(a, traducido, prot) {
-  const fichasT = new Set(fichas(traducido).map(x => x.toLowerCase()));
+  const fichasT = new Set(fichas(traducido).map(raiz));
   const tramos = Math.min(10, a.length);
   const porTramo = Array.from({ length: tramos }, () => new Map());
   a.forEach((p, i) => { const t = Math.min(tramos - 1, Math.floor(i * tramos / a.length)); for (const x of anclasDe(p, prot)) porTramo[t].set(x, (porTramo[t].get(x) || 0) + 1); });

@@ -51,7 +51,8 @@ function getDataLocation() {
 }
 
 async function setDataLocation(nuevaRuta) {
-  const origen = getDataRoot();
+
+  const origen = raizActual();
   const destino = path.resolve(nuevaRuta);
 
   if (path.resolve(origen) === destino) {

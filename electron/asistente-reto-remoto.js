@@ -1,4 +1,5 @@
 const crypto = require('node:crypto');
+const { capturarRecuperable } = require('./captura-recuperable.js');
 
 const LIMITES = Object.freeze({
   ttlSesionMs: 5 * 60 * 1000,
@@ -120,7 +121,7 @@ function crearRemoto({ gestor, ahora = Date.now, politicaNavegacion = mismoSitio
   const cadencia = s => (ahora() < s.rafagaHasta ? L.minFotogramaRafagaMs : L.minFotogramaMs);
 
   async function capturar(retoId, s) {
-    const imagen = await s.win.webContents.capturePage();
+    const imagen = await capturarRecuperable(s.win.webContents);
     if (sesiones.get(retoId) !== s) throw falla('sin-sesion');
     const tamano = imagen.getSize();
     const reducida = tamano.width > L.anchoMax ? imagen.resize({ width: L.anchoMax }) : imagen;

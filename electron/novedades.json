@@ -1,5 +1,44 @@
 [
   {
+    "version": "2026.11.14",
+    "fecha": "2026-11-14",
+    "resumen": "Seguridad: Electron 42, traducciones que ya no salen incompletas por error y menos trabajo de fondo inútil",
+    "detalle": [
+      {
+        "que": "La aplicación pasa a Electron 42 (Chromium 148), la primera rama con el arreglo de un aviso de seguridad alto que la 41 ya no va a recibir.",
+        "porque": "Era el último aviso alto de la aplicación; ahora no queda ninguno."
+      },
+      {
+        "que": "El control de pruebas (el MCP con el que los agentes conducen la app, también en el emulador de Android) usa Puppeteer 25 y Zod 4, y ya no lleva un Puppeteer antiguo aparte para el móvil.",
+        "porque": "Quita los nueve avisos altos que tenía; la app del móvil se sigue probando en el Chrome del emulador."
+      },
+      {
+        "que": "Abrir la app desde el control de pruebas cerrando la copia anterior ya no cierra otras aplicaciones de Electron del PC.",
+        "porque": "Antes se llevaba por delante cualquier otra aplicación de Electron que hubiera abierta en el PC."
+      },
+      {
+        "que": "La captura de una página que hace el asistente (y la del reto de Cloudflare que se pasa desde el móvil) se reintenta sola si la primera falla, como pasaba a veces en el servidor.",
+        "porque": "Una de cada cien primeras capturas de una ventana nueva salía vacía o con error; ahora la salva el segundo intento."
+      },
+      {
+        "que": "Los capítulos en inglés traducidos enteros ya no salen «incompletos» por error: el control de la traducción ya no toma por nombre propio cualquier mayúscula a mitad de frase, ni espera ver en castellano los posesivos («Lily's») o las contracciones («I'm»).",
+        "porque": "Diez capítulos traducidos enteros se marcaban incompletos hora tras hora y no se podían guardar ni desde el lector."
+      },
+      {
+        "que": "Si el traductor devuelve un capítulo incompleto, la traducción de fondo no lo vuelve a pedir en 24 horas (un fallo de red sí se reintenta, y al abrir el capítulo el lector lo sigue intentando).",
+        "porque": "Se pedían otra vez cada hora: unas 240 peticiones al día tiradas contra el traductor gratuito."
+      },
+      {
+        "que": "Las obras sin fandom se releen como mucho una vez por semana (diez distintas por pasada), y el aviso dice cuántas relee de verdad y calla si no toca ninguna.",
+        "porque": "Desde que el trabajo de fondo corre cada hora, siempre se releían las mismas diez: unas 240 lecturas de índice al día, con retos de Cloudflare en RoyalRoad."
+      },
+      {
+        "que": "Mudar la biblioteca a otra carpeta copia la que está abierta, no la que diga el puntero en ese momento.",
+        "porque": "Con el disco del puntero desconectado al arrancar y vuelto a conectar, se copiaba la del disco y lo último que habías leído se quedaba atrás."
+      }
+    ]
+  },
+  {
     "version": "2026.11.13",
     "fecha": "2026-11-13",
     "resumen": "Seguridad: dependencias al día",

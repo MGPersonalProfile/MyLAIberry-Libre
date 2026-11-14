@@ -20,6 +20,9 @@ const PAUSA_POR_LIMITE = 10 * 60 * 1000;
 const mismoIdioma = new Map();
 const CAPITULOS_PARA_CREERLO = 2;
 
+const incompletas = new Map();
+const ESPERA_TRAS_INCOMPLETA = 24 * 60 * 60 * 1000;
+
 const enEspera = new Set();
 
 const yaEstaEnTuIdioma = (id) => (mismoIdioma.get(id) || 0) >= CAPITULOS_PARA_CREERLO;
@@ -50,6 +53,7 @@ async function encolar(fanficId, indices, idioma) {
   for (const i of indices) {
     if (i < 0) continue;
     if (tieneTraduccion(dir, i, idioma)) continue;
+    if ((incompletas.get(`${id}|${i}|${idioma}`) || 0) > Date.now()) continue;
 
     if (!fs.existsSync(path.join(dir, `chapter_${i}.html`))) {
       enEspera.add(`${id}|${i}|${idioma}`);
@@ -103,7 +107,8 @@ async function procesar() {
       cola.unshift(tarea);
       console.warn('[Traducción] servicio limitando; pausa de 10 minutos.');
     } else {
-      console.warn(`[Traducción] capítulo ${tarea.chapterIndex}: ${err.message}`);
+      if (err.integridad) incompletas.set(`${tarea.fanficId}|${tarea.chapterIndex}|${tarea.idioma}`, Date.now() + ESPERA_TRAS_INCOMPLETA);
+      console.warn(`[Traducción] capítulo ${tarea.chapterIndex}: ${err.message}${err.integridad ? ' (de fondo no se vuelve a pedir hasta dentro de 24 h)' : ''}`);
     }
   }
 

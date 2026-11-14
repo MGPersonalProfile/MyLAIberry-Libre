@@ -16,19 +16,24 @@ async function buscarFondosDeFandom({ fandom }) {
   console.log(`[Fondos] "${fandom}": ${guardadas} imagen(es) — ${recorrido || 'sin candidatas'}`);
 }
 
-async function completarFandomsQueFaltan() {
+const intentadas = new Map();
+const REINTENTO_FANDOM = 7 * 24 * 3600 * 1000;
+
+async function completarFandomsQueFaltan(ahora = Date.now()) {
   const sinFandom = (await getFanfics()).filter(f =>
     f.url &&
     f.origen !== 'descartada' &&
     !(f.tags || []).some(t => t.category === ETQ.FANDOM)
   );
 
+  const toca = sinFandom.filter(o => !(ahora - (intentadas.get(String(o.id)) || 0) < REINTENTO_FANDOM)).slice(0, 10);
+  for (const o of toca) intentadas.set(String(o.id), ahora);
   await cola.encolarVarias(
     'comprobar-capitulos',
-    sinFandom.slice(0, 10).map(o => ({ fanficId: String(o.id) }))
+    toca.map(o => ({ fanficId: String(o.id) }))
   );
-  if (sinFandom.length > 0) {
-    console.log(`[Fondos] ${sinFandom.length} obra(s) sin fandom; releyendo su índice para averiguarlo.`);
+  if (toca.length > 0) {
+    console.log(`[Fondos] ${sinFandom.length} obra(s) sin fandom; releyendo el índice de ${toca.length} para averiguarlo.`);
   }
 }
 
