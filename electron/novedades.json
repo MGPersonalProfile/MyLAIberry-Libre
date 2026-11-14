@@ -1,5 +1,20 @@
 [
   {
+    "version": "2026.11.14-3",
+    "fecha": "2026-11-14",
+    "resumen": "El control de pruebas y las capturas, sin quedarse atascados",
+    "detalle": [
+      {
+        "que": "Si una captura de página se queda colgada para siempre, al minuto se da por perdida y la ventana vuelve a poder hacer capturas.",
+        "porque": "Antes esa ventana se quedaba sin capturas hasta cerrarla."
+      },
+      {
+        "que": "Al abrir la app desde el control de pruebas cerrando la copia anterior, se comprueba que de verdad se cerró; si sigue abierta, lo dice. Y se reconoce la app instalada en su carpeta de siempre aunque le falte algún fichero.",
+        "porque": "Un cierre que fallaba se daba por hecho y la copia vieja seguía abierta."
+      }
+    ]
+  },
+  {
     "version": "2026.11.14-2",
     "fecha": "2026-11-14",
     "resumen": "El control de pruebas y las capturas, más prudentes",
