@@ -123,7 +123,7 @@ function trasElFallo(tarea, err, lista, obras) {
 
   tarea.ultimoError = String(err?.message || err).slice(0, 300);
 
-  if (err instanceof ErrorDeRitmo || err?.limitado) {
+  if (err instanceof ErrorDeRitmo || err?.limitado || err?.reto) {
 
     const ahora = Date.now();
     const sitio = err.sitio || sitioDeTarea(tarea, obras);

@@ -20,46 +20,12 @@ function permitido(direccion, sitios = SITIOS) {
   return u;
 }
 
-function reglasDeRobots(texto) {
-  const grupos = [];
-  let actual = { agentes: [], reglas: [], pausa: 0 };
-  for (const linea of texto.split(/\r?\n/)) {
-    const m = linea.replace(/#.*/, '').match(/^\s*([\w-]+)\s*:\s*(.*?)\s*$/);
-    if (!m) continue;
-    const clave = m[1].toLowerCase(), valor = m[2];
-    if (clave === 'user-agent') {
-      if (actual.reglas.length || actual.pausa) { grupos.push(actual); actual = { agentes: [], reglas: [], pausa: 0 }; }
-      actual.agentes.push(valor.toLowerCase());
-    } else if (['allow', 'disallow'].includes(clave) && actual.agentes.length) {
-      actual.reglas.push({ tipo: clave, patron: valor });
-    } else if (clave === 'crawl-delay' && actual.agentes.length) {
-      actual.pausa = Math.max(0, Number(valor) || 0) * 1000;
-    }
-  }
-  grupos.push(actual);
-  return grupos;
-}
-
-function gruposAplicables(texto) {
-  const grupos = reglasDeRobots(texto);
-  const propios = grupos.filter(g => g.agentes.includes('mylaiberry'));
-  return propios.length ? propios : grupos.filter(g => g.agentes.includes('*'));
-}
-
-function robotsPermite(texto, ruta) {
-  const reglas = gruposAplicables(texto).flatMap(g => g.reglas);
-  const escapado = s => s.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
-  const coinciden = reglas.filter(r => r.patron && new RegExp('^' + escapado(r.patron).replace(/\$$/, '$')).test(ruta));
-  coinciden.sort((a, b) => b.patron.length - a.patron.length || (a.tipo === 'allow' ? -1 : 1));
-  return !coinciden.length || coinciden[0].tipo === 'allow';
-}
-
 function crearNavegador(opciones = {}) {
   const { signal, progreso = () => {}, sitios = SITIOS, maxPaginas = MAX_PAGINAS,
   fetchRobots = fetch, pausa = PAUSA, origen, entorno = process.env, plataforma = process.platform, plazos = {},
   powerMonitor = monitorElectron, pendientes = null, cargar = cargarPagina, crearVentana = opciones => require('./user-agent.js').crearVentana(opciones) } = opciones;
 
-  const robots = new Map();
+  const sondeados = new Set();
   let win = null, paginas = 0, anterior = 0, bloqueada = false, monitorActivo = false, presupuestoHasta = Infinity, directorAusente = false;
   const alBloquear = () => { bloqueada = true; };
   const alDesbloquear = () => { bloqueada = false; };
@@ -76,24 +42,20 @@ function crearNavegador(opciones = {}) {
   const comprobarTiempo = hasta => { if (Date.now() >= fechaLimite(hasta)) throw Object.assign(
     new Error('Límite de tiempo de la investigación agotado.'), { tiempoAgotado: true, noConsultado: true }); };
 
-  async function comprobarRobots(u, hasta) {
-    if (!robots.has(u.origin)) {
-      const respuesta = await fetchRobots(`${u.origin}/robots.txt`, { signal: AbortSignal.timeout(Math.max(1, Math.min(8000, fechaLimite(hasta) - Date.now()))), redirect: 'manual',
-        headers: { 'user-agent': require('./user-agent.js').AGENTE_ROBOTS } });
+  async function sondearSitio(u, hasta) {
+    if (sondeados.has(u.origin)) return;
 
-      const texto = await respuesta.text().catch(() => '');
+    const respuesta = await fetchRobots(`${u.origin}/robots.txt`, { signal: AbortSignal.timeout(Math.max(1, Math.min(8000, fechaLimite(hasta) - Date.now()))), redirect: 'manual',
+      headers: { 'user-agent': require('./user-agent.js').AGENTE_ROBOTS } }).catch(() => null);
+    if (!respuesta) return;
 
-      const paginaHtml = /<(?:!doctype|html|body)\b/i.test(texto);
-      const sinPagina = respuesta.status === 404 || (respuesta.ok && !paginaHtml);
+    const texto = await respuesta.text().catch(() => '');
 
-      if (respuesta.status === 418 || esCaidoOLimitado(0, sinPagina ? '' : texto)) throw errorCaido(u.origin, respuesta.status);
-      if (!respuesta.ok && respuesta.status !== 404) throw Object.assign(new Error(`No se pudo consultar robots.txt de ${u.hostname} (${respuesta.status}).`), { codigoHttp: respuesta.status, noConsultado: true, robotsNoConsultado: true });
-      robots.set(u.origin, respuesta.status === 404 ? '' : texto);
-    }
-    if (!robotsPermite(robots.get(u.origin), u.pathname + u.search)) throw Object.assign(new Error(`robots.txt no permite visitar ${u.pathname}.`), { robotsProhibe: true });
-    const espera = Math.max(0, ...gruposAplicables(robots.get(u.origin)).map(g => g.pausa));
-    if (espera > 30000) throw new Error('El ritmo exigido por robots.txt supera el límite de esta investigación.');
-    return espera;
+    const paginaHtml = /<(?:!doctype|html|body)\b/i.test(texto);
+    const sinPagina = respuesta.status === 404 || (respuesta.ok && !paginaHtml);
+
+    if (respuesta.status === 418 || esCaidoOLimitado(0, sinPagina ? '' : texto)) throw errorCaido(u.origin, respuesta.status);
+    sondeados.add(u.origin);
   }
 
   const planActual = () => planDeReto({ origen, env: entorno, plataforma,
@@ -144,10 +106,10 @@ function crearNavegador(opciones = {}) {
     const u = permitido(direccion, sitios);
     exigirDisponible(u.href);
     if (paginas >= maxPaginas) throw new Error(`Investigación limitada a ${maxPaginas} páginas.`);
-    const robotsPausa = await comprobarRobots(u, hasta);
+    await sondearSitio(u, hasta);
     comprobarTiempo(hasta);
     if (signal?.aborted) throw new Error('Investigación cancelada.');
-    const demora = Math.max(0, Math.max(pausa, robotsPausa) - (Date.now() - anterior));
+    const demora = Math.max(0, pausa - (Date.now() - anterior));
     if (demora) await dormir(demora);
     comprobarTiempo(hasta);
     if (signal?.aborted) throw new Error('Investigación cancelada.');
@@ -188,4 +150,4 @@ function crearNavegador(opciones = {}) {
     get paginas() { return paginas; }, maxPaginas };
 }
 
-module.exports = { crearNavegador, permitido, robotsPermite, MAX_PAGINAS };
+module.exports = { crearNavegador, permitido, MAX_PAGINAS };

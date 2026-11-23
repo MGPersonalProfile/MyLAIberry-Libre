@@ -1,8 +1,7 @@
 const { JSDOM } = require('jsdom');
 const { conRitmo } = require('./navegar.js');
-const { descargarImagen } = require('./webtoon-imagenes.js');
 const { cabeceras } = require('../user-agent.js');
-const { guardarCapituloComic, generarHtmlCapituloComic } = require('../db.js');
+const { descargadorComic } = require('./comic.js');
 
 function idDeObra(url) {
   const m = String(url || '').match(/title_no=(\d+)/i);
@@ -88,9 +87,22 @@ function extraerVinhetas(html) {
   return vinhetas;
 }
 
+function limpiarAutor(texto) {
+  return String(texto || '').replace(/\s+/g, ' ').replace(/\s*(?:\.\.\.|…)?\s*author info\s*$/i, '')
+    .replace(/\s+,/g, ',').trim();
+}
+
+function autoresDe(doc) {
+  const enlaces = [...doc.querySelectorAll('.author_area a.author')].map(a => limpiarAutor(a.textContent)).filter(Boolean);
+  if (enlaces.length) return enlaces.join(', ');
+  const area = doc.querySelector('.author, .author_area')?.cloneNode(true);
+  area?.querySelectorAll('button, .btn_info, .ico_info, [class*="_btnAuthorInfo"]').forEach(b => b.remove());
+  return limpiarAutor(area?.textContent);
+}
+
 function extraerMetadatosSerie(doc) {
   const title = doc.querySelector('.subj, h1')?.textContent?.trim() || 'Webtoon';
-  const author = doc.querySelector('.author, .author_area')?.textContent?.trim() || '';
+  const author = autoresDe(doc);
   const cover = doc.querySelector('.thmb img, meta[property="og:image"]')?.src ||
                 doc.querySelector('meta[property="og:image"]')?.getAttribute('content') || '';
   const description = doc.querySelector('.summary, meta[name="description"]')?.textContent?.trim() ||
@@ -119,25 +131,20 @@ async function scrape(url, onProgress, opciones = {}) {
       const pRes = await conRitmo(pagUrl, () => fetch(pagUrl, { headers: cabeceras() }));
       const pHtml = await pRes.text();
       episodios = episodios.concat(extraerEpisodios(pHtml));
-    } catch {
-
+    } catch (err) {
+      if (err.limitado || err.reto) throw err;
     }
   }
 
   const vistos = new Set();
-  const unicos = [];
-  for (const ep of episodios) {
-    if (!vistos.has(ep.episodeNo)) {
-      vistos.add(ep.episodeNo);
-      unicos.push(ep);
-    }
-  }
+  const unicos = episodios.filter(ep => !vistos.has(ep.episodeNo) && vistos.add(ep.episodeNo));
 
   let capitulosOrdenados = ordenarEpisodios(unicos).map((ep, idx) => ({
     title: ep.title,
     url: ep.url,
     index: idx,
-    episodeNo: ep.episodeNo
+    episodeNo: ep.episodeNo,
+    idioma: new URL(canon).pathname.split('/')[1]
   }));
 
   let episodiosElegidos;
@@ -163,55 +170,23 @@ async function scrape(url, onProgress, opciones = {}) {
   };
 }
 
-async function downloadChapters(chapters, fanficId, onProgress, saveContentFn, desde = 0) {
-  if (!Array.isArray(chapters) || chapters.length === 0) return;
-
-  for (let i = 0; i < chapters.length; i++) {
-    const ch = chapters[i];
-    const indiceReal = desde + i;
-    onProgress && onProgress({
-      step: 'downloading_chapter',
-      message: `Descargando ${ch.title} (${i + 1}/${chapters.length})...`,
-      downloaded: indiceReal,
-      total: chapters.length
-    });
-
-    const res = await conRitmo(ch.url, () =>
-      fetch(ch.url, { headers: cabeceras({ 'Referer': 'https://www.webtoons.com/' }) })
-    );
-    const html = await res.text();
-    const vinhetas = extraerVinhetas(html);
-
-    const imagenes = [];
-    for (let j = 0; j < vinhetas.length; j++) {
-      const v = vinhetas[j];
-      const buffer = await descargarImagen(v.url, { referer: ch.url });
-      imagenes.push({
-        archivo: `${String(j + 1).padStart(4, '0')}.jpg`,
-        buffer,
-        ancho: v.ancho,
-        alto: v.alto
-      });
-    }
-
-    await guardarCapituloComic(fanficId, indiceReal, {
-      titleNo: idDeObra(ch.url),
-      episodio: ch.episodeNo || String(indiceReal + 1),
-      url: ch.url,
-      imagenes,
-      totalEsperadas: vinhetas.length
-    });
-
-    const htmlCap = generarHtmlCapituloComic(fanficId, indiceReal, imagenes);
-    await saveContentFn(fanficId, i, htmlCap);
-  }
+async function obtenerVinhetas(ch) {
+  const { pedirComic } = require('./comic-red.js');
+  const html = await pedirComic(ch.url, r => r.text(), {
+    headers: cabeceras({ Referer: 'https://www.webtoons.com/' }), redirect: 'follow'
+  });
+  return extraerVinhetas(html);
 }
+
+const downloadChapters = descargadorComic({ fuente: 'webtoon', obtenerVinhetas, idDeObra, referer: ch => ch.url });
 
 async function obtenerEpisodios(url, onProgress) {
   return await scrape(url, onProgress);
 }
 
 module.exports = {
+  limpiarAutor,
+  extraerMetadatosSerie,
   esUrlDeWebtoon,
   idDeObra,
   urlCanonica,

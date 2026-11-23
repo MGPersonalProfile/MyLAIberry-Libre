@@ -1,3 +1,5 @@
+export { textoErrorTraduccion } from '../../equipo';
+
 export default function avisoNoDescargado(t) {
   return '<div style="text-align:center; padding:4rem 2rem; opacity:.45;">'
     + '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" '

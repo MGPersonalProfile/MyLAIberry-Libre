@@ -7,6 +7,7 @@ import { DESCUBRIR } from './textos/descubrir';
 import { SUBRAYADOS } from './textos/subrayados';
 import { EQUIPO } from './textos/equipo';
 import { TRADUCCION } from './textos/traduccion';
+import { esUno } from './plural';
 
 export const LANGS = ['es', 'en'];
 export const DEFAULT_LANG = 'es';
@@ -15,7 +16,7 @@ export const UI = { ...BIBLIOTECA, ...LECTOR, ...IMPORTAR, ...ASISTENTE, ...AJUS
 
 function interpolate(text, params) {
   return text.replace(/\{(\w+):([^|}]*)\|([^}]*)\}/g, (match, name, uno, varios) =>
-    Object.prototype.hasOwnProperty.call(params, name) ? (Number(params[name]) === 1 ? uno : varios) : match
+    Object.prototype.hasOwnProperty.call(params, name) ? (esUno(params[name]) ? uno : varios) : match
   ).replace(/\{(\w+)\}/g, (match, name) =>
     Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : match
   );

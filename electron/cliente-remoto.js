@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, ipcMain } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, dialog } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
@@ -44,6 +44,8 @@ function abrirVentana(base, obra = null) {
   win.webContents.on('did-fail-load', (_e, code, desc, url) => {
     if (code !== -3 && url.startsWith(origen)) paginaDeError(win, base, desc);
   });
+
+  require('./descargas-cliente.js').atenderDescargas(win.webContents.session, win, { dialog, carpeta: app.getPath('downloads') });
   win.loadURL(conObra(base, obra));
   return win;
 }

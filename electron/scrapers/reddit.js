@@ -124,16 +124,20 @@ async function recomendaciones({ consulta, subreddit }) {
       porRss = true;
     }
     const aLeer = elegirHilos(hilos);
-    let limitado = false;
+
+    let corte = '';
     for (const hilo of aLeer) {
-      if (limitado) { hilo.errorComentarios = MENSAJE_429.replace('vuelve', 'no se insistió; vuelve'); continue; }
+      if (corte) { hilo.errorComentarios = corte; continue; }
       try {
         hilo.comentarios = porRss
           ? comentariosDeRss(await pedirRss(`${hilo.url.replace(/\/?$/, '/')}.rss?sort=top&depth=1&limit=25`))
           : comentariosDeHilo(await pedirJson(win, `https://www.reddit.com/comments/${hilo.id}.json?sort=top&limit=25&depth=1`));
       } catch (e) {
         hilo.errorComentarios = e.message;
-        if (e.limitado && ENFRIAR) limitado = true;
+        if ((e.limitado && ENFRIAR) || e.reto) {
+          corte = e.reto ? `Reddit pidió una comprobación de seguridad; no se insistió con este hilo.`
+            : MENSAJE_429.replace('vuelve', 'no se insistió; vuelve');
+        }
       }
     }
 

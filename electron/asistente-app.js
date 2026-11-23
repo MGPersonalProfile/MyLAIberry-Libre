@@ -374,7 +374,7 @@ const CATALOGO = [
     parametros: { obras: { type: 'array', maxItems: 500, items: obra }, todas: { type: 'boolean' } }, requeridos: [],
     args: async (a, c) => [await idsDeVarias(a, c)],
     resumen: a => (a.todas ? 'Rehacer las traducciones de TODAS las obras de la biblioteca (gasta cuota de traducción)'
-      : `Rehacer las traducciones de ${(a.obras || []).length} obras: ${(a.obras || []).slice(0, 4).join(', ')}${(a.obras || []).length > 4 ? '…' : ''} (gasta cuota de traducción)`),
+      : `Rehacer las traducciones de ${(a.obras || []).length} ${(a.obras || []).length === 1 ? "obra" : "obras"}: ${(a.obras || []).slice(0, 4).join(', ')}${(a.obras || []).length > 4 ? '…' : ''} (gasta cuota de traducción)`),
     descripcion: 'Borra y rehace las traducciones de varias obras (lista de títulos) o de todas (todas: true), con UNA sola tarjeta. Sólo se rehace de inmediato por donde va cada una; el resto, al leerlo.' },
   { nombre: 'encender_acceso_movil', nivel: 'confirmar', canal: 'lan-encender', args: async () => [],
     resumen: () => 'Encender «Leer desde el móvil»: la biblioteca queda accesible desde tu red',

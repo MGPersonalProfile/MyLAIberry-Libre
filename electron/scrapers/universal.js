@@ -287,6 +287,8 @@ async function downloadChapters(chapters, fanficId, onProgress, saveContentFn) {
       }
       await delay(Math.floor(Math.random() * 1500) + 1000);
     } catch (err) {
+
+      if (err.limitado || err.reto) throw err;
       console.error(`[Universal] Error cap ${i}:`, err.message);
       try { win.webContents.stop(); } catch {  }
     }

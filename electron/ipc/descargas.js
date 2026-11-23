@@ -8,7 +8,8 @@ const {
   saveCoverLocally, updateLocalCoverPath, getSettings, elegirCapitulos
 } = require('../db.js');
 const cola = require('../cola.js');
-const { scrapeStory, urlDeAutor, opcionesDeRelectura } = require('../scrapers/index.js');
+const { scrapeStory, urlDeAutor, opcionesDeRelectura, fuenteDeComic } = require('../scrapers/index.js');
+const { esIdiomaComic } = require('../scrapers/mangadex-url.js');
 const traduccion = require('../traduccion-anticipada.js');
 const { avisar, ventana } = require('../ventana.js');
 const { dirDeFanfic } = require('../rutas.js');
@@ -92,7 +93,21 @@ function resumenDeRefresco(nuevos, reparados, total) {
 const TOPE_EPISODIOS = 5000;
 function opcionesDeImportacion(opciones) {
   const episodios = Array.isArray(opciones?.episodios) ? opciones.episodios.filter(e => typeof e === 'string').slice(0, TOPE_EPISODIOS) : [];
-  return { respaldoFicHub: true, ...(episodios.length ? { episodios } : {}) };
+  return {
+    respaldoFicHub: true, ...(episodios.length ? { episodios } : {}),
+    ...(esIdiomaComic(opciones?.idiomaComic) ? { idiomaComic: opciones.idiomaComic } : {}),
+    ...(['es', 'en'].includes(opciones?.idiomaInterfaz) ? { idiomaInterfaz: opciones.idiomaInterfaz } : {})
+  };
+}
+
+async function episodiosDeComic(url, opciones) {
+  const fuente = fuenteDeComic(url);
+  if (!fuente) return { status: 'error', clave: 'import.comic_invalid_url' };
+  try {
+    return { status: 'success', data: await fuente.scraper.obtenerEpisodios(url.trim(), undefined, opcionesDeImportacion(opciones)) };
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
 }
 
 function obraParaGuardar(storyData) {
@@ -278,27 +293,12 @@ function registrar() {
       return { status: 'error', message: error.message };
     }
   });
-  ipcMain.handle('obtener-episodios-webtoon', async (event, url) => {
-    if (!url || typeof url !== 'string' || !require('../scrapers/webtoon.js').esUrlDeWebtoon(url)) {
+  ipcMain.handle('obtener-episodios-comic', (_event, url, opciones) => episodiosDeComic(url, opciones));
+  ipcMain.handle('obtener-episodios-webtoon', (_event, url) => {
+    if (typeof url !== 'string' || !require('../scrapers/webtoon.js').esUrlDeWebtoon(url)) {
       return { status: 'error', message: 'Dirección de Webtoon no válida.' };
     }
-    try {
-      const { obtenerEpisodios } = require('../scrapers/webtoon.js');
-      const datos = await obtenerEpisodios(url.trim());
-      return {
-        status: 'success',
-        data: {
-          title: datos.title,
-          author: datos.author,
-          cover: datos.cover,
-          description: datos.description,
-          url: datos.url,
-          chapters: datos.chapters
-        }
-      };
-    } catch (e) {
-      return { status: 'error', message: e.message };
-    }
+    return episodiosDeComic(url);
   });
   ipcMain.handle('importar-libro', async (event, opciones = {}) => {
     const sendProgress = (data) => avisar('scrape-progress', data);
@@ -433,6 +433,7 @@ function registrar() {
       if (require('../libro-enlace').esEnlaceLibro(url)) return await require('../libro-enlace').importarEnlace(url, sendProgress);
 
       const storyData = await scrapeStory(url, sendProgress, opcionesDeImportacion(opciones));
+      if (storyData.esComic && !storyData.chapters?.length) return { status: 'error', clave: 'import.comic_empty' };
 
       sendProgress({ step: 'saving_metadata', message: 'Guardando metadatos...' });
       const saved = await addFanfic(obraParaGuardar(storyData));

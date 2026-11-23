@@ -4,13 +4,15 @@ const DE_SITIO = new Set(['descargar-capitulos', 'comprobar-capitulos', 'comprob
 const FUENTES = { AO3: 'archiveofourown.org', FFN: 'fanfiction.net', 'FanFiction.net': 'fanfiction.net',
   RoyalRoad: 'royalroad.com', Wattpad: 'wattpad.com', Webnovel: 'webnovel.com', WeTriedTLs: 'wetriedtls.com' };
 
+const INTERMEDIARIOS = { FicHub: 'fichub.net' };
+
 function sitioDeTarea(tarea, obras = {}) {
   if (!DE_SITIO.has(tarea.tipo)) return '';
   const carga = tarea.carga || {};
   if (carga.url) return sitioDe(carga.url);
   const obra = obras[String(carga.fanficId)];
   if (!obra || typeof obra !== 'object') return '';
-  return sitioDe(obra.url) || FUENTES[obra.source] || '';
+  return INTERMEDIARIOS[obra.source] || sitioDe(obra.url) || FUENTES[obra.source] || '';
 }
 
 function pausasDe(lista, ahora = Date.now()) {

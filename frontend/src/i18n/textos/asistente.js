@@ -35,12 +35,12 @@ export const ASISTENTE = {
   'discover.unblock': { es: 'Desbloquear', en: 'Unblock' },
   'discover.min_words': { es: 'Ocultar lo corto', en: 'Hide short works' },
   'discover.min_words_none': { es: 'Cualquier longitud', en: 'Any length' },
-  'discover.min_words_n': { es: 'Ocultar las de menos de {n} palabras', en: 'Hide under {n} words' },
+  'discover.min_words_n': { es: 'Ocultar las de menos de {n} {n:palabra|palabras}', en: 'Hide under {n} {n:word|words}' },
   'discover.romance': { es: 'Romance como centro', en: 'Romance-centred' },
   'discover.romance_show': { es: 'Romance como centro: mostrar', en: 'Romance-centred: show' },
   'discover.romance_sink': { es: 'Romance como centro: al final', en: 'Romance-centred: at the bottom' },
   'discover.romance_hide': { es: 'Romance como centro: ocultar', en: 'Romance-centred: hide' },
-  'discover.hidden_by_filters': { es: 'Hay {n} descubiertas ocultas por tus filtros ({detalle}). Cámbialos aquí para verlas.', en: '{n} discoveries are hidden by your filters ({detalle}). Change them here to see them.' },
+  'discover.hidden_by_filters': { es: 'Hay {n} {n:descubierta oculta|descubiertas ocultas} por tus filtros ({detalle}). Cámbialos aquí para verlas.', en: '{n} {n:discovery is|discoveries are} hidden by your filters ({detalle}). Change them here to see them.' },
   'discover.hidden_by_filters_one': { es: 'Hay 1 descubierta oculta por tus filtros ({detalle}). Cámbialos aquí para verla.', en: '1 discovery is hidden by your filters ({detalle}). Change them here to see it.' },
   'discover.hidden_format': { es: '{n} por formato', en: '{n} by format' },
   'discover.hidden_authors': { es: '{n} por autor', en: '{n} by author' },
@@ -138,13 +138,13 @@ export const ASISTENTE = {
   'run.phase.buscando':   { es: 'buscando en las webs', en: 'searching the sites' },
   'run.phase.internet':   { es: 'buscando en internet', en: 'searching the web' },
   'run.phase.terminada':  { es: 'terminada', en: 'done' },
-  'run.found':   { es: '{n} candidatas nuevas', en: '{n} new candidates' },
+  'run.found':   { es: '{n} {n:candidata nueva|candidatas nuevas}', en: '{n} {n:new candidate|new candidates}' },
   'run.partial': { es: 'resultado parcial: lo encontrado hasta entonces se conserva', en: 'partial result: what was found so far is kept' },
   'run.skipped': { es: 'Sin consultar: {fuentes}', en: 'Not checked: {fuentes}' },
   'run.stale':   { es: 'No se puede preguntar al servidor ahora: lo que ves puede estar desactualizado. La investigación sigue allí.', en: 'The server cannot be reached right now: what you see may be out of date. The investigation keeps running there.' },
   'initiative.dismiss':    { es: 'Atendido', en: 'Dismiss' },
   'initiative.research':   { es: 'Investigaciones', en: 'Investigations' },
-  'initiative.findings':   { es: '{n} candidatas', en: '{n} candidates' },
+  'initiative.findings':   { es: '{n} {n:candidata|candidatas}', en: '{n} {n:candidate|candidates}' },
   'initiative.pause':      { es: 'Pausar', en: 'Pause' },
   'initiative.resume':     { es: 'Reanudar', en: 'Resume' },
   'initiative.close':      { es: 'Cerrar', en: 'Close' },
@@ -152,7 +152,7 @@ export const ASISTENTE = {
   'initiative.lost':       { es: 'historia perdida', en: 'lost story' },
 
   'initiative.operations':  { es: 'Preparando', en: 'Preparing' },
-  'initiative.downloading': { es: '{n} de {total} capítulos', en: '{n} of {total} chapters' },
+  'initiative.downloading': { es: '{n} de {total} {total:capítulo|capítulos}', en: '{n} of {total} {total:chapter|chapters}' },
   'initiative.also_translating': { es: 'y traduciendo', en: 'and translating' },
   'initiative.changes':     { es: 'Ideas para la app', en: 'Ideas for the app' },
   'initiative.mailbox_failure': { es: 'Fallo', en: 'Failure' },
@@ -205,7 +205,7 @@ export const ASISTENTE = {
   'initiative.shelf_gone':        { es: 'Obra que ya no está', en: 'Work no longer here' },
 
   'initiative.radar':      { es: 'Obras vigiladas', en: 'Watched works' },
-  'initiative.radar_chapters': { es: 'Avisar con {n} capítulos nuevos', en: 'Notify after {n} new chapters' },
+  'initiative.radar_chapters': { es: 'Avisar con {n} {n:capítulo nuevo|capítulos nuevos}', en: 'Notify after {n} new {n:chapter|chapters}' },
   'initiative.radar_complete': { es: 'Avisar cuando la fuente la dé por terminada', en: 'Notify when the source marks it complete' },
   'initiative.memory':     { es: 'Lo que cree saber de ti', en: 'What it thinks it knows about you' },
   'initiative.proposed':   { es: 'Solo es una suposición suya', en: 'Just its guess' },
@@ -223,8 +223,8 @@ export const ASISTENTE = {
   'initiative.rule_dead':  { es: 'guardada, pero el traductor no puede aplicarla', en: "saved, but the translator can't apply it" },
 
   'initiative.matches': {
-    es: 'Encaja con {n} pistas · {dudas} sin comprobar',
-    en: 'Matches {n} clues · {dudas} unverified'
+    es: 'Encaja con {n} {n:pista|pistas} · {dudas} sin comprobar',
+    en: 'Matches {n} {n:clue|clues} · {dudas} unverified'
   },
   'initiative.contradicts': {
     es: 'Descartada: contradice «{pista}»',

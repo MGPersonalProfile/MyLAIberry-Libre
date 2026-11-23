@@ -44,12 +44,13 @@ function iniciar(app = require('electron').app, session = require('electron').se
   else app.whenReady().then(() => configurarSesion(session.defaultSession));
 }
 
-function cabeceras(extra = {}) {
+function cabeceras(extra = {}, { clienteApi = false } = {}) {
   const fuera = {};
   for (const [k, v] of (extra instanceof Headers ? extra.entries() : Object.entries(extra))) {
     if (k.toLowerCase() !== 'user-agent') fuera[k] = v;
   }
-  return { ...fuera, 'User-Agent': agente() };
+  const identidad = clienteApi ? `MyLAIberry/${require('../package.json').version}` : agente();
+  return { ...fuera, 'User-Agent': identidad };
 }
 
 const conAgente = (opciones = {}) => ({ ...opciones, headers: cabeceras(opciones.headers) });

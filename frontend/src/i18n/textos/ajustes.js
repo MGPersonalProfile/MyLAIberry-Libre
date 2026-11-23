@@ -38,13 +38,13 @@ export const AJUSTES = {
   'update.installing':      { es: 'Actualizando… se cerrará y volverá a abrirse', en: 'Updating… it will close and reopen' },
 
   'settings.pace':               { es: 'Tu ritmo', en: 'Your pace' },
-  'settings.pace_value':         { es: '{ppm} palabras por minuto, medidas en {n} capítulos', en: '{ppm} words per minute, measured over {n} chapters' },
-  'settings.pace_pending':       { es: 'Todavía no: faltan {n} capítulos leídos para medirlo.', en: 'Not yet: {n} more chapters read to measure it.' },
+  'settings.pace_value':         { es: '{ppm} palabras por minuto, medidas en {n} {n:capítulo|capítulos}', en: '{ppm} words per minute, measured over {n} {n:chapter|chapters}' },
+  'settings.pace_pending':       { es: 'Todavía no: {n:falta|faltan} {n} {n:capítulo leído|capítulos leídos} para medirlo.', en: 'Not yet: {n} more {n:chapter|chapters} read to measure it.' },
   'settings.pace_reset':         { es: 'Olvidar mi ritmo', en: 'Forget my pace' },
   'settings.pace_reset_desc':    { es: 'Vuelve a medirlo desde cero: útil si ahora lees de otra manera.', en: 'Measure it again from scratch.' },
 
   'lectura.titulo':    { es: 'Mi lectura', en: 'My reading' },
-  'lectura.racha':     { es: 'Racha de {n} días · mejor: {mejor}', en: '{n}-day streak · best: {mejor}' },
+  'lectura.racha':     { es: 'Racha de {n} {n:día|días} · mejor: {mejor}', en: '{n}-day streak · best: {mejor}' },
   'lectura.hoy':       { es: 'hoy', en: 'today' },
   'lectura.siete':     { es: 'últimos 7 días', en: 'last 7 days' },
   'lectura.total':     { es: 'en total', en: 'total' },
@@ -79,6 +79,6 @@ export const AJUSTES = {
   'settings.redo_yes':        { es: 'Sí, rehacer', en: 'Yes, redo' },
   'settings.redo_cancel':     { es: 'Cancelar', en: 'Cancel' },
   'settings.redo_working':    { es: 'Rehaciendo…', en: 'Redoing…' },
-  'settings.redo_done':       { es: 'Hecho: {n} capítulos traducidos borrados en {obras} obra(s). Se volverán a traducir al leerlos.', en: 'Done: {n} translated chapters deleted in {obras} work(s). They will be translated again as you read.' },
+  'settings.redo_done':       { es: 'Hecho: {n} {n:capítulo traducido borrado|capítulos traducidos borrados} en {obras} {obras:obra|obras}. {n:Se volverá a traducir al leerlo|Se volverán a traducir al leerlos}.', en: 'Done: {n} translated {n:chapter|chapters} deleted in {obras} {obras:work|works}. {n:It|They} will be translated again as you read.' },
   'settings.redo_failed':     { es: 'No se pudieron rehacer las traducciones.', en: 'The translations could not be redone.' }
 };

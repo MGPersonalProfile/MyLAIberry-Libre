@@ -1,4 +1,8 @@
+const { rutaDeMangaDex, urlDeManga } = require('./scrapers/mangadex-url.js');
+
 function claveDeObra(url) {
+  const manga = rutaDeMangaDex(url);
+  if (manga?.tipo === 'title') return urlDeManga(manga.id, manga.idioma);
   const u = String(url || '');
   const m = u.match(/archiveofourown\.org\/works\/(\d+)/) || u.match(/royalroad\.com\/fiction\/(\d+)/) ||
     u.match(/fanfiction\.net\/s\/(\d+)/) || u.match(/gutenberg\.org\/ebooks\/(\d+)/) ||

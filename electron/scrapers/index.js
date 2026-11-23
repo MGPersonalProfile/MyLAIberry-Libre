@@ -7,8 +7,19 @@ const webnovel = require('./webnovel');
 const universal = require('./universal');
 const gutenberg = require('./gutenberg');
 const webtoon = require('./webtoon');
+const flame = require('./flame');
+const mangadex = require('./mangadex');
+
+const fuentesComic = [
+  { reconoce: webtoon.esUrlDeWebtoon, scraper: webtoon, name: 'Webtoon', tier: 1, esComic: true },
+  { reconoce: flame.esUrlDeFlame, scraper: flame, name: 'Flame Comics', tier: 1, esComic: true },
+  { reconoce: mangadex.esUrlDeMangaDex, scraper: mangadex, name: 'MangaDex', tier: 1, esComic: true }
+];
+const fuenteDeComic = url => fuentesComic.find(fuente => fuente.reconoce(url));
+const esUrlDeComic = url => !!fuenteDeComic(url);
 
 const SITE_MATCHERS = [
+  ...fuentesComic,
 
   { pattern: /royalroad\.com/i,          scraper: royalroad,   name: 'RoyalRoad',              tier: 1 },
   { pattern: /archiveofourown\.org/i,    scraper: ao3,         name: 'Archive of Our Own',     tier: 1 },
@@ -19,8 +30,6 @@ const SITE_MATCHERS = [
 
   { pattern: /gutenberg\.org/i,           scraper: gutenberg,   name: 'Project Gutenberg',      tier: 1 },
 
-  { pattern: /webtoons?\.com/i,          scraper: webtoon,     name: 'Webtoon',                tier: 1 },
-
   { pattern: /spacebattles\.com/i,       scraper: fichub,      name: 'SpaceBattles (FicHub)',   tier: 2 },
   { pattern: /sufficientvelocity\.com/i, scraper: fichub,      name: 'SufficientVelocity (FicHub)', tier: 2 },
   { pattern: /questionablequesting/i,    scraper: fichub,      name: 'QuestionableQuesting (FicHub)', tier: 2 },
@@ -30,8 +39,9 @@ const SITE_MATCHERS = [
 
 function detectScraper(url) {
   for (const matcher of SITE_MATCHERS) {
-    if (matcher.pattern.test(url)) {
-      return { scraper: matcher.scraper, name: matcher.name, tier: matcher.tier };
+    if (matcher.reconoce ? matcher.reconoce(url) : matcher.pattern.test(url)) {
+      const { scraper, name, tier, esComic } = matcher;
+      return { scraper, name, tier, ...(esComic ? { esComic } : {}) };
     }
   }
 
@@ -92,6 +102,8 @@ function urlDeAutor(url) {
 
 module.exports = {
   detectScraper,
+  esUrlDeComic,
+  fuenteDeComic,
   scrapeStory,
   opcionesDeRelectura,
   leerAutor,

@@ -212,6 +212,7 @@ contextBridge.exposeInMainWorld('api', {
 
   scrapeStory: (url, opciones) => ipcRenderer.invoke('scrape-story', url, opciones),
   obtenerEpisodiosWebtoon: (url) => ipcRenderer.invoke('obtener-episodios-webtoon', url),
+  obtenerEpisodiosComic: (url, opciones) => ipcRenderer.invoke('obtener-episodios-comic', url, opciones),
   elegirCapitulos: (fanficId, indices) => ipcRenderer.invoke('elegir-capitulos', fanficId, indices),
   estadoComic: (fanficId) => ipcRenderer.invoke('comic-estado', fanficId),
 

@@ -24,6 +24,8 @@ const vedado = host => VEDADOS.some(d => host === d || host.endsWith('.' + d));
 const sharePublico = u => u.protocol === 'https:' && ['chatgpt.com', 'chat.openai.com'].includes(u.hostname)
   && /^\/share\/[a-z0-9-]+\/?$/i.test(u.pathname);
 
+const estaticoDeShare = u => u.protocol === 'https:' && ['chatgpt.com', 'chat.openai.com'].includes(u.hostname)
+  && u.pathname.startsWith('/cdn/assets/');
 const NOMBRES_DE_CASA = /(^localhost$|\.localhost$|\.local$|\.lan$|\.home$|\.internal$|\.ts\.net$)/i;
 
 function parsearIpv4MapeadaHex(v6) {
@@ -46,18 +48,18 @@ function ipPrivada(ip) {
   return v6 === '::' || v6 === '::1' || /^f[cd]/.test(v6) || /^fe[89ab]/.test(v6) || (v6.startsWith('::ffff:') && ipPrivada(v6.slice(7)));
 }
 
-function comprobarForma(direccion) {
+function comprobarForma(direccion, { subrecurso = false } = {}) {
   let u;
   try { u = new URL(direccion); } catch { throw Object.assign(new Error('Esa dirección no es una URL válida.'), { delUsuario: true }); }
   const host = u.hostname.replace(/^\[|\]$/g, '').toLowerCase();
   if (!['https:', 'http:'].includes(u.protocol) || u.username || u.password) throw new Error('Sólo se abren páginas http(s) sin credenciales en la dirección.');
   if (NOMBRES_DE_CASA.test(host) || (net.isIP(host) && ipPrivada(host))) throw new Error('Las direcciones de la red de casa no se abren desde el asistente.');
-  if (vedado(host) && !sharePublico(u)) throw new Error(`${host} es una página de cuentas: el asistente no la abre. Si hace falta, ábrela tú.`);
+  if (vedado(host) && !sharePublico(u) && !(subrecurso && estaticoDeShare(u))) throw new Error(`${host} es una página de cuentas: el asistente no la abre. Si hace falta, ábrela tú.`);
   return u;
 }
 
-async function comprobarDestino(direccion, resolver = (h) => dns.lookup(h, { all: true })) {
-  const u = comprobarForma(direccion);
+async function comprobarDestino(direccion, resolver = (h) => dns.lookup(h, { all: true }), opciones = {}) {
+  const u = comprobarForma(direccion, opciones);
   const host = u.hostname.replace(/^\[|\]$/g, '');
   if (!net.isIP(host)) {
     const ips = await resolver(host).catch(() => { throw new Error(`No se encuentra ${host}.`); });
@@ -68,18 +70,25 @@ async function comprobarDestino(direccion, resolver = (h) => dns.lookup(h, { all
 
 const vigiladas = new Map();
 const filtrosInstalados = new WeakSet();
+let resolverSinVentana;
+const VIGILADA_TRAS_CERRAR = 60000;
 function vigilarRed(win, resolver) {
   const wc = win.webContents;
   const ses = wc?.session;
   if (!ses?.webRequest || wc.id === undefined) return;
   vigiladas.set(wc.id, resolver);
-  win.on?.('closed', () => vigiladas.delete(wc.id));
+  resolverSinVentana = resolver;
+
+  win.on?.('closed', () => { setTimeout(() => vigiladas.delete(wc.id), VIGILADA_TRAS_CERRAR).unref?.(); });
   if (filtrosInstalados.has(ses)) return;
   filtrosInstalados.add(ses);
   ses.webRequest.onBeforeRequest({ urls: ['http://*/*', 'https://*/*', 'ws://*/*', 'wss://*/*'] }, (d, responder) => {
-    if (!vigiladas.has(d.webContentsId)) return responder({});
-    const r = vigiladas.get(d.webContentsId);
-    (r ? comprobarDestino(d.url, r) : comprobarDestino(d.url)).then(() => responder({}), () => responder({ cancel: true }));
+    const sinVentana = d.webContentsId === undefined || d.webContentsId === null;
+    if (!sinVentana && !vigiladas.has(d.webContentsId)) return responder({});
+    const r = sinVentana ? resolverSinVentana : vigiladas.get(d.webContentsId);
+    const subrecurso = sinVentana || (d.resourceType !== 'mainFrame' && d.resourceType !== 'subFrame');
+    comprobarDestino(d.url, r || undefined, { subrecurso })
+      .then(() => responder({}), () => responder({ cancel: true }));
   });
 }
 

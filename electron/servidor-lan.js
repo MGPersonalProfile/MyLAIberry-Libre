@@ -92,7 +92,16 @@ function rechazo(req, anfitrionesValidos) {
   const anfitrion = String(req.headers.host || '').toLowerCase().replace(/:\d+$/, '').replace(/^\[|\]$/g, '');
   if (!anfitrionesValidos.has(anfitrion)) return [403, 'Cabecera Host inesperada.'];
 
+  if (!nodoPermitido(req)) return [403, 'Este equipo de la tailnet no tiene acceso.'];
+
   return null;
+}
+
+function nodoPermitido(req, nodos = process.env.MYLAIBERRY_NODOS) {
+  const lista = String(nodos || '').split(',').map(n => n.trim()).filter(Boolean);
+  if (!lista.length) return true;
+  const saltos = String(req.headers['x-forwarded-for'] || '').split(',').map(n => n.trim()).filter(Boolean);
+  return !saltos.length || lista.includes(saltos[saltos.length - 1]);
 }
 
 function rutaDe(url, codigo) {
@@ -336,6 +345,7 @@ module.exports = {
   esIndiceValido,
   direccionesLan,
   esIPv4Privada,
+  nodoPermitido,
   limpiarCapitulo,
   escaparHtml,
   PUERTO_POR_DEFECTO

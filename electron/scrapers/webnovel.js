@@ -192,6 +192,8 @@ async function downloadChapters(chapters, fanficId, onProgress, saveContentFn, d
     try {
       r = await mirar(cap.url, CAPITULO);
     } catch (err) {
+
+      if (err.limitado || err.reto) throw err;
       console.error(`[Webnovel] capítulo ${numero}: ${err.message}`);
       continue;
     }

@@ -16,11 +16,13 @@ function carrera(promesa, signal) {
 }
 
 function aviso(job, cuantas) {
-  if (job.kind !== 'lost') return `${cuantas} candidatas nuevas para «${job.query}»`;
+
+  if (job.kind !== 'lost') return `${cuantas} ${cuantas === 1 ? 'candidata nueva' : 'candidatas nuevas'} para «${job.query}»`;
   const encajan = (job.contrastadas || []).filter(c => c.veredicto === 'encaja').length;
+  const total = job.findings.length;
   return encajan
-    ? `${encajan} de ${job.findings.length} candidatas encajan con tus pistas sobre «${job.query}»`
-    : `Ninguna de las ${job.findings.length} candidatas de «${job.query}» encaja todavía con tus pistas`;
+    ? `${encajan} de ${total} ${total === 1 ? 'candidata' : 'candidatas'} ${encajan === 1 ? 'encaja' : 'encajan'} con tus pistas sobre «${job.query}»`
+    : `${total === 1 ? 'La candidata' : `Ninguna de las ${total} candidatas`} de «${job.query}» ${total === 1 ? 'no encaja' : 'encaja'} todavía con tus pistas`;
 }
 
 async function enInternet(consulta, { services, signal, origen }) {

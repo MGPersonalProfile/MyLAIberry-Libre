@@ -317,7 +317,7 @@ async function downloadChapters(chapters, fanficId, onProgress, saveContentFn) {
       await esperar(sleepTime);
     } catch (err) {
 
-      if (err.limitado) throw err;
+      if (err.limitado || err.reto) throw err;
       console.error(`Error descargando cap ${i}:`, err);
 
     }

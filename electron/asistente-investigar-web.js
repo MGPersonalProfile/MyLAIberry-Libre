@@ -276,7 +276,8 @@ function crearInvestigador({ signal, progreso = () => {}, origen, presupuestoMs,
       actual = win.webContents.getURL();
       html = await navegador.ejecutar('document.documentElement.outerHTML');
     } catch (err) {
-      if (esAO3 && (err.limitado || err.caido || /no responde ahora|robots\.txt/i.test(err.message))) {
+
+      if (esAO3 && (err.limitado || err.caido || err.codigoHttp >= 500 || /no responde ahora/i.test(err.message))) {
         return require('./ao3-caido').fichaDesdeFicHub(url, err, navegador.paginas);
       }
       throw err;

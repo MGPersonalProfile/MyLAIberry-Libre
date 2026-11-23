@@ -22,11 +22,7 @@ function exigirDisponible(url, ahora = Date.now()) {
   exigirQueNoEnfrie(url, ahora);
 }
 
-const PROHIBE = 'robots.txt de AO3 prohíbe esta ruta';
-const NO_CONSULTADO = 'No se pudo consultar robots.txt de AO3 (AO3 caído o limitándonos)';
 function causaDe(errAO3, codigo) {
-  if (errAO3?.robotsProhibe) return PROHIBE;
-  if (errAO3?.robotsNoConsultado) return NO_CONSULTADO;
   return errAO3?.message ? errAO3.message.replace(/\.$/, '') : `AO3 no responde ahora (${codigo}: caído o limitándonos)`;
 }
 
@@ -55,9 +51,7 @@ async function fichaDesdeFicHub(url, errAO3, paginasVisitadas = 0) {
     completa: meta.status === 'complete' ? true : (meta.status === 'ongoing' ? false : copia.completa),
     autorUrl: meta.authorUrl ? `https://archiveofourown.org${meta.authorUrl}` : (copia.autorUrl || ''),
     tags: [],
-    avisos: [errAO3?.robotsProhibe || errAO3?.robotsNoConsultado
-      ? `${causaDe(errAO3)}; los datos de la ficha proceden de la copia de FicHub.`
-      : 'AO3 no responde; los datos de la ficha proceden de la copia de FicHub.'],
+    avisos: ['AO3 no responde; los datos de la ficha proceden de la copia de FicHub.'],
     etiquetasCompletas: false
   };
   const { fichaVerificada } = require('./asistente-investigar-web');

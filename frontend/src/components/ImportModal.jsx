@@ -3,7 +3,7 @@ import { DialogSheet } from './ui/Layout';
 import { useI18n } from '../i18n/I18nContext';
 import FormularioImportar from './importar/FormularioImportar';
 import EstadoProgreso from './importar/EstadoProgreso';
-import SeleccionEpisodiosWebtoon from './importar/SeleccionEpisodiosWebtoon';
+import SeleccionEpisodiosComic from './importar/SeleccionEpisodiosComic';
 
 const LIBRO = Symbol('libro');
 
@@ -65,13 +65,13 @@ function useProgresoImportacion(isOpen, enCursoRef, alTerminarRef, cerrarRef, se
 }
 
 export default function ImportModal({ isOpen, onClose, onImportSuccess, urlInicial }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [url, setUrl] = useState('');
   const [status, setStatus] = useState('idle');
   const [progressMsg, setProgressMsg] = useState('');
   const [details, setDetails] = useState('');
   const [detectedSite, setDetectedSite] = useDetectarSitio(url, t);
-  const [webtoonData, setWebtoonData] = useState(null);
+  const [comic, setComic] = useState(null);
 
   const alTerminarRef = useRef(onImportSuccess);
   const cerrarRef = useRef(null);
@@ -101,7 +101,7 @@ export default function ImportModal({ isOpen, onClose, onImportSuccess, urlInici
     setProgressMsg('');
     setDetails('');
     setDetectedSite(null);
-    setWebtoonData(null);
+    setComic(null);
     onClose();
   }
 
@@ -116,7 +116,7 @@ export default function ImportModal({ isOpen, onClose, onImportSuccess, urlInici
       else if (r?.status === 'error') {
         setStatus('error');
         setProgressMsg(t('import.error'));
-        setDetails(r.message);
+        setDetails(r.clave ? t(r.clave) : r.message);
       }
     } catch (err) {
       setStatus('error');
@@ -126,30 +126,35 @@ export default function ImportModal({ isOpen, onClose, onImportSuccess, urlInici
   };
 
   const handleImport = async () => {
-    if (!url.trim()) return;
+    const enlace = url.trim();
+    if (!enlace) return;
     if (!window.api) { setStatus('error'); setProgressMsg(t('import.error')); return; }
-    if ((detectedSite?.name === 'Webtoon' || /webtoons?\.com/i.test(url)) && window.api.obtenerEpisodiosWebtoon) {
-      iniciarAccion(url, t('import.starting'), async () => {
-        const r = await window.api.obtenerEpisodiosWebtoon(url.trim());
-        if (r?.status === 'success' && r.data?.chapters?.length) {
-          setWebtoonData(r.data);
-          setStatus('seleccion_webtoon');
-          return { status: 'ok' };
-        }
-        return r || { status: 'error', message: 'No se pudieron leer los episodios de Webtoon.' };
-      });
-      return;
-    }
-    iniciarAccion(url, t('import.starting'), () => window.api.scrapeStory(url));
+    iniciarAccion(enlace, t('import.starting'), async () => {
+      const sitio = await window.api.detectSite?.(enlace);
+      const api = window.api;
+      const consultar = sitio?.esComic && api.obtenerEpisodiosComic
+        ? () => api.obtenerEpisodiosComic(enlace, { idiomaInterfaz: lang })
+        : sitio?.name === 'Webtoon' && api.obtenerEpisodiosWebtoon
+          ? () => api.obtenerEpisodiosWebtoon(enlace)
+          : null;
+      if (!consultar) return api.scrapeStory(enlace);
+      const resultado = await consultar();
+      if (resultado?.status === 'success' && resultado.data) {
+        setComic(resultado.data);
+        setStatus('seleccion_comic');
+      }
+      return resultado ?? { status: 'error', clave: 'import.comic_load_error' };
+    });
   };
 
-  const handleConfirmarWebtoon = (episodios) => {
-    setWebtoonData(null);
-    iniciarAccion(url, t('import.starting'), () => window.api.scrapeStory(url, { episodios }));
+  const handleConfirmarComic = (episodios, idiomaComic) => {
+    const enlace = url.trim();
+    setComic(null);
+    iniciarAccion(enlace, t('import.starting'), () => window.api.scrapeStory(enlace, { episodios, idiomaComic, idiomaInterfaz: lang }));
   };
 
-  const handleCancelarWebtoon = () => {
-    setWebtoonData(null);
+  const handleCancelarComic = () => {
+    setComic(null);
     setStatus('idle');
   };
 
@@ -199,11 +204,12 @@ export default function ImportModal({ isOpen, onClose, onImportSuccess, urlInici
           onChange={(e) => handleSubirLibro(e.target.files?.[0])}
         />
       )}
-      {status === 'seleccion_webtoon' && webtoonData ? (
-        <SeleccionEpisodiosWebtoon
-          webtoonData={webtoonData}
-          onConfirmar={handleConfirmarWebtoon}
-          onCancelar={handleCancelarWebtoon}
+      {status === 'seleccion_comic' && comic ? (
+        <SeleccionEpisodiosComic
+          inicial={comic}
+          onCambiarIdioma={idiomaComic => window.api.obtenerEpisodiosComic(comic.url, { idiomaComic, idiomaInterfaz: lang })}
+          onConfirmar={handleConfirmarComic}
+          onCancelar={handleCancelarComic}
         />
       ) : (
         <FormularioImportar

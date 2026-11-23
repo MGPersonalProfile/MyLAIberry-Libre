@@ -22,7 +22,7 @@ import FinDeObra from './lector/FinDeObra';
 import { restaurarCapitulo } from './lector/restaurar';
 import ResumenPrevio from './lector/ResumenPrevio';
 import NavegacionCapitulos from './lector/NavegacionCapitulos';
-import avisoNoDescargado from './lector/avisoNoDescargado';
+import avisoNoDescargado, { textoErrorTraduccion } from './lector/avisoNoDescargado';
 import AvisosDeCarga from './lector/AvisosDeCarga';
 import PanelAsistente from './lector/PanelAsistente';
 import MenuSubrayado from './lector/MenuSubrayado';
@@ -138,7 +138,7 @@ export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
       }
     } catch (err) {
 
-      if (vigente()) setErrorTrad(err?.message || t('reader.translate_error'));
+      if (vigente()) setErrorTrad(textoErrorTraduccion(err, t('reader.translate_error'), lang));
     } finally {
       if (vigente()) { setTraduciendo(false); setProgresoTrad(0); }
     }
@@ -168,7 +168,7 @@ export default function Reader({ story, onClose, onLeerOtra, onAbrirAjustes }) {
           setContenidoTraducido(false);
         }
       } catch (err) {
-        if (token === tokenCargaRef.current) setErrorTrad(err?.message || t('reader.translate_error'));
+        if (token === tokenCargaRef.current) setErrorTrad(textoErrorTraduccion(err, t('reader.translate_error'), lang));
       }
     }
   };

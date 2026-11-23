@@ -178,7 +178,8 @@ const DENEGADO = /request temporarily denied|retry later/i;
 
 function exigirQueNoSeaUnReto(sitio, { titulo = '', texto = '', url = '', ...senales } = {}) {
   const muestra = `${titulo} ${String(texto).slice(0, 2000)}`;
-  if (detectarReto({ titulo, ...senales })) throw Object.assign(new Error(`${sitio} devolvió el reto de Cloudflare en vez de resultados.`), { reto: true, noConsultado: true });
+
+  if (detectarReto({ titulo, ...senales })) throw Object.assign(new Error(`${sitio} devolvió el reto de Cloudflare en vez de resultados.`), { reto: true, noConsultado: true, sitio: sitioDe(url) });
   if (url && DENEGADO.test(muestra)) throw limitado(url, 418, muestra);
 
   if (url && MANTENIMIENTO.test(muestra)) throw limitado(url, 503, muestra);
@@ -259,7 +260,10 @@ function mientrasAvance(win, promesa, etiqueta = 'la página', opciones = {}) {
         rechazar(new Error(`${etiqueta}: la página dejó de responder (${p.cargando ? 'cinco minutos' : 'un minuto'} sin ninguna actividad)`));
       }
       if (conReto * cada >= retoMaxMs) {
-        rechazar(new Error(`${etiqueta}: el reto de la web no se pasó en ${Math.round(retoMaxMs / 60000)} minutos`));
+
+        let url = ''; try { url = win.webContents.getURL?.() || ''; } catch {  }
+        rechazar(Object.assign(new Error(`${etiqueta}: el reto de la web no se pasó en ${Math.round(retoMaxMs / 60000)} minutos`),
+          { reto: true, sitio: sitioDe(url) }));
       }
     }, cada);
 
@@ -278,7 +282,8 @@ function pasarElRetoSola(win, msConReto, cada, recargasMs) {
 
 function ensenarSiHayReto(win, msConReto, retoMs) {
   if (win.isDestroyed()) return;
-  if (msConReto >= retoMs && !win.isVisible()) {
+
+  if (msConReto >= retoMs && !win.isVisible() && process.env.MYLAIBERRY_SIN_PANTALLA !== '1') {
     win.__mlEnsenadaPorReto = true;
     win.setTitle('MyLAIberry — pasa la comprobación del sitio para seguir');
     win.showInactive();
@@ -306,4 +311,4 @@ async function ejecutarAunqueNavegue(win, guion) {
   }
 }
 
-module.exports = { cargarPagina, conRitmo, sitioDe, exigirQueNoSeaUnReto, exigirQueNoEnfrie, enfriar, enfriandoHasta, limitado, muestraDePagina, PACIENCIA, mientrasAvance, ejecutarAunqueNavegue, ESPERA };
+module.exports = { cargarPagina, conRitmo, sitioDe, exigirQueNoSeaUnReto, exigirQueNoEnfrie, enfriar, enfriandoHasta, limitado, muestraDePagina, PACIENCIA, mientrasAvance, ejecutarAunqueNavegue, ESPERA, ensenarSiHayReto };

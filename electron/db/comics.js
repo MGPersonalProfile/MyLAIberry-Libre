@@ -67,7 +67,7 @@ async function escribirImagenesEnTmp(carpetaTmp, imagenes) {
 }
 
 async function guardarCapituloComic(fanficId, chapterIndex, datos) {
-  const { titleNo, episodio, url, imagenes = [], totalEsperadas, incompleto = false } = datos;
+  const { fuente = 'webtoon', titleNo, episodio, url, imagenes = [], totalEsperadas, incompleto = false } = datos;
   const carpetaFinal = carpetaComicCapitulo(fanficId, chapterIndex);
   const carpetaTmp = path.join(carpetaDeObra(fanficId), 'comic', `chapter_${chapterIndex}_tmp`);
 
@@ -81,7 +81,7 @@ async function guardarCapituloComic(fanficId, chapterIndex, datos) {
     const manifiesto = {
       version: 1,
       tipo: 'comic',
-      fuente: 'webtoon',
+      fuente,
       titleNo: String(titleNo || ''),
       episodio: String(episodio || ''),
       url: url || '',

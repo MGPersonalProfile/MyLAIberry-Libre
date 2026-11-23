@@ -38,3 +38,8 @@ export function textoSinConexion({ lang = idiomaActual(), sufijo = '' } = {}) {
     : textoDelEquipo('offline.sin_servidor', {}, lang) + (equipoActual().tipo === 'pc' ? textoDelEquipo('offline.pc_encendido', {}, lang) : '');
   return motivo + (sufijo ? textoDelEquipo(sufijo, {}, lang) : '');
 }
+
+export function textoErrorTraduccion(err, generico, lang = idiomaActual()) {
+  if (err?.sinConexion) return textoSinConexion({ lang, sufijo: 'offline.trad_no_guardada' });
+  return err?.message || generico;
+}

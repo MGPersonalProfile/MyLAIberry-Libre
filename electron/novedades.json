@@ -1,5 +1,133 @@
 [
   {
+    "version": "2026.11.22",
+    "fecha": "2026-11-22",
+    "resumen": "Importa webcómics de Flame Comics y MangaDex y elige qué episodios descargar.",
+    "detalle": [
+      {
+        "que": "Pega el enlace de una serie o un capítulo de Flame Comics o MangaDex en Importar para elegir sus episodios. Las viñetas se guardan en la biblioteca y se abren en el lector de cómics.",
+        "porque": "Pediste importar webcómics que no están en Webtoon, como Solo Leveling."
+      },
+      {
+        "que": "En MangaDex puedes elegir español, español latinoamericano o inglés. La lista muestra el idioma y sólo incluye episodios con viñetas alojadas en MangaDex.",
+        "porque": "Puedes leer la edición en español cuando la fuente la tiene."
+      }
+    ]
+  },
+  {
+    "version": "2026.11.18-3",
+    "fecha": "2026-11-18",
+    "resumen": "El asistente ya no hace caso de robots.txt: entra en cualquier página pública de las webs admitidas, AO3 incluida.",
+    "detalle": [
+      {
+        "que": "Al investigar o abrir la ficha de una obra, el asistente entra aunque el robots.txt de la web lo prohíba o pida esperar entre página y página; la ficha de AO3 se lee de AO3 y no de la copia de FicHub.",
+        "porque": "Orden del 18-11: «nos la pela todo lo que no sea ilegal»."
+      },
+      {
+        "que": "Si AO3 está caído o en mantenimiento, se sigue reconociendo antes de abrir nada y se tira de la copia de FicHub como hasta ahora.",
+        "porque": "Lo único que se conserva de aquella comprobación es saber si la web está caída."
+      }
+    ]
+  },
+  {
+    "version": "2026.11.18-2",
+    "fecha": "2026-11-18",
+    "resumen": "Los números concuerdan en toda la app («1 candidata nueva», «1 obra»), y la comprobación de seguridad de una web ya no hace insistir a ninguna descarga.",
+    "detalle": [
+      {
+        "que": "Todo lo que cuenta algo concuerda con el número: «1 candidata nueva», «1 obra», «Racha de 1 día», «1 palabra», y «1.000 palabras» sigue en plural.",
+        "porque": "Visto el 18-11 en el móvil: el asistente avisaba de «1 candidatas nuevas»."
+      },
+      {
+        "que": "Si una web saca la comprobación de seguridad a mitad de una descarga de Webnovel, de una novela por capítulos numerados o de las páginas de episodios de Webtoon, la descarga se para y se retoma más tarde, como ya pasaba con RoyalRoad y FanFiction.net; y si la comprobación no se pasa en 15 minutos, también.",
+        "porque": "Revisión del 18-11: esas descargas seguían pidiendo capítulo a capítulo y gastaban sus reintentos."
+      },
+      {
+        "que": "Cuando FicHub pide la comprobación de seguridad, se esperan todas las obras que se bajan de FicHub, no la del foro de donde salió.",
+        "porque": "Revisión del 18-11."
+      },
+      {
+        "que": "Los autores de un webcómic de Webtoon salen limpios también cuando la web está en español o en francés.",
+        "porque": "Revisión del 18-11 del arreglo del 17-11."
+      }
+    ]
+  },
+  {
+    "version": "2026.11.18",
+    "fecha": "2026-11-18",
+    "resumen": "Con un solo capítulo o episodio, la app ya no dice «1 capítulos».",
+    "detalle": [
+      {
+        "que": "Los botones y avisos que cuentan capítulos o episodios concuerdan con el número: «Descargar 1 episodio», «Guardar 1 capítulo», «falta 1 capítulo leído».",
+        "porque": "Visto el 17-11 al importar un webcómic de un episodio en el móvil: decía «Descargar 1 episodios» y «Guardar 1 capítulos»."
+      },
+      {
+        "que": "Si RoyalRoad, FanFiction.net u otra web saca la comprobación de seguridad de Cloudflare a mitad de una descarga, la app para esa descarga, espera un rato y la retoma desde el capítulo que falte, en vez de pedir los cientos de capítulos que quedan uno a uno y acabar dándola por perdida.",
+        "porque": "Medido el 17-11 en el móvil de pruebas: una obra larga de RoyalRoad chocó con la comprobación en cada capítulo y la descarga gastaba sus reintentos."
+      },
+      {
+        "que": "Los autores de un webcómic de Webtoon salen limpios («AETHON, Kisai Entertainment, …») en vez de con espacios raros y un «author info» al final.",
+        "porque": "Visto el 17-11 al importar Mark of the Fool en el móvil."
+      }
+    ]
+  },
+  {
+    "version": "2026.11.17",
+    "fecha": "2026-11-17",
+    "resumen": "El asistente vuelve a leer los enlaces compartidos de ChatGPT.",
+    "detalle": [
+      {
+        "que": "Si le pasas al asistente un enlace público de una conversación de ChatGPT (chatgpt.com/share/…), lee la conversación entera otra vez.",
+        "porque": "Comprobado el 17-11: ChatGPT carga ahora sus scripts desde su propia web, el filtro de seguridad del asistente los cortaba y la página salía vacía. Sólo pasan esos ficheros; las páginas de la cuenta siguen cerradas."
+      },
+      {
+        "que": "Al guardar un texto pegado, un índice de capítulos al principio ya no se convierte en capítulos falsos, una mención como «Capítulo 3» dentro de la historia no la corta, un título de capítulo que acaba en punto sigue siendo título y un último capítulo de una sola línea ya no se pierde.",
+        "porque": "Lo encontró una revisión del 17-11 del arreglo del día anterior, que separaba capítulos escritos todos en una línea y se pasaba de listo en esos casos."
+      },
+      {
+        "que": "Cuando el asistente visita una web, lo que esa web pide en segundo plano (sus «service workers») tampoco puede llegar a tu red de casa ni a tus cuentas (ChatGPT, Google, GitHub…), ni siquiera después de cerrar la ventana.",
+        "porque": "Comprobado el 17-11 con una página de prueba: esas peticiones no van ligadas a ninguna ventana y el filtro de seguridad las dejaba pasar; una llegó a conectar con ChatGPT. Ahora se miran todas; las webs públicas siguen funcionando igual."
+      }
+    ]
+  },
+  {
+    "version": "2026.11.16-3",
+    "fecha": "2026-11-16",
+    "resumen": "Pegarle al asistente varios capítulos seguidos en una sola línea ya no los junta en uno ni pierde los cortos.",
+    "detalle": [
+      {
+        "que": "Si le pegas «Capítulo 1. … Capítulo 2. …» todo seguido y le pides que lo guarde, crea un capítulo por cada uno; y un capítulo corto que va entero en su línea queda como capítulo con su texto, no como un título vacío.",
+        "porque": "Repetida el 16-11 la prueba con el modelo de verdad en el móvil: dos capítulos pegados así se guardaban como uno, y uno de menos de 100 letras se habría quedado sin texto."
+      },
+      {
+        "que": "Leyendo en el móvil sin conexión una obra guardada sin traducir, el aviso dice que lo que falta es la traducción y que estás leyendo el original.",
+        "porque": "Probado el 16-11 en modo avión: el capítulo se leía entero, pero el aviso decía «Esto no estaba guardado en el móvil», como si faltara el capítulo."
+      }
+    ]
+  },
+  {
+    "version": "2026.11.16-2",
+    "fecha": "2026-11-16",
+    "resumen": "El asistente vuelve a guardar como obra un texto que empieza por «Capítulo 1.» en la misma línea.",
+    "detalle": [
+      {
+        "que": "Si le pegas al asistente un texto como «Capítulo 1. La lluvia caía…» todo seguido y le pides que lo guarde, ahora crea la obra con su capítulo «Capítulo 1» y el texto dentro.",
+        "porque": "Probado el 16-11 con el modelo de verdad en el móvil: contestaba «No hay texto para importar», porque tomaba la línea entera por el título del capítulo y lo dejaba vacío."
+      }
+    ]
+  },
+  {
+    "version": "2026.11.16",
+    "fecha": "2026-11-16",
+    "resumen": "Guardar un EPUB desde el PC vuelve a funcionar: ahora te pregunta dónde guardarlo.",
+    "detalle": [
+      {
+        "que": "En el PC, «Exportar EPUB» (y bajar el audio de una obra o una copia) abre el diálogo de Windows para elegir dónde guardarlo; si lo cancelas, no se baja nada.",
+        "porque": "Comprobado el 16-11: desde que el PC abre la biblioteca del servidor, la descarga se quedaba a medias sin preguntar y la app decía «Guardado» sin haber guardado nada."
+      }
+    ]
+  },
+  {
     "version": "2026.11.14-3",
     "fecha": "2026-11-14",
     "resumen": "El control de pruebas y las capturas, sin quedarse atascados",

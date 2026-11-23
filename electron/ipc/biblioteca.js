@@ -186,8 +186,8 @@ function registrar() {
 
   ipcMain.handle('detect-site', async (event, url) => {
     try {
-      const { name, tier } = detectScraper(url);
-      return { name, tier };
+      const { name, tier, esComic } = detectScraper(url);
+      return { name, tier, ...(esComic ? { esComic } : {}) };
     } catch {
       return { name: 'Desconocido', tier: 3 };
     }

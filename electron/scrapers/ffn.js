@@ -350,7 +350,7 @@ async function downloadChapters(chapters, fanficId, onProgress, saveContentFn) {
       await delay(Math.floor(Math.random() * 2000) + 1500);
     } catch (err) {
 
-      if (err.limitado) throw err;
+      if (err.limitado || err.reto) throw err;
       console.error(`[FFN] Error cap ${i}:`, err.message);
     }
   }

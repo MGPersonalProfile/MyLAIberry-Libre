@@ -20,7 +20,7 @@ export const BIBLIOTECA = {
 
   'nav.mylist':            { es: 'Mi lista', en: 'My list' },
   'mylist.count_one':      { es: '1 guardada', en: '1 saved' },
-  'mylist.count':          { es: '{n} guardadas', en: '{n} saved' },
+  'mylist.count':          { es: '{n} {n:guardada|guardadas}', en: '{n} saved' },
   'mylist.empty':          { es: 'Tu lista está vacía', en: 'Your list is empty' },
   'mylist.empty_hint':     {
     es: 'Guarda aquí lo que quieras tener a mano. Se marca desde la ficha de cada obra.',
@@ -156,7 +156,7 @@ export const BIBLIOTECA = {
 
   'card.read':             { es: 'Leer', en: 'Read' },
   'card.read_aria':        { es: 'Leer {title}', en: 'Read {title}' },
-  'card.download_pending': { es: 'Descargar {n} capítulos que faltan', en: 'Download {n} missing chapters' },
+  'card.download_pending': { es: 'Descargar {n} {n:capítulo que falta|capítulos que faltan}', en: 'Download {n} missing {n:chapter|chapters}' },
   'card.download_done':    { es: 'Ya está descargado entero', en: 'Already fully downloaded' },
   'card.download_aria':    { es: 'Descargar capítulos de {title}', en: 'Download chapters of {title}' },
   'card.details':          { es: 'Ver ficha', en: 'View details' },
@@ -179,7 +179,7 @@ export const BIBLIOTECA = {
   },
   'empty.cta':   { es: 'Añadir mi primera Historia', en: 'Add my first story' },
 
-  'detail.chapters_count':  { es: '{n} capítulos', en: '{n} chapters' },
+  'detail.chapters_count':  { es: '{n} {n:capítulo|capítulos}', en: '{n} {n:chapter|chapters}' },
   'detail.current_chapter': { es: 'Capítulo {n} actual', en: 'On chapter {n}' },
   'detail.comic_panels_size': { es: '{tamano} en viñetas', en: '{tamano} in panels' },
   'detail.comic_incomplete_episodes': { es: 'Episodios incompletos: {episodios}', en: 'Incomplete episodes: {episodios}' },
@@ -198,7 +198,7 @@ export const BIBLIOTECA = {
   'detail.series_partial':  { es: 'Catálogo parcial', en: 'Partial catalog' },
   'detail.downloading':     { es: 'Descargando {done}/{total}', en: 'Downloading {done}/{total}' },
   'detail.resume':          { es: 'Reanudar · faltan {n}', en: 'Resume · {n} left' },
-  'detail.download_all':    { es: 'Descargar {n} capítulos', en: 'Download {n} chapters' },
+  'detail.download_all':    { es: 'Descargar {n} {n:capítulo|capítulos}', en: 'Download {n} {n:chapter|chapters}' },
   'detail.preparing':       { es: 'Preparando…', en: 'Getting ready…' },
   'detail.refresh':         { es: 'Buscar capítulos nuevos', en: 'Check for new chapters' },
 
@@ -300,8 +300,8 @@ export const BIBLIOTECA = {
   'detail.discard':         { es: 'No me interesa', en: 'Not interested' },
 
   'paywall.summary': {
-    es: 'Se han descargado {libres} de {total} capítulos.',
-    en: '{libres} of {total} chapters downloaded.'
+    es: '{libres:Se ha descargado|Se han descargado} {libres} de {total} {total:capítulo|capítulos}.',
+    en: '{libres} of {total} {total:chapter|chapters} downloaded.'
   },
   'paywall.explain': {
     es: 'El resto son de pago en este sitio. Puedes comprarlos allí, o buscar la obra donde también esté publicada.',
@@ -321,10 +321,10 @@ export const BIBLIOTECA = {
     en: 'Save the work as EPUB to read on your phone or e-reader'
   },
   'detail.epub_working':    { es: 'Preparando…', en: 'Preparing…' },
-  'detail.epub_done':       { es: 'Guardado, {hechos} capítulos.', en: 'Saved, {hechos} chapters.' },
+  'detail.epub_done':       { es: 'Guardado, {hechos} {hechos:capítulo|capítulos}.', en: 'Saved, {hechos} {hechos:chapter|chapters}.' },
   'detail.epub_partial':    {
-    es: 'Guardado con {hechos} de {total} capítulos: el resto aún no está descargado.',
-    en: 'Saved with {hechos} of {total} chapters: the rest isn’t downloaded yet.'
+    es: 'Guardado con {hechos} de {total} {total:capítulo|capítulos}: el resto aún no está descargado.',
+    en: 'Saved with {hechos} of {total} {total:chapter|chapters}: the rest isn’t downloaded yet.'
   },
   'detail.epub_show':       { es: 'Ver dónde', en: 'Show file' },
   'detail.epub_failed':     { es: 'No se pudo exportar.', en: 'Export failed.' },
@@ -340,7 +340,7 @@ export const BIBLIOTECA = {
 
   'detail.delete_sure':     { es: '¿Eliminar la obra y sus capítulos?', en: 'Delete this work and its chapters?' },
   'detail.refreshing':      { es: 'Releyendo el índice…', en: 'Re-reading the index…' },
-  'detail.refresh_new':     { es: '+{n} capítulos', en: '+{n} chapters' },
+  'detail.refresh_new':     { es: '+{n} {n:capítulo|capítulos}', en: '+{n} {n:chapter|chapters}' },
   'detail.refresh_none':    { es: 'Sin novedades', en: 'Nothing new' },
 
   'common.confirm': { es: 'Confirmar', en: 'Confirm' },
@@ -379,8 +379,8 @@ export const BIBLIOTECA = {
   'storage.moved_1':          { es: 'Biblioteca movida. La copia anterior sigue en', en: 'Library moved. The old copy is still in' },
   'storage.moved_2':          { es: 'por si quieres comprobarla antes de borrarla.', en: 'in case you want to check it before deleting it.' },
   'storage.open_existing': { es: 'Abrir una biblioteca que ya existe', en: 'Open an existing library' },
-  'storage.already_open': { es: 'Es la que ya está abierta ({n} obras).', en: 'That is the one already open ({n} works).' },
-  'storage.restart_to_open': { es: 'Encontrada, con {n} obras. Se abre al reiniciar; la de ahora no se toca.', en: 'Found, with {n} works. It opens on restart; the current one is left as is.' },
+  'storage.already_open': { es: 'Es la que ya está abierta ({n} {n:obra|obras}).', en: 'That is the one already open ({n} {n:work|works}).' },
+  'storage.restart_to_open': { es: 'Encontrada, con {n} {n:obra|obras}. Se abre al reiniciar; la de ahora no se toca.', en: 'Found, with {n} {n:work|works}. It opens on restart; the current one is left as is.' },
   'storage.restart_pending': { es: 'Al reiniciar se abre la biblioteca de arriba.', en: 'Restarting opens the library above.' },
   'storage.restart_now': { es: 'Reiniciar ahora', en: 'Restart now' },
   'backups.title': { es: 'Copias de seguridad', en: 'Backups' },
@@ -388,7 +388,7 @@ export const BIBLIOTECA = {
   'backups.none': { es: 'Todavía no hay ninguna: la primera se hace al abrir la app.', en: 'None yet: the first one is made when the app opens.' },
   'backups.daily': { es: 'del día', en: 'daily' },
   'backups.before_restore': { es: 'antes de restaurar', en: 'before restoring' },
-  'backups.works': { es: '{n} obras', en: '{n} works' },
+  'backups.works': { es: '{n} {n:obra|obras}', en: '{n} {n:work|works}' },
   'backups.unreadable': { es: 'ilegible', en: 'unreadable' },
   'backups.restore': { es: 'Restaurar', en: 'Restore' },
   'backups.confirm': { es: 'Sí, volver a esta', en: 'Yes, go back to this one' },

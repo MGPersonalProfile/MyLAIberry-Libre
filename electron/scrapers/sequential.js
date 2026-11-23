@@ -73,7 +73,9 @@ async function existe(enlace, n, win) {
   try {
     const page = await mientrasAvance(win, universal.extractPage(enlace(n), win), `capítulo ${n}`);
     return contarPalabras(page?.content) >= MIN_PALABRAS;
-  } catch {
+  } catch (err) {
+
+    if (err.limitado || err.reto) throw err;
     try { win.webContents.stop(); } catch {  }
     return false;
   }
@@ -323,6 +325,8 @@ async function downloadChapters(chapters, fanficId, onProgress, saveContentFn) {
           }
         }
       } catch (err) {
+
+        if (err.limitado || err.reto) throw err;
         console.error(`[sequential] Error en el capítulo ${i + 1}:`, err.message);
 
         if (err.noExiste && ++vaciosSeguidos >= VACIOS_PARA_PARAR) break;
