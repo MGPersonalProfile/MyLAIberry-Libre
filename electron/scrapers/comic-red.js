@@ -1,5 +1,6 @@
 const { conRitmo, sitioDe, exigirQueNoSeaUnReto, limitado, enfriar } = require('./navegar.js');
-const { cabeceras } = require('../user-agent.js');
+const ua = require('../user-agent.js');
+const { cabeceras } = ua;
 const { detectarReto } = require('../asistente-reto.js');
 const { JSDOM } = require('jsdom');
 
@@ -33,12 +34,22 @@ async function comprobarRespuesta(res, url, esperaDatos) {
   if (!res.ok) throw new Error(`${host} · HTTP ${res.status}`);
 }
 
-async function pedirComic(url, leer, { headers = cabeceras(), minimo, redirect = 'error', esperaDatos = false } = {}) {
+async function fetchDeNavegador(url, opciones = {}) {
+  const u = new URL(url);
+  if (u.protocol !== 'https:') throw new Error(`${u.hostname} · sólo https`);
+  await require('../asistente-web-libre.js').comprobarDestino(u.href);
+  return ua.fetchElectron(u.href, { ...opciones, credentials: 'omit', redirect: 'error' });
+}
+
+async function pedirComic(url, leer, { headers = cabeceras(), minimo, redirect = 'error', esperaDatos = false, navegador = false } = {}) {
   return conRitmo(url, async () => {
-    const res = await fetch(url, { headers, redirect, signal: AbortSignal.timeout(60000) });
+    const opcionesRed = { headers, redirect, signal: AbortSignal.timeout(60000) };
+    const { pedirPublico } = require('../red-publica.js');
+    const res = navegador ? await fetchDeNavegador(url, opcionesRed)
+      : await pedirPublico(url, { pedir: fetch, headers, maxSaltos: redirect === 'follow' ? 5 : 0, signal: opcionesRed.signal });
     await comprobarRespuesta(res, url, esperaDatos);
     return leer(res);
   }, minimo);
 }
 
-module.exports = { pedirComic };
+module.exports = { pedirComic, fetchDeNavegador };

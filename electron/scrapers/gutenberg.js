@@ -12,12 +12,16 @@ function numeroDeLibro(url) {
 
 const direccionDe = (n) => `https://www.gutenberg.org/ebooks/${n}`;
 
-function pedir(url, opciones) {
+function pedirCrudo(url, opciones) {
   return require('../user-agent.js').fetchElectron(url, opciones);
 }
 
+function pedir(url, opciones = {}) {
+  return require('../red-publica.js').pedirPublico(url, { ...opciones, pedir: pedirCrudo });
+}
+
 async function bajarEpub(url) {
-  const r = await pedir(url, { signal: AbortSignal.timeout(120000), redirect: 'follow' });
+  const r = await pedir(url, { signal: AbortSignal.timeout(120000) });
   if (!r.ok) throw new Error(`Gutenberg respondió ${r.status} a ${url}`);
   const datos = Buffer.from(await r.arrayBuffer());
   if (datos.length > TECHO) throw new Error('Ese EPUB de Gutenberg pasa de 60 MB: no se baja.');
@@ -34,7 +38,7 @@ async function bajarLibro(url) {
 
 async function ficha(n) {
   try {
-    const r = await pedir(`${direccionDe(n)}.opds`, { signal: AbortSignal.timeout(30000), redirect: 'follow' });
+    const r = await pedir(`${direccionDe(n)}.opds`, { signal: AbortSignal.timeout(30000) });
     return r.ok ? fichaDeOpds(await r.text()) : null;
   } catch { return null; }
 }

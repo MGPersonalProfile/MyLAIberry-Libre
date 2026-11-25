@@ -42,8 +42,12 @@ async function bajarVinhetas(ch, fuente, obtenerVinhetas, referer) {
 
 function descargadorComic({ fuente, obtenerVinhetas, idDeObra, referer }) {
   return async function downloadChapters(chapters, fanficId, onProgress, saveContentFn, desde = 0) {
+    let guardados = 0, algunoEnDisco = false;
     for (const [i, ch] of (chapters || []).entries()) {
       const indice = desde + i;
+
+      if (ch.yaEnDisco) { algunoEnDisco = true; continue; }
+      if (ch.dePago) { onProgress?.({ step: 'info', message: `${ch.title}: de pago o anticipado, se salta.` }); continue; }
       onProgress?.({
         step: 'downloading_chapter', message: `${ch.title} (${i + 1}/${chapters.length})`,
         downloaded: indice, total: chapters.length
@@ -53,6 +57,7 @@ function descargadorComic({ fuente, obtenerVinhetas, idDeObra, referer }) {
         imagenes = await bajarVinhetas(ch, fuente, obtenerVinhetas, referer);
       } catch (err) {
         if (err.limitado || err.reto) throw err;
+        if (err.dePago) { onProgress?.({ step: 'info', message: `${ch.title}: de pago o anticipado, se salta.` }); continue; }
         throw new Error(`${ch.title} · ${err.message}`, { cause: err });
       }
       await conDisco(() => guardarCapituloComic(fanficId, indice, {
@@ -60,6 +65,10 @@ function descargadorComic({ fuente, obtenerVinhetas, idDeObra, referer }) {
         url: ch.url, imagenes, totalEsperadas: imagenes.length
       }));
       await saveContentFn(fanficId, i, generarHtmlCapituloComic(fanficId, indice, imagenes));
+      guardados++;
+    }
+    if (guardados === 0 && !algunoEnDisco && (chapters || []).length > 0) {
+      throw new Error(`${fuente} · no se descargó ningún capítulo (todos de pago o sin viñetas)`);
     }
   };
 }

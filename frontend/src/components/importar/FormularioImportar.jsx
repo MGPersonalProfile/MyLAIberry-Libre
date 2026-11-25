@@ -7,7 +7,7 @@ import { InsetGroupedList } from '../ui/List';
 import ImportarWeb from '../ImportarWeb';
 import { useI18n } from '../../i18n/I18nContext';
 
-const SITIOS = ['RoyalRoad', 'AO3', 'FanFiction.net', 'SpaceBattles', 'Project Gutenberg', 'Webtoon', 'Flame Comics', 'MangaDex'];
+const SITIOS = ['RoyalRoad', 'AO3', 'FanFiction.net', 'SpaceBattles', 'Project Gutenberg', 'Webtoon', 'Flame Comics', 'MangaDex', 'Asura Scans'];
 
 function InsigniaSitio({ detectedSite, t }) {
   if (!detectedSite) {

@@ -138,6 +138,11 @@ function trasElFallo(tarea, err, lista, obras) {
     return () => devolver(tarea, { alFrente: true });
   }
 
+  if (err?.noSoportado) {
+    console.warn(`[Cola] ${tarea.tipo} descartada, no se puede soportar: ${err.message}`);
+    return () => quitar(tarea.id);
+  }
+
   tarea.intentos = (tarea.intentos || 0) + 1;
   if (tarea.intentos >= INTENTOS_MAXIMOS) {
     console.warn(`[Cola] ${tarea.tipo} descartada tras ${tarea.intentos} intentos: ${err.message}`);
@@ -251,4 +256,4 @@ function enMarcha() {
   return arrancada && !parada;
 }
 
-module.exports = { registrar, encolar, encolarVarias, arrancar, parar, enMarcha, pendientes, enCurso, elegirTarea, ErrorDeRitmo };
+module.exports = { trasElFallo, registrar, encolar, encolarVarias, arrancar, parar, enMarcha, pendientes, enCurso, elegirTarea, ErrorDeRitmo };

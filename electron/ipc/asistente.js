@@ -47,7 +47,7 @@ async function leerConUnReintento(url, pausa = 20000) {
     return await scrapeStory(url, progreso, { respaldoFicHub: true });
   } catch (e) {
 
-    if (e.noExiste) throw e;
+    if (e.noExiste || e.noSoportado) throw e;
     await new Promise(r => setTimeout(r, pausa));
     try { return await scrapeStory(url, progreso, { respaldoFicHub: true }); }
     catch (otra) { throw new Error(`${otra.message} (reintentado tras ${pausa / 1000} s; la dirección es ${url})`); }

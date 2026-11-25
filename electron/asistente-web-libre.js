@@ -82,7 +82,8 @@ function vigilarRed(win, resolver) {
   win.on?.('closed', () => { setTimeout(() => vigiladas.delete(wc.id), VIGILADA_TRAS_CERRAR).unref?.(); });
   if (filtrosInstalados.has(ses)) return;
   filtrosInstalados.add(ses);
-  ses.webRequest.onBeforeRequest({ urls: ['http://*/*', 'https://*/*', 'ws://*/*', 'wss://*/*'] }, (d, responder) => {
+  const patronesRed = ['http', 'https', 'ws', 'wss', 'file'].map(p => `${p}://${'*'}/${'*'}`);
+  ses.webRequest.onBeforeRequest({ urls: patronesRed }, (d, responder) => {
     const sinVentana = d.webContentsId === undefined || d.webContentsId === null;
     if (!sinVentana && !vigiladas.has(d.webContentsId)) return responder({});
     const r = sinVentana ? resolverSinVentana : vigiladas.get(d.webContentsId);
@@ -278,4 +279,4 @@ const MOTORES = [
 
 const deCasa = host => NOMBRES_DE_CASA.test(host) || (net.isIP(host) && ipPrivada(host));
 
-module.exports = { crearWebLibre, paginaSiguiente, indiceDeCapitulos, LECTOR, comprobarForma, comprobarDestino, ipPrivada, vedado, deCasa, VEDADOS, MAX_PAGINAS };
+module.exports = { vigilarRed, crearWebLibre, paginaSiguiente, indiceDeCapitulos, LECTOR, comprobarForma, comprobarDestino, ipPrivada, vedado, deCasa, VEDADOS, MAX_PAGINAS };

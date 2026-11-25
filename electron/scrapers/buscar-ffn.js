@@ -1,4 +1,4 @@
-const { crearVentana } = require('../user-agent.js');
+const { ventanaVigilada } = require('./ventana-aislada.js');
 const { parseMeta, portadaGrande } = require('./ffn.js');
 const { cargarPagina, exigirQueNoSeaUnReto, muestraDePagina, PACIENCIA } = require('./navegar.js');
 
@@ -60,7 +60,7 @@ const LECTOR_PERSONAJES = '(function () { var s = document.querySelector("select
   'return s ? Array.prototype.map.call(s.options, function (o) { return o.value + "=" + (o.textContent || "").trim(); }) : []; })()';
 
 async function leerListado(url, { personajes = false } = {}) {
-  const win = crearVentana({
+  const win = ventanaVigilada({
     width: 1200, height: 900, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });

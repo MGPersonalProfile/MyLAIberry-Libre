@@ -1,5 +1,63 @@
 [
   {
+    "version": "2026.11.25",
+    "fecha": "2026-11-25",
+    "resumen": "Los cómics se descargan con más seguridad, Asura Scans salta los capítulos de pago, y una novela con ilustraciones ya no se confunde con un cómic.",
+    "detalle": [
+      {
+        "que": "Las páginas de cómics (Asura Scans y las demás) se abren en una ventana aparte, sin tus sesiones de «Tus cuentas», sin ventanas emergentes y sin poder irse a otra web ni a tu red de casa.",
+        "porque": "Una revisión vio que una web de cómics podía abrir ventanas o usar tus sesiones abiertas."
+      },
+      {
+        "que": "La portada de Asura Scans ya se guarda (antes daba error siempre), y sólo se baja si viene del propio sitio.",
+        "porque": "La revisión midió que la portada fallaba en cada arranque y que una dirección falsa podía hacer que la app pidiera cosas de tu red."
+      },
+      {
+        "que": "Los capítulos de pago o anticipados de Asura Scans se saltan en vez de parar toda la descarga, y «Reanudar» no repite los que ya tienes.",
+        "porque": "El primer capítulo de pago hacía fallar la obra entera y volvía a fallar en cada intento."
+      },
+      {
+        "que": "Una novela o un fanfic con ilustraciones, mapas o láminas ya no se rechaza como si fuera un cómic: ahora hace falta que tres capítulos seguidos sean sólo imágenes.",
+        "porque": "Un capítulo de ilustraciones al principio bastaba para que la app rechazara la obra de texto entera."
+      },
+      {
+        "que": "Si Cloudflare tarda en dejar pasar, la app espera de verdad en vez de rendirse, y en el servidor sin pantalla se rinde en pocos minutos en vez de dejar la cola parada un cuarto de hora. Los cómics de sitios sin soporte ya no se reintentan tres veces.",
+        "porque": "La espera de Asura contaba mal el tiempo y un reto sin nadie delante bloqueaba toda la cola."
+      },
+      {
+        "que": "Pequeños arreglos: una dirección de Asura con otro sufijo se reconoce como la misma obra, un enlace roto no tumba la importación, la búsqueda en r/manhwa ya no escribe «r/r/», y el error de abrir_ficha_web dice si el problema es https, la contraseña en la dirección o el sitio, y qué herramienta usar.",
+        "porque": "Salieron de la misma revisión."
+      },
+      {
+        "que": "Las portadas, las series y las descargas de cualquier web (no sólo Asura) ya no pueden hacer que la app pida cosas a tu red de casa ni seguir redirecciones sin comprobar, y no envían tus sesiones de «Tus cuentas» a webs que no las necesitan.",
+        "porque": "La segunda revisión vio que el arreglo anterior sólo cubría las portadas de Asura."
+      },
+      {
+        "que": "Una dirección que no sea una página web (por ejemplo un fichero de tu disco) ya no se puede abrir como si fuera una obra, tampoco desde el móvil por la red de casa.",
+        "porque": "Con una dirección así se podía leer un fichero del PC."
+      }
+    ]
+  },
+  {
+    "version": "2026.11.24",
+    "fecha": "2026-11-24",
+    "resumen": "Importa cómics de Asura Scans, y los sitios de cómics que no se soportan lo dicen en vez de importar basura.",
+    "detalle": [
+      {
+        "que": "Pega el enlace de una serie de Asura Scans (como Breakers) en Importar: se listan sus capítulos reales y se guardan las viñetas. Antes se importaban como «capítulos» las filas del índice, con los comentarios.",
+        "porque": "Importaste Breakers desde el asistente y salieron 138 capítulos que eran basura."
+      },
+      {
+        "que": "Si pegas un cómic de un sitio que no se soporta (qimanga, reaperscans, toonkotsu u otro que sólo tiene imágenes), la app lo dice al momento y no crea una obra con páginas vacías.",
+        "porque": "Esos sitios daban «no hay capítulos» o un reto de Cloudflare, y el asistente reintentaba sin explicar nada."
+      },
+      {
+        "que": "El asistente ya no falla al buscar recomendaciones en r/manhwa: si Reddit no deja buscar dentro del subreddit, busca en todo Reddit pidiendo ese subreddit. Y si le pides la ficha de un sitio que no investiga (Webnovel), te dice cuáles sí y que use preparar_obra.",
+        "porque": "El buzón del 21-11 traía los dos errores sin explicación."
+      }
+    ]
+  },
+  {
     "version": "2026.11.22",
     "fecha": "2026-11-22",
     "resumen": "Importa webcómics de Flame Comics y MangaDex y elige qué episodios descargar.",

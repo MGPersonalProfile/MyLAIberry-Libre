@@ -1,5 +1,6 @@
 const { cargarPagina, conRitmo, exigirQueNoEnfrie, limitado } = require('./navegar.js');
-const { cabeceras, crearVentana } = require('../user-agent.js');
+const { cabeceras } = require('../user-agent.js');
+const { ventanaVigilada } = require('./ventana-aislada.js');
 
 async function pedirHTML(url, msTope = 45000) {
   return conRitmo(url, async () => {
@@ -22,7 +23,7 @@ async function pedirHTML(url, msTope = 45000) {
 async function pedirHTMLConNavegador(url, msEspera = 6000) {
 
   exigirQueNoEnfrie(url);
-  const win = crearVentana({
+  const win = ventanaVigilada({
     width: 1280, height: 900, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });

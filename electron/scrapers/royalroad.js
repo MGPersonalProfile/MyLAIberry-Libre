@@ -1,4 +1,4 @@
-const { crearVentana } = require('../user-agent.js');
+const { ventanaVigilada } = require('./ventana-aislada.js');
 const { GENERO, completaDeEtiquetas } = require('../etiquetas.js');
 const { cargarPagina, PACIENCIA, mientrasAvance, ejecutarAunqueNavegue } = require('./navegar.js');
 const { exigirAlgoGuardado } = require('./guardado.js');
@@ -202,6 +202,7 @@ function armarResultado(metadata, capitulos) {
 
   resto.synopsis = String(resto.synopsis || '').replace(/<\/p>\s*<p[^>]*>/gi, '\n\n').replace(/<br\s*\/?>/gi, '\n')
     .replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&#x27;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+  if ('coverUrl' in resto) resto.coverUrl = require('../red-publica.js').urlPublica(resto.coverUrl, 'https://www.royalroad.com');
 
   const completa = completaDeEtiquetas(etiquetasEstado || []);
   const tags = (generos || []).map(name => ({ name, category: GENERO }));
@@ -247,7 +248,7 @@ async function leerFicha(win, onProgress) {
 
 async function scrapeRoyalRoad(url, onProgress) {
   if (onProgress) onProgress({ step: 'init', message: 'Iniciando motor de extracción...' });
-  const win = crearVentana({
+  const win = ventanaVigilada({
     width: 800, height: 600, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });
@@ -283,7 +284,7 @@ async function downloadChapters(chapters, fanficId, onProgress, saveContentFn) {
 
   let guardados = 0;
 
-  const win = crearVentana({
+  const win = ventanaVigilada({
     width: 800,
     height: 600,
     show: false,

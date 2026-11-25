@@ -1,4 +1,5 @@
-const { crearVentana, fetchWeb } = require('../user-agent.js');
+const { fetchWeb } = require('../user-agent.js');
+const { ventanaVigilada } = require('./ventana-aislada.js');
 
 const HILOS_LEIDOS = 3;
 const COMENTARIOS_POR_HILO = 10;
@@ -29,6 +30,17 @@ function urlDeBusqueda({ consulta, subreddit }) {
   const sub = String(subreddit || '').replace(/^\/?r\//i, '').replace(/[^\w]/g, '');
   if (sub) p.set('restrict_sr', 'on');
   return `https://www.reddit.com/${sub ? `r/${sub}/` : ''}search.json?${p}`;
+}
+
+const subLimpio = subreddit => String(subreddit || '').replace(/^\/?r\//i, '').replace(/[^\w]/g, '');
+
+function urlDeBusquedaRss({ consulta, subreddit, global = false }) {
+  const sub = subLimpio(subreddit);
+
+  const q = global && sub ? `(${consulta}) subreddit:${sub}` : String(consulta || '');
+  const p = new URLSearchParams({ q, sort: 'relevance', t: 'all', limit: '15' });
+  if (sub && !global) p.set('restrict_sr', 'on');
+  return `https://www.reddit.com/${sub && !global ? `r/${sub}/` : ''}search.rss?${p}`;
 }
 
 function hilosDeListado(json) {
@@ -112,15 +124,22 @@ function elegirHilos(hilos) {
 
 async function recomendaciones({ consulta, subreddit }) {
   if (!String(consulta || '').trim()) return [];
-  const win = crearVentana({ width: 1200, height: 900, show: false,
+  const win = ventanaVigilada({ width: 1200, height: 900, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true } });
   try {
-    let hilos, porRss = false;
+    let hilos, porRss = false, busquedaGlobal = false;
     try {
       hilos = hilosDeListado(await pedirJson(win, urlDeBusqueda({ consulta, subreddit })));
     } catch (e) {
 
-      hilos = hilosDeRss(await pedirRss(urlDeBusqueda({ consulta, subreddit }).replace('/search.json?', '/search.rss?')));
+      try {
+        hilos = hilosDeRss(await pedirRss(urlDeBusquedaRss({ consulta, subreddit })));
+      } catch (e2) {
+
+        if (!subLimpio(subreddit) || !/HTTP 404/.test(e2.message)) throw e2;
+        hilos = hilosDeRss(await pedirRss(urlDeBusquedaRss({ consulta, subreddit, global: true })));
+        busquedaGlobal = true;
+      }
       porRss = true;
     }
     const aLeer = elegirHilos(hilos);
@@ -142,7 +161,8 @@ async function recomendaciones({ consulta, subreddit }) {
     }
 
     const nota = porRss ? 'Reddit bloquea a la app sin sesión: esto sale de su RSS, sin votos y a veces sin comentarios. ' +
-      'Si el autor entra en Reddit en Ajustes > Tus cuentas, se lee entero.' : undefined;
+      'Si el autor entra en Reddit en Ajustes > Tus cuentas, se lee entero.' +
+      (busquedaGlobal ? ` Reddit no dejó buscar dentro de r/${subLimpio(subreddit)}: se buscó en todo Reddit con subreddit:${subLimpio(subreddit)}.` : '') : undefined;
 
     return hilos.map(h => (aLeer.includes(h) ? { ...h, nota } : { ...h, texto: undefined }));
   } finally {

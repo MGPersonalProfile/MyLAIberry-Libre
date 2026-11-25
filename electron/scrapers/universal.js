@@ -1,8 +1,9 @@
-const { crearVentana } = require('../user-agent.js');
+const { ventanaVigilada } = require('./ventana-aislada.js');
 const fs = require('fs');
 const { cargarPagina, PACIENCIA, mientrasAvance } = require('./navegar.js');
 const { exigirAlgoGuardado } = require('./guardado.js');
 const { textoPlano } = require('../capitulo-valido.js');
+const { pareceCapituloDeComic, esPaginaDeComic, comprobarObraNoEsComic, cuentaDeComics } = require('./universal-comic.js');
 
 let readabilitySource = null;
 function getReadabilitySource() {
@@ -72,6 +73,7 @@ const guionDeLectura = (source) => `
 `;
 
 async function extractPage(url, win) {
+  await require('../asistente-web-libre.js').comprobarDestino(url);
   await cargarPagina(win, url);
 
   await delay(2000);
@@ -87,6 +89,7 @@ async function extractPage(url, win) {
 }
 
 async function extractLinks(url, win) {
+  await require('../asistente-web-libre.js').comprobarDestino(url);
   await cargarPagina(win, url);
   await delay(2000);
 
@@ -205,11 +208,12 @@ function obraLeida(url, contenido) {
 }
 
 async function scrape(url, onProgress) {
+  await require('../asistente-web-libre.js').comprobarDestino(url);
   if (onProgress) onProgress({ step: 'init', message: 'Iniciando extractor universal...' });
 
-  const win = crearVentana({
+  const win = ventanaVigilada({
     width: 800, height: 600, show: false,
-    webPreferences: { nodeIntegration: false, contextIsolation: true }
+    webPreferences: { sandbox: true, nodeIntegration: false, contextIsolation: true }
   });
 
   try {
@@ -224,6 +228,8 @@ async function scrape(url, onProgress) {
     const candidatos = detectChapterLinks(enlaces, url);
 
     if (candidatos.length > 2) {
+
+      await comprobarObraNoEsComic(win, candidatos, url => mientrasAvance(win, extractPage(url, win), 'capítulo de muestra'));
       if (onProgress) {
         onProgress({
           step: 'done',
@@ -255,12 +261,13 @@ async function scrape(url, onProgress) {
   }
 }
 
-async function downloadChapters(chapters, fanficId, onProgress, saveContentFn) {
+async function downloadChapters(chapters, fanficId, onProgress, saveContentFn, desde = 0) {
 
   let guardados = 0;
-  let win = crearVentana({
+  const comics = cuentaDeComics({ conTexto: desde > 0 });
+  let win = ventanaVigilada({
     width: 800, height: 600, show: false,
-    webPreferences: { nodeIntegration: false, contextIsolation: true }
+    webPreferences: { sandbox: true, nodeIntegration: false, contextIsolation: true }
   });
 
   try {
@@ -275,6 +282,7 @@ async function downloadChapters(chapters, fanficId, onProgress, saveContentFn) {
 
     try {
       const page = await mientrasAvance(win, extractPage(chapters[i].url, win), `capítulo ${i + 1}`);
+      comics.nota(await esPaginaDeComic(win, page), chapters[i].url);
       const html = page?.content || '';
 
       if (html.trim()) {
@@ -289,6 +297,8 @@ async function downloadChapters(chapters, fanficId, onProgress, saveContentFn) {
     } catch (err) {
 
       if (err.limitado || err.reto) throw err;
+
+      if (err.noSoportado) throw err;
       console.error(`[Universal] Error cap ${i}:`, err.message);
       try { win.webContents.stop(); } catch {  }
     }
@@ -306,5 +316,6 @@ module.exports = {
   downloadChapters,
   extractPage,
   extractLinks,
-  detectChapterLinks
+  detectChapterLinks,
+  pareceCapituloDeComic
 };

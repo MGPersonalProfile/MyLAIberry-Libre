@@ -1,5 +1,7 @@
 const { limpiarNombreFandom } = require('./etiquetas.js');
-const { fetchWeb, crearVentana } = require('./user-agent.js');
+const { fetchWeb } = require('./user-agent.js');
+const { pedirPublico } = require('./red-publica.js');
+const { ventanaVigilada } = require('./scrapers/ventana-aislada.js');
 
 const ANCHO_MINIMO = 1200;
 const PROPORCION_MINIMA = 1.6;
@@ -64,7 +66,7 @@ function valeDeFondo(medida) {
 
 async function traerYMedir(url, fuente) {
   try {
-    const r = await fetchWeb(url, { signal: AbortSignal.timeout(25000) });
+    const r = await pedirPublico(url, { signal: AbortSignal.timeout(25000) });
     if (!r.ok) return null;
 
     const buf = Buffer.from(await r.arrayBuffer());
@@ -179,9 +181,9 @@ async function buscarEnImagenes(fandom, motores = MOTORES_DE_IMAGENES) {
   const urls = [];
 
   for (const motor of motores) {
-    const win = crearVentana({
+    const win = ventanaVigilada({
       width: 1400, height: 900, show: false,
-      webPreferences: { nodeIntegration: false, contextIsolation: true }
+      webPreferences: { sandbox: true, nodeIntegration: false, contextIsolation: true }
     });
 
     try {

@@ -87,12 +87,13 @@ async function buscar({ consulta, pagina = 1, url: dada } = {}) {
   if (!String(consulta || '').trim()) return [];
 
   const { session } = require('electron');
-  const { configurarSesion, crearVentana } = require('../user-agent.js');
+  const { configurarSesion } = require('../user-agent.js');
+  const { ventanaVigilada } = require('./ventana-aislada.js');
   const { cargarPagina, exigirQueNoSeaUnReto, muestraDePagina, mientrasAvance } = require('./navegar.js');
   const ses = session.fromPartition(PARTICION);
 
   configurarSesion(ses, IDIOMA);
-  const win = crearVentana({ show: false, width: 1280, height: 900, webPreferences: { session: ses, nodeIntegration: false, contextIsolation: true } });
+  const win = ventanaVigilada({ show: false, width: 1280, height: 900, webPreferences: { session: ses, sandbox: true, nodeIntegration: false, contextIsolation: true } });
   try {
     const url = dada || urlDeBusqueda({ consulta, pagina });
     const html = await mientrasAvance(win, (async () => {

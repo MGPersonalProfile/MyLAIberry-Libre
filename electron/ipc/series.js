@@ -3,9 +3,8 @@ const { CatalogoSeries } = require('../series/catalogo.js');
 const { clasificarObrasDeSerie, importarObrasSerie } = require('../series/importacion.js');
 const { getFanfics, addFanfic } = require('../db.js');
 const { esDeLaBiblioteca } = require('../origen.js');
-const { comprobarDestino } = require('../asistente-web-libre.js');
+const comprobarDestino = (...args) => require('../asistente-web-libre.js').comprobarDestino(...args);
 
-const { fetchElectron } = require('../user-agent.js');
 const MAX_BYTES_SERIE = 2 * 1024 * 1024;
 
 async function leerTextoConTope(res, maxBytes = MAX_BYTES_SERIE) {
@@ -30,11 +29,23 @@ async function leerTextoConTope(res, maxBytes = MAX_BYTES_SERIE) {
   return txt;
 }
 
-async function fetchSerie(url) {
-  await comprobarDestino(url);
-  const res = await fetchElectron(url, { signal: AbortSignal.timeout(20000) });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return await leerTextoConTope(res);
+async function fetchSerie(url, { maxSaltos = 5 } = {}) {
+  for (let salto = 0; salto <= maxSaltos; salto++) {
+    await comprobarDestino(url);
+    const res = await require('../user-agent.js').fetchElectron(url, {
+      signal: AbortSignal.timeout(20000),
+      credentials: 'omit',
+      redirect: 'manual'
+    });
+    const destino = res.status >= 300 && res.status < 400 && res.headers?.get?.('location');
+    if (!destino) {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await leerTextoConTope(res);
+    }
+    await res.body?.cancel?.();
+    if (salto >= maxSaltos) throw new Error('Demasiadas redirecciones al leer la serie.');
+    url = new URL(destino, url).href;
+  }
 }
 
 async function procesarImportacionSerie(obras, opciones = {}, deps = {}) {

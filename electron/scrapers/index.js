@@ -9,17 +9,22 @@ const gutenberg = require('./gutenberg');
 const webtoon = require('./webtoon');
 const flame = require('./flame');
 const mangadex = require('./mangadex');
+const asura = require('./asura');
+const sinSoporte = require('./comic-sin-soporte');
 
 const fuentesComic = [
   { reconoce: webtoon.esUrlDeWebtoon, scraper: webtoon, name: 'Webtoon', tier: 1, esComic: true },
   { reconoce: flame.esUrlDeFlame, scraper: flame, name: 'Flame Comics', tier: 1, esComic: true },
-  { reconoce: mangadex.esUrlDeMangaDex, scraper: mangadex, name: 'MangaDex', tier: 1, esComic: true }
+  { reconoce: mangadex.esUrlDeMangaDex, scraper: mangadex, name: 'MangaDex', tier: 1, esComic: true },
+  { reconoce: asura.esUrlDeAsura, scraper: asura, name: 'Asura Scans', tier: 1, esComic: true }
 ];
 const fuenteDeComic = url => fuentesComic.find(fuente => fuente.reconoce(url));
 const esUrlDeComic = url => !!fuenteDeComic(url);
 
 const SITE_MATCHERS = [
   ...fuentesComic,
+
+  { reconoce: sinSoporte.esUrlDeComicSinSoporte, scraper: sinSoporte, name: 'Cómics sin soporte', tier: 3 },
 
   { pattern: /royalroad\.com/i,          scraper: royalroad,   name: 'RoyalRoad',              tier: 1 },
   { pattern: /archiveofourown\.org/i,    scraper: ao3,         name: 'Archive of Our Own',     tier: 1 },

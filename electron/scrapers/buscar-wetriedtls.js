@@ -41,7 +41,7 @@ function obrasDeRespuesta(json) {
       synopsis,
       url: `https://wetriedtls.com/series/${s.series_slug}`,
       source: 'WeTriedTLs',
-      coverUrl: s.thumbnail || '',
+      coverUrl: require('../red-publica.js').urlPublica(s.thumbnail, 'https://wetriedtls.com'),
       totalChapters: capitulos,
 
       sinCifras: ['kudos', 'wordCount'],

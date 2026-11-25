@@ -1,7 +1,11 @@
 const { JSDOM } = require('jsdom');
 const { conRitmo } = require('./navegar.js');
-const { cabeceras } = require('../user-agent.js');
+const { cabeceras, fetchWeb } = require('../user-agent.js');
+const { pedirPublico } = require('../red-publica.js');
 const { descargadorComic } = require('./comic.js');
+
+const HOST_VINHETA_WEBTOON = /(^|\.)(pstatic\.net|webtoons?\.com|naver\.(net|com))$/i;
+const esLocalDePrueba = u => process.env.MYLAIBERRY_WEBTOON_LOCAL === '1' && (u.hostname === '127.0.0.1' || u.hostname === 'localhost');
 
 function idDeObra(url) {
   const m = String(url || '').match(/title_no=(\d+)/i);
@@ -23,7 +27,7 @@ function urlCanonica(url) {
     const m = u.pathname.match(/^(\/[a-z]{2}\/[^/]+\/[^/]+)/i);
     const base = m ? m[1] : '/en/comic';
 
-    const deLaPrueba = process.env.MYLAIBERRY_WEBTOON_LOCAL === '1' && (u.hostname === '127.0.0.1' || u.hostname === 'localhost');
+    const deLaPrueba = esLocalDePrueba(u);
     const origin = deLaPrueba ? u.origin : 'https://www.webtoons.com';
     return `${origin}${base}/list?title_no=${tid}`;
   } catch {
@@ -51,12 +55,17 @@ function paginasDeSerie(html, base = 'https://www.webtoons.com') {
   const dom = new JSDOM(html);
   const doc = dom.window.document;
   const links = Array.from(doc.querySelectorAll('.paginate a, .paginate_area a'));
+  let origenBase = '';
+  try { origenBase = new URL(base).origin; } catch {  }
   const urls = [];
   for (const a of links) {
     const href = a.getAttribute('href');
-    if (href && href !== '#' && !href.startsWith('javascript:')) {
-      urls.push(href.startsWith('http') ? href : `${base}${href.startsWith('/') ? '' : '/'}${href}`);
-    }
+    if (!href || href === '#' || href.startsWith('javascript:')) continue;
+    try {
+      const u = new URL(href, base);
+      if (u.username || u.password) continue;
+      if (esUrlDeWebtoon(u.href) || (esLocalDePrueba(u) && u.origin === origenBase)) urls.push(u.href);
+    } catch {  }
   }
   return [...new Set(urls)];
 }
@@ -77,12 +86,19 @@ function extraerVinhetas(html) {
     const url = dataUrl || src;
 
     if (!url || url.includes('bg_transparency.png')) continue;
+    let u;
+    try { u = new URL(url); } catch { continue; }
+    if (u.username || u.password) continue;
+    const permitida = esLocalDePrueba(u)
+      ? /^https?:$/.test(u.protocol)
+      : u.protocol === 'https:' && HOST_VINHETA_WEBTOON.test(u.hostname);
+    if (!permitida) continue;
 
     const ancho = Number(img.getAttribute('width')) || 800;
     const alto = Number(img.getAttribute('height')) || 1280;
     const alt = img.getAttribute('alt') || 'Viñeta';
 
-    vinhetas.push({ url, ancho, alto, alt });
+    vinhetas.push({ url: u.href, ancho, alto, alt });
   }
   return vinhetas;
 }
@@ -103,8 +119,9 @@ function autoresDe(doc) {
 function extraerMetadatosSerie(doc) {
   const title = doc.querySelector('.subj, h1')?.textContent?.trim() || 'Webtoon';
   const author = autoresDe(doc);
-  const cover = doc.querySelector('.thmb img, meta[property="og:image"]')?.src ||
+  const coverCruda = doc.querySelector('.thmb img, meta[property="og:image"]')?.src ||
                 doc.querySelector('meta[property="og:image"]')?.getAttribute('content') || '';
+  const cover = require('../red-publica.js').urlPublica(coverCruda, 'https://www.webtoons.com');
   const description = doc.querySelector('.summary, meta[name="description"]')?.textContent?.trim() ||
                       doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
   return { title, author, cover, description };
@@ -114,8 +131,14 @@ async function scrape(url, onProgress, opciones = {}) {
   const avisar = (msg, step = 'loading') => onProgress && onProgress({ step, message: msg });
   avisar('Leyendo la serie de Webtoon...');
 
+  const pedirWebtoon = (destino) => {
+    const u = new URL(destino);
+    return esLocalDePrueba(u)
+      ? fetchWeb(u.href, { headers: cabeceras(), credentials: 'omit' })
+      : pedirPublico(u.href, { headers: cabeceras() });
+  };
   const canon = urlCanonica(url);
-  const res = await conRitmo(canon, () => fetch(canon, { headers: cabeceras() }));
+  const res = await conRitmo(canon, () => pedirWebtoon(canon));
   const html = await res.text();
 
   const dom = new JSDOM(html);
@@ -128,7 +151,7 @@ async function scrape(url, onProgress, opciones = {}) {
   for (const pagUrl of paginas) {
     avisar(`Leyendo página adicional de episodios: ${pagUrl}`);
     try {
-      const pRes = await conRitmo(pagUrl, () => fetch(pagUrl, { headers: cabeceras() }));
+      const pRes = await conRitmo(pagUrl, () => pedirWebtoon(pagUrl));
       const pHtml = await pRes.text();
       episodios = episodios.concat(extraerEpisodios(pHtml));
     } catch (err) {

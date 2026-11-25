@@ -1,7 +1,10 @@
-const { crearVentana } = require('../user-agent.js');
+const { ventanaVigilada } = require('./ventana-aislada.js');
 const { GENERO, completaDeEtiquetas } = require('../etiquetas.js');
 const universal = require('./universal');
+const { esPaginaDeComic, comprobarObraNoEsComic, cuentaDeComics } = require('./universal-comic.js');
 const { cargarPagina, mientrasAvance } = require('./navegar.js');
+const { urlPublica } = require('../red-publica.js');
+const sanitizarPortada = (cruda, base) => urlPublica(cruda, base);
 
 const CHAPTER_RE = /\/(chapter|capitulo|capítulo)-(\d+)(?:[/?#]|$)/i;
 
@@ -21,6 +24,7 @@ function delay(ms) {
 }
 
 async function cargar(win, url) {
+  await require('../asistente-web-libre.js').comprobarDestino(url);
   try {
     await mientrasAvance(win, cargarPagina(win, url), 'carga de página');
   } catch (err) {
@@ -199,7 +203,7 @@ async function leerFicha(win, base) {
         title: info.title,
         author: (info.autor || '').trim(),
         synopsis: limpiarSinopsis(info.synopsis),
-        coverUrl: info.coverUrl,
+        coverUrl: sanitizarPortada(info.coverUrl, base),
         generos: info.generos || [],
         completa: completaDeEtiquetas(info.estado || []),
         series
@@ -237,13 +241,14 @@ function sitioDe(base) {
 }
 
 async function scrape(url, onProgress) {
+  await require('../asistente-web-libre.js').comprobarDestino(url);
   const base = seriesBase(url);
 
   const palabraDeLaUrl = CHAPTER_RE.test(url) ? palabraDeCapitulo(url) : null;
 
-  const win = crearVentana({
+  const win = ventanaVigilada({
     width: 900, height: 700, show: false,
-    webPreferences: { nodeIntegration: false, contextIsolation: true }
+    webPreferences: { sandbox: true, nodeIntegration: false, contextIsolation: true }
   });
 
   try {
@@ -260,6 +265,8 @@ async function scrape(url, onProgress) {
       title: `Capítulo ${i + 1}`,
       url: enlace(i + 1)
     }));
+
+    await comprobarObraNoEsComic(win, chapters, url => mientrasAvance(win, universal.extractPage(url, win), 'capítulo de muestra'));
 
     if (onProgress) onProgress({ step: 'done', message: `${total} capítulos encontrados.` });
 
@@ -282,13 +289,13 @@ async function scrape(url, onProgress) {
   }
 }
 
-async function downloadChapters(chapters, fanficId, onProgress, saveContentFn) {
-  const win = crearVentana({
+async function downloadChapters(chapters, fanficId, onProgress, saveContentFn, desde = 0) {
+  const win = ventanaVigilada({
     width: 900, height: 700, show: false,
-    webPreferences: { nodeIntegration: false, contextIsolation: true }
+    webPreferences: { sandbox: true, nodeIntegration: false, contextIsolation: true }
   });
 
-  let vaciosSeguidos = 0;
+  let vaciosSeguidos = 0; const comics = cuentaDeComics({ conTexto: desde > 0 });
 
   try {
     for (let i = 0; i < chapters.length; i++) {
@@ -303,6 +310,7 @@ async function downloadChapters(chapters, fanficId, onProgress, saveContentFn) {
 
       try {
         const page = await mientrasAvance(win, universal.extractPage(chapter.url, win), `capítulo ${i + 1}`);
+        comics.nota(await esPaginaDeComic(win, page), chapter.url);
         const html = page?.content || '';
         const palabras = contarPalabras(html);
 
@@ -327,6 +335,7 @@ async function downloadChapters(chapters, fanficId, onProgress, saveContentFn) {
       } catch (err) {
 
         if (err.limitado || err.reto) throw err;
+        if (err.noSoportado) throw err;
         console.error(`[sequential] Error en el capítulo ${i + 1}:`, err.message);
 
         if (err.noExiste && ++vaciosSeguidos >= VACIOS_PARA_PARAR) break;
@@ -339,4 +348,4 @@ async function downloadChapters(chapters, fanficId, onProgress, saveContentFn) {
   }
 }
 
-module.exports = { scrape, downloadChapters, seriesBase, buscarUltimo, contarPalabras, finDelTramo };
+module.exports = { scrape, downloadChapters, seriesBase, buscarUltimo, contarPalabras, finDelTramo, sanitizarPortada };

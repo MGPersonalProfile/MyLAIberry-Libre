@@ -1,4 +1,4 @@
-const { crearVentana } = require('../user-agent.js');
+const { ventanaVigilada } = require('./ventana-aislada.js');
 const { cargarPagina } = require('./navegar.js');
 const { completaDelTitulo } = require('../etiquetas.js');
 const { ordenarIndice } = require('./webnovel-indice.js');
@@ -29,7 +29,7 @@ function limpiarAutor(crudo) {
 }
 
 function nueva() {
-  return crearVentana({
+  return ventanaVigilada({
     show: false,
     width: 1280,
     height: 900,

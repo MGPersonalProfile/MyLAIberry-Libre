@@ -14,8 +14,16 @@ const dormir = ms => new Promise(resolve => setTimeout(resolve, ms));
 function permitido(direccion, sitios = SITIOS) {
   const u = new URL(direccion);
   const localDePrueba = u.protocol === 'http:' && u.hostname === '127.0.0.1' && sitios.has('127.0.0.1');
+  const lista = 'AO3, FanFiction.net, RoyalRoad y Wattpad';
+  if (sitios.has(u.hostname) && u.protocol !== 'https:' && !localDePrueba) {
+    throw Object.assign(new Error(`La investigación sólo abre páginas https de los sitios admitidos (${lista}); ${u.hostname} llegó por ${u.protocol} y no vale: usa su dirección https.`), { noConsultado: true });
+  }
+  if (sitios.has(u.hostname) && (u.username || u.password)) {
+    throw Object.assign(new Error(`La investigación sólo abre páginas públicas de los sitios admitidos (${lista}), sin usuario ni contraseña en la dirección.`), { noConsultado: true });
+  }
   if ((u.protocol !== 'https:' && !localDePrueba) || u.username || u.password || !sitios.has(u.hostname)) {
-    throw new Error('La investigación sólo abre páginas públicas de los sitios admitidos.');
+    throw Object.assign(new Error(`La investigación sólo abre páginas públicas de los sitios admitidos (${lista}); ${u.hostname} no es uno de ellos. ` +
+      'Para leerla sin importarla usa navegar_web; para importar una obra de otro sitio (Webnovel, Webtoon, cómics…) usa preparar_obra con su dirección.'), { noConsultado: true });
   }
   return u;
 }
@@ -123,9 +131,18 @@ function crearNavegador(opciones = {}) {
       creada.on('closed', () => { ventanasAbiertas--; if (win === creada) win = null; });
 
       win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+      const libre = require('./asistente-web-libre.js');
       win.webContents.on('will-navigate', (event, target) => {
         try { permitido(target, sitios); } catch { event.preventDefault(); }
       });
+      win.webContents.on('will-redirect', (event, target, _enSitio, isMainFrame = true) => {
+        try {
+          libre.comprobarForma(target);
+          if (isMainFrame !== false) permitido(target, sitios);
+        } catch { event.preventDefault(); }
+      });
+
+      if (!sitios.has('127.0.0.1')) libre.vigilarRed(win);
     }
     paginas++;
     progreso({ paginas, maxPaginas, url: u.toString(), estado: 'cargando' });

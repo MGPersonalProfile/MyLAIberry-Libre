@@ -430,6 +430,8 @@ function registrar() {
 
     try {
 
+      require('../asistente-web-libre.js').comprobarForma(url);
+
       if (require('../libro-enlace').esEnlaceLibro(url)) return await require('../libro-enlace').importarEnlace(url, sendProgress);
 
       const storyData = await scrapeStory(url, sendProgress, opcionesDeImportacion(opciones));
